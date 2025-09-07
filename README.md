@@ -8,9 +8,7 @@
 **Student Lifestyle**  
 
 ## 📝 Problem Statement  
-- Learning is passive and unengaging.  
-- Students Lack Affordable, Accessible Tutoring.
-- Learning Concepts are Abstract and Hard to Visualize. 
+**Tutoring For Students** 
 
 ## 💡 About HelloChickgu  
 HelloChickgu is a gamified learning platform that transforms traditional studying into an engaging, interactive adventure. Built to solve the challenges of passive learning, limited access to affordable tutoring, and the difficulty of visualizing abstract concepts, HelloChickgu combines gamification, AR, AI-powered assistance, and module-based tutoring into one seamless app. With features like quest-based learning, on-demand tutor matching, and immersive resources, it empowers students to learn at their own pace while keeping them motivated and supported every step of the way.
