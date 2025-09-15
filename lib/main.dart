@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'shared/theme/theme.dart';
 import 'features/home/home.dart';
+import 'features/community/community.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,8 +15,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Hello Chickgu!',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme, // apply theme globally
-      home: const HomePage(),
+      theme: AppTheme.lightTheme,
+      home: const CommunityPage(),
     );
   }
 }
