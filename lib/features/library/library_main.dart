@@ -7,11 +7,9 @@ class LibraryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: colorScheme.background,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -20,12 +18,9 @@ class LibraryPage extends StatelessWidget {
         ),
         title: Text(
           'My Library',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: theme.textTheme.bodyLarge?.color,
-          ),
+          // Use global AppBar title style from theme
         ),
-        centerTitle: false,
+        centerTitle: true,
       ),
       body: const SingleChildScrollView(
         padding: EdgeInsets.all(16),
@@ -50,9 +45,20 @@ class _LibraryContent extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         Text(
+          'Continue Lesson',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            fontSize: 24,
+          ),
+        ),
+        const SizedBox(height: 12),
+        const _ContinueLessonCard(),
+        const SizedBox(height: 24),
+        Text(
           'Categories',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
+            fontSize: 24,
             color: Colors.black,
           ),
         ),
@@ -60,18 +66,10 @@ class _LibraryContent extends StatelessWidget {
         const _CategoriesRow(),
         const SizedBox(height: 24),
         Text(
-          'Continue Lesson',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 12),
-        const _ContinueLessonCard(),
-        const SizedBox(height: 24),
-        Text(
           'Courses',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
+            fontSize: 24,
           ),
         ),
         const SizedBox(height: 12),
@@ -97,7 +95,7 @@ class LibraryBanner extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -109,30 +107,39 @@ class LibraryBanner extends StatelessWidget {
               Expanded(
                 child: Text(
                   titleText,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleLarge?.copyWith(
                     color: Colors.white,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 28,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.emoji_nature,
-                  color: Colors.white,
-                  size: 38,
+              const SizedBox(width: 0),
+              Flexible(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: SizedBox(
+                    width: 100,
+                    height: 100,
+                    child: OverflowBox(
+                      alignment: Alignment.centerRight,
+                      maxWidth: 200,
+                      maxHeight: 200,
+                      child: Image.asset(
+                        'assets/images/library banner.png',
+                        width: 180,
+                        height: 180,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           _SearchField(hintText: 'Search Lesson...'),
         ],
       ),
@@ -159,15 +166,15 @@ class _SearchField extends StatelessWidget {
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide(color: Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.6),
         ),
       ),
@@ -176,39 +183,43 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-class _CategoriesRow extends StatelessWidget {
+class _CategoriesRow extends StatefulWidget {
   const _CategoriesRow();
+
+  @override
+  State<_CategoriesRow> createState() => _CategoriesRowState();
+}
+
+class _CategoriesRowState extends State<_CategoriesRow> {
+  final List<_CategoryData> _categories = const [
+    _CategoryData('All', Colors.white),
+    _CategoryData('Bookmark', AppTheme.primaryYellow),
+    _CategoryData('Coding', AppTheme.secondaryPink),
+    _CategoryData('Green', AppTheme.secondaryMint),
+  ];
+
+  int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: const [
-          CategoryChip(
-            label: 'All',
-            backgroundColor: AppTheme.primaryBlue,
-            textColor: Colors.white,
-          ),
-          SizedBox(width: 8),
-          CategoryChip(
-            label: 'Bookmark',
-            backgroundColor: AppTheme.primaryYellow,
-            textColor: Colors.black,
-          ),
-          SizedBox(width: 8),
-          CategoryChip(
-            label: 'Coding',
-            backgroundColor: AppTheme.secondaryPink,
-            textColor: Colors.white,
-          ),
-          SizedBox(width: 8),
-          CategoryChip(
-            label: 'Green',
-            backgroundColor: AppTheme.secondaryMint,
-            textColor: Colors.white,
-          ),
-        ],
+        children: List.generate(_categories.length, (index) {
+          final item = _categories[index];
+          final isSelected = index == _selectedIndex;
+          return Row(
+            children: [
+              CategoryChip(
+                label: item.label,
+                dotColor: item.dotColor,
+                selected: isSelected,
+                onTap: () => setState(() => _selectedIndex = index),
+              ),
+              const SizedBox(width: 8),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -218,32 +229,69 @@ class CategoryChip extends StatelessWidget {
   const CategoryChip({
     super.key,
     required this.label,
-    required this.backgroundColor,
-    required this.textColor,
+    required this.dotColor,
+    required this.selected,
+    required this.onTap,
   });
 
   final String label;
-  final Color backgroundColor;
-  final Color textColor;
+  final Color dotColor;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.w700,
+    final Color background = selected ? AppTheme.primaryBlue : Colors.white;
+    final Color labelColor = selected ? Colors.white : Colors.black87;
+    final Color? borderColor = selected ? null : Colors.grey.shade300;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        width: 96,
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(24),
+          border: borderColor == null ? null : Border.all(color: borderColor),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: AppTheme.primaryBlue.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: labelColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+class _CategoryData {
+  final String label;
+  final Color dotColor;
+  const _CategoryData(this.label, this.dotColor);
 }
 
 class _ContinueLessonCard extends StatelessWidget {
@@ -257,23 +305,30 @@ class _ContinueLessonCard extends StatelessWidget {
         color: AppTheme.primaryYellow,
         borderRadius: BorderRadius.circular(16),
       ),
+      clipBehavior: Clip.hardEdge,
+      constraints: const BoxConstraints(minHeight: 150),
       padding: const EdgeInsets.all(16),
       child: Stack(
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(12),
+              SizedBox(
+                width: 84,
+                height: 84,
+                child: OverflowBox(
+                  alignment: Alignment.centerLeft,
+                  maxWidth: 160,
+                  maxHeight: 160,
+                  child: Image.asset(
+                    'assets/images/learning process python.png',
+                    width: 150,
+                    height: 150,
+                    fit: BoxFit.contain,
+                  ),
                 ),
-                alignment: Alignment.center,
-                child: const FlutterLogo(size: 40),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,13 +337,14 @@ class _ContinueLessonCard extends StatelessWidget {
                       'Python Programming',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '1 out of 5 modules',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.black.withOpacity(0.7),
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -297,8 +353,8 @@ class _ContinueLessonCard extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: 1 / 5,
                         minHeight: 8,
-                        color: AppTheme.primaryBlue,
-                        backgroundColor: Colors.white,
+                        color: Colors.white,
+                        backgroundColor: Colors.white.withOpacity(0.4),
                       ),
                     ),
                   ],
@@ -306,27 +362,7 @@ class _ContinueLessonCard extends StatelessWidget {
               ),
             ],
           ),
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryBlue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                elevation: 2,
-              ),
-              onPressed: () {},
-              icon: const Icon(Icons.chat_bubble_outline, size: 16),
-              label: const Text('Ask Chippy'),
-            ),
-          ),
+          // Removed Ask Chippy button
         ],
       ),
     );
