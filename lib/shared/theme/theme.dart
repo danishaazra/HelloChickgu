@@ -18,10 +18,26 @@ class AppTheme {
     return base.copyWith(
       primaryColor: primaryBlue,
       scaffoldBackgroundColor: bgLightBlue,
+
+      // appbar theme
+      appBarTheme: AppBarTheme(
+        backgroundColor: bgWhite,
+        titleTextStyle: GoogleFonts.baloo2(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
+        iconTheme: const IconThemeData(size: 36, color: Colors.black),
+        actionsIconTheme: const IconThemeData(size: 36, color: Colors.black),
+      ),
+
+      // text theme
       textTheme: baloo2TextTheme.apply(
         bodyColor: Colors.black87,
         displayColor: Colors.black,
       ),
+
+      // color scheme
       colorScheme: base.colorScheme.copyWith(
         primary: primaryBlue,
         secondary: primaryYellow,
