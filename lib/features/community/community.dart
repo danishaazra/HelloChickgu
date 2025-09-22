@@ -23,16 +23,13 @@ class _CommunityPageState extends State<CommunityPage> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Community', style: Theme.of(context).textTheme.titleLarge),
+        centerTitle: true,
+        title: const Text('Community'),
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -430,7 +427,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leadingWidth: 72,
         leading: TextButton(
@@ -438,7 +434,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           child: Text('Cancel', style: Theme.of(context).textTheme.labelLarge),
         ),
         centerTitle: true,
-        title: Text('New Post', style: Theme.of(context).textTheme.titleLarge),
+        title: const Text('New Post'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
