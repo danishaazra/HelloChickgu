@@ -121,7 +121,7 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                 _helloAnimationController.reset();
                 _chickguAnimationController.reset();
                 _helloAnimationController.forward();
-                Future.delayed(const Duration(milliseconds: 400), () {
+                Future.delayed(const Duration(milliseconds: 350), () {
                   _chickguAnimationController.forward();
                 });
               }
@@ -158,10 +158,10 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
             ),
           ),
           
-          // Hello and Chickgu images overlay (only on last screen)
-          if (_currentPage == 3)
-            Positioned(
-              top: MediaQuery.of(context).size.height * 0.3,
+          
+           if (_currentPage == 3)
+             Positioned(
+               top: MediaQuery.of(context).padding.top + 10,
               left: 0,
               right: 0,
               child: Column(
@@ -170,31 +170,35 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                   AnimatedBuilder(
                     animation: _helloScaleAnimation,
                     builder: (context, child) {
-                      return Transform.scale(
-                        scale: _helloScaleAnimation.value,
-                        child: Image.asset(
-                          'assets/hello.png',
-                          width: 200,
-                          height: 100,
-                          fit: BoxFit.contain,
+                      return Transform.translate(
+                        offset: const Offset(0, 52),
+                        child: Transform.scale(
+                          scale: _helloScaleAnimation.value,
+                          child: Image.asset(
+                            'assets/hello.png',
+                            width: 200,
+                            height: 150,
+                          ),
                         ),
                       );
                     },
-                  ),
-                  
-                  const SizedBox(height: 10),
-                  
-                  // Chickgu image with fade animation
+                   ),
+                   
+                   
+                   
+                   // Chickgu image with fade animation
                   AnimatedBuilder(
                     animation: _chickguFadeAnimation,
                     builder: (context, child) {
                       return Opacity(
                         opacity: _chickguFadeAnimation.value,
-                        child: Image.asset(
-                          'assets/chickgu.png',
-                          width: 150,
-                          height: 150,
-                          fit: BoxFit.contain,
+                        child: Transform.translate(
+                          offset: const Offset(0, -12),
+                          child: Image.asset(
+                            'assets/chickgu.png',
+                            width: 250,
+                            height: 150,
+                          ),
                         ),
                       );
                     },
