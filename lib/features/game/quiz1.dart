@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:hellochickgu/shared/theme/theme.dart';
+import 'package:hellochickgu/features/game/level_page.dart';
 // import removed: was used by old close button
 import 'package:hellochickgu/features/game/quiz1end.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
@@ -9,7 +10,8 @@ import 'dart:async';
 
 
 class quiz1 extends StatefulWidget {
-  const quiz1({super.key});
+  final int level;
+  const quiz1({super.key, this.level = 1});
 
   @override
   State<quiz1> createState() => _Quiz1State();
@@ -335,6 +337,9 @@ class _Quiz1State extends State<quiz1> {
           correct: correctCount,
           wrong: wrongCount,
           timeTaken: _secondsElapsed,
+          questions: questions,
+          selectedAnswers: selectedAnswers,
+          level: widget.level,
         ),
       ),
     );
@@ -424,7 +429,12 @@ class _Quiz1State extends State<quiz1> {
                                 ),
                                 const SizedBox(width: 8),
                                 GestureDetector(
-                                  onTap: () => Navigator.pop(context),
+                                  onTap: () {
+                                    Navigator.of(context).pushAndRemoveUntil(
+                                      MaterialPageRoute(builder: (_) => const LevelPage()),
+                                      (route) => false,
+                                    );
+                                  },
                                   child: Container(
                                     width: 36,
                                     height: 36,
