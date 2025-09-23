@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
 
+import 'dart:math' as math;
+
+
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
@@ -24,7 +27,7 @@ class ProfilePage extends StatelessWidget {
                     children: [
                       Positioned.fill(
                         child: Image.network(
-                          'https://media.istockphoto.com/id/1400918939/vector/summer-sunny-clear-sky-orange-and-blue-abstract-defocused-color-gradient-background-vector.jpg?s=612x612&w=0&k=20&c=H7zCHx8fPia02XttG3pkAVhLRm1VQSWEUi7Tl2agHms=',
+                          'https://i.pinimg.com/1200x/6a/61/db/6a61db73fcbe1fdf53ae05f53fa10c47.jpg',
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -39,8 +42,18 @@ class ProfilePage extends StatelessWidget {
                         top: 0,
                         left: 0,
                         right: 0,
-                        child: SizedBox(
+                        child: Container(
                           height: 56,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
                           child: Stack(
                             children: [
                               Align(
@@ -235,6 +248,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
       badgeColor: Colors.purple,
     ),
   ];
+  int _activeTabIndex = 0; // 0 = Recent Posts, 1 = Achievements
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +269,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                     children: [
                       Positioned.fill(
                         child: Image.network(
-                          'https://media.istockphoto.com/id/1400918939/vector/summer-sunny-clear-sky-orange-and-blue-abstract-defocused-color-gradient-background-vector.jpg?s=612x612&w=0&k=20&c=H7zCHx8fPia02XttG3pkAVhLRm1VQSWEUi7Tl2agHms=',
+                          'https://i.pinimg.com/1200x/6a/61/db/6a61db73fcbe1fdf53ae05f53fa10c47.jpg',
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -266,13 +280,22 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                           ),
                         ),
                       ),
-                      Positioned(
+                  Positioned(
                         top: 0,
                         left: 0,
                         right: 0,
                         child: Container(
-                          height: 60,
-                          color: const Color(0xFFECF4F9),
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
                           child: Stack(
                             children: [
                               Align(
@@ -340,52 +363,141 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                 const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Text(
-                          'Achievements',
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                      Expanded(
+                        child: _TabButton(
+                          label: 'Recent Posts',
+                          isActive: _activeTabIndex == 0,
+                          onTap: () => setState(() => _activeTabIndex = 0),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 110,
-                        child: ListView.separated(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          scrollDirection: Axis.horizontal,
-                          itemCount: 10,
-                          separatorBuilder: (_, __) => const SizedBox(width: 12),
-                          itemBuilder: (context, index) => const _BadgeThumbnail(),
-                          ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _TabButton(
+                          label: 'Journey',
+                          isActive: _activeTabIndex == 1,
+                          onTap: () => setState(() => _activeTabIndex = 1),
                         ),
-                      ],
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Recent Posts',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
                 Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    itemCount: _posts.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) => _PostCard(post: _posts[index]),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 250),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: _activeTabIndex == 0
+                        ? ListView.separated(
+                            key: const ValueKey('posts'),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            itemCount: _posts.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            itemBuilder: (context, index) => _PostCard(post: _posts[index]),
+                          )
+                        : SingleChildScrollView(
+                            key: const ValueKey('journey'),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            physics: const BouncingScrollPhysics(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(
+                                    'Achievements',
+                                    style: textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  height: 110,
+                                  child: ListView.separated(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: 10,
+                                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                    itemBuilder: (context, index) => const _BadgeThumbnail(),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(
+                                    'Performance',
+                                    style: textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.05),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  child: Column(
+                                    children: [
+                                      SizedBox(
+                                        height: 280,
+                                        child: _RadarChart(
+                                          categories: const [
+                                            'Memory',
+                                            'Solving',
+                                            'Patterns',
+                                            'Logic',
+                                            'Understanding',
+                                          ],
+                                          values: const [
+                                            0.7,
+                                            0.55,
+                                            0.8,
+                                            0.65,
+                                            0.5,
+                                          ],
+                                          categoryColors: const [
+                                            Color(0xFF6C63FF),
+                                            Color(0xFFFF6584),
+                                            Color(0xFF00BFA6),
+                                            Color(0xFFFFC107),
+                                            Color(0xFF29B6F6),
+                                          ],
+                                          levels: 5,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Wrap(
+                                        alignment: WrapAlignment.center,
+                                        spacing: 16,
+                                        runSpacing: 8,
+                                        children: const [
+                                          _LegendDot(color: Color(0xFF6C63FF), label: 'Memory'),
+                                          _LegendDot(color: Color(0xFFFF6584), label: 'Solving'),
+                                          _LegendDot(color: Color(0xFF00BFA6), label: 'Patterns'),
+                                          _LegendDot(color: Color(0xFFFFC107), label: 'Logic'),
+                                          _LegendDot(color: Color(0xFF29B6F6), label: 'Understanding'),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                              ],
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -418,7 +530,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
 // Removed editable field widget since PersonalInformationPage is now view-only
 
 class _BadgeThumbnail extends StatelessWidget {
-  const _BadgeThumbnail({super.key});
+  const _BadgeThumbnail();
 
   @override
   Widget build(BuildContext context) {
@@ -445,6 +557,57 @@ class _BadgeThumbnail extends StatelessWidget {
     );
   }
 }
+
+class _TabButton extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _TabButton({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color activeColor = Colors.black;
+    final Color inactiveColor = Colors.grey.shade500;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: Border.all(
+            color: isActive ? Colors.black : Colors.transparent,
+            width: 1.2,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: isActive ? activeColor : inactiveColor,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// removed _PerformanceMeter (replaced by radar chart in Journey)
 
 class _Post {
   final String authorName;
@@ -898,14 +1061,262 @@ class StatisticsPage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            // Content will be added here later
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 320,
+                            child: _RadarChart(
+                              categories: const [
+                                'Memory',
+                                'Solving',
+                                'Patterns',
+                                'Logic',
+                                'Understanding',
+                              ],
+                              values: const [
+                                0.7, // Memory
+                                0.55, // Solving
+                                0.8, // Patterns
+                                0.65, // Logic
+                                0.5, // Understanding
+                              ],
+                              categoryColors: const [
+                                Color(0xFF6C63FF),
+                                Color(0xFFFF6584),
+                                Color(0xFF00BFA6),
+                                Color(0xFFFFC107),
+                                Color(0xFF29B6F6),
+                              ],
+                              levels: 5,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 16,
+                            runSpacing: 8,
+                            children: const [
+                              _LegendDot(color: Color(0xFF6C63FF), label: 'Memory'),
+                              _LegendDot(color: Color(0xFFFF6584), label: 'Solving'),
+                              _LegendDot(color: Color(0xFF00BFA6), label: 'Patterns'),
+                              _LegendDot(color: Color(0xFFFFC107), label: 'Logic'),
+                              _LegendDot(color: Color(0xFF29B6F6), label: 'Understanding'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 }
+
+class _LegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  const _LegendDot({
+    required this.color,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(label),
+      ],
+    );
+  }
+}
+
+class _RadarChart extends StatelessWidget {
+  final List<String> categories;
+  final List<double> values; // 0..1
+  final List<Color> categoryColors;
+  final int levels;
+
+  const _RadarChart({
+    required this.categories,
+    required this.values,
+    required this.categoryColors,
+    this.levels = 5,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double size =
+            constraints.biggest.shortestSide == double.infinity
+                ? 300
+                : constraints.biggest.shortestSide;
+        return CustomPaint(
+          painter: _RadarChartPainter(
+            categories: categories,
+            values: values,
+            categoryColors: categoryColors,
+            levels: levels,
+            labelStyle: Theme.of(context)
+                    .textTheme
+                    .labelSmall
+                    ?.copyWith(color: Colors.black87) ??
+                const TextStyle(fontSize: 11, color: Colors.black87),
+          ),
+          size: Size.square(size),
+        );
+      },
+    );
+  }
+}
+
+class _RadarChartPainter extends CustomPainter {
+  final List<String> categories;
+  final List<double> values; // 0..1 length == categories
+  final List<Color> categoryColors;
+  final int levels;
+  final TextStyle labelStyle;
+
+  _RadarChartPainter({
+    required this.categories,
+    required this.values,
+    required this.categoryColors,
+    required this.levels,
+    required this.labelStyle,
+  }) : assert(categories.length == values.length),
+       assert(categories.length == categoryColors.length);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Offset center = size.center(Offset.zero);
+    final double radius = (size.shortestSide / 2) - 24; // padding for labels
+    final int count = categories.length;
+    final double angleStep = (2 * 3.141592653589793) / count;
+
+    final Paint gridPaint = Paint()
+      ..color = Colors.grey.withOpacity(0.25)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    // Draw concentric polygons (levels)
+    for (int level = 1; level <= levels; level++) {
+      final double r = radius * (level / levels);
+      final Path ring = Path();
+      for (int i = 0; i < count; i++) {
+        final double angle = -3.141592653589793 / 2 + i * angleStep;
+        final Offset p = center + Offset(r * math.cos(angle), r * math.sin(angle));
+        if (i == 0) {
+          ring.moveTo(p.dx, p.dy);
+        } else {
+          ring.lineTo(p.dx, p.dy);
+        }
+      }
+      ring.close();
+      canvas.drawPath(ring, gridPaint);
+    }
+
+    // Draw axes and labels
+    final Paint axisPaint = Paint()
+      ..color = Colors.grey.withOpacity(0.35)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    for (int i = 0; i < count; i++) {
+      final double angle = -3.141592653589793 / 2 + i * angleStep;
+      final Offset tip = center + Offset(radius * math.cos(angle), radius * math.sin(angle));
+      canvas.drawLine(center, tip, axisPaint);
+
+      // Label
+      final TextPainter tp = TextPainter(
+        text: TextSpan(text: categories[i], style: labelStyle.copyWith(color: categoryColors[i])),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+      )..layout();
+      final double labelPadding = 8;
+      Offset labelOffset = tip;
+      // Adjust label position outward a bit
+      labelOffset = center + Offset((radius + labelPadding) * math.cos(angle), (radius + labelPadding) * math.sin(angle));
+      labelOffset = labelOffset - Offset(tp.width / 2, tp.height / 2);
+      tp.paint(canvas, labelOffset);
+    }
+
+    // Data polygon
+    final Path dataPath = Path();
+    final List<Offset> dataPoints = <Offset>[];
+    for (int i = 0; i < count; i++) {
+      final double angle = -3.141592653589793 / 2 + i * angleStep;
+      final double r = radius * values[i].clamp(0.0, 1.0);
+      final Offset p = center + Offset(r * math.cos(angle), r * math.sin(angle));
+      dataPoints.add(p);
+      if (i == 0) {
+        dataPath.moveTo(p.dx, p.dy);
+      } else {
+        dataPath.lineTo(p.dx, p.dy);
+      }
+    }
+    dataPath.close();
+
+    final Paint fillPaint = Paint()
+      ..color = const Color(0xFF6C63FF).withOpacity(0.15)
+      ..style = PaintingStyle.fill;
+    final Paint strokePaint = Paint()
+      ..color = const Color(0xFF6C63FF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    canvas.drawPath(dataPath, fillPaint);
+    canvas.drawPath(dataPath, strokePaint);
+
+    // Colored vertices per category
+    for (int i = 0; i < count; i++) {
+      final Paint dotPaint = Paint()..color = categoryColors[i];
+      canvas.drawCircle(dataPoints[i], 4, dotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RadarChartPainter oldDelegate) {
+    return oldDelegate.values != values ||
+        oldDelegate.categories != categories ||
+        oldDelegate.levels != levels;
+  }
+}
+
+// Minimal math helpers
+// removed placeholder Math class; using dart:math instead
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});

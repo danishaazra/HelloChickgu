@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'shared/theme/theme.dart';
-import 'features/game/level_page.dart';
-import 'features/game/training_page.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'features/game/quiz1.dart';
 
 void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
@@ -18,10 +16,7 @@ class MyApp extends StatelessWidget {
       title: 'Hello Chickgu!',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const LevelPage(),
-      routes: {
-        '/training': (_) => const TrainingPage(),
-      },
+      home: const quiz1(),
     );
   }
 }
