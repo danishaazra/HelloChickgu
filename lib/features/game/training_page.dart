@@ -6,8 +6,6 @@ class TrainingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isSmallScreen = Responsive.isSmallScreen(context);
-    
     return Scaffold(
       appBar: AppBar(
         title: Text(
