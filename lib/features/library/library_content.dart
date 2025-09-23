@@ -4,8 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import '../../shared/theme/theme.dart';
 import '../chatbot/chippy_chatbot.dart';
-import '../../services/download_service.dart';
-import '../../shared/widgets/ar_button.dart';
+import '../../services/download_service.dart'; // TODO: Remove this
 
 class ModuleContentPage extends StatelessWidget {
   final String courseTitle;
@@ -124,13 +123,6 @@ class ModuleContentPage extends StatelessWidget {
                                 ),
                               );
                             },
-                          ),
-                          const SizedBox(width: 6),
-                          ARButton(
-                            size: 70,
-                            iconColor: Colors.black,
-                            backgroundColor: Colors.transparent,
-                            tooltip: 'AR Experience',
                           ),
                           const SizedBox(width: 6),
                           _AssetIconButton(

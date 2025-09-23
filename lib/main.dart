@@ -9,10 +9,16 @@ import 'features/community/community.dart';
 import 'features/library/library_main.dart';
 import 'features/library/library_courseoutline.dart';
 import 'features/game/quiz1.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'features/onboarding/onboarding.dart';
+import 'features/auth/login.dart';
+import 'firebase_options.dart';
 
-
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -25,9 +31,7 @@ class MyApp extends StatelessWidget {
       title: 'Hello Chickgu!',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const MapChickgu(),
-      home: const quiz1(),
-
+      home: const LoginPage(),
     );
   }
 }
