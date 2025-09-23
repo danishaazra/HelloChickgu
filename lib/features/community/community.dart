@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
+import 'package:hellochickgu/shared/utils/responsive.dart';
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -20,6 +21,8 @@ class _CommunityPageState extends State<CommunityPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isSmallScreen = Responsive.isSmallScreen(context);
+    
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
@@ -29,7 +32,13 @@ class _CommunityPageState extends State<CommunityPage> {
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
-        title: const Text('Community'),
+        title: Text(
+          'Community',
+          style: TextStyle(
+            fontSize: Responsive.scaleFont(context, 20),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),

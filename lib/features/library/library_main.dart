@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../shared/theme/theme.dart';
 import 'library_courseoutline.dart';
 import '../chatbot/chippy_chatbot.dart';
+import 'package:hellochickgu/shared/utils/responsive.dart';
 
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
@@ -9,6 +10,7 @@ class LibraryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isSmallScreen = Responsive.isSmallScreen(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -20,12 +22,15 @@ class LibraryPage extends StatelessWidget {
         ),
         title: Text(
           'My Library',
-          // Use global AppBar title style from theme
+          style: TextStyle(
+            fontSize: Responsive.scaleFont(context, 20),
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
       ),
-      body: const SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+      body: SingleChildScrollView(
+        padding: Responsive.scalePaddingAll(context, 16),
         child: _LibraryContent(),
       ),
     );
@@ -38,6 +43,8 @@ class _LibraryContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isSmallScreen = Responsive.isSmallScreen(context);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -48,6 +55,7 @@ class _LibraryContent extends StatelessWidget {
         const SizedBox(height: 24),
         _AskChippySection(),
         const SizedBox(height: 24),
+        SizedBox(height: Responsive.scaleHeight(context, 24)),
         Text(
           'Continue Lesson',
           style: theme.textTheme.titleMedium?.copyWith(
@@ -244,7 +252,7 @@ class LibraryBanner extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleLarge?.copyWith(
                     color: Colors.white,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     fontSize: 28,
                   ),
                 ),
@@ -469,6 +477,8 @@ class _ContinueLessonCard extends StatelessWidget {
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                         fontSize: 24,
+
+                        fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
                     ),

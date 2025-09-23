@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../profile/profile.dart';
+import 'package:hellochickgu/shared/utils/responsive.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -105,6 +106,9 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    final isSmallScreen = Responsive.isSmallScreen(context);
+    final isVerySmallScreen = Responsive.isVerySmallScreen(context);
+    
     return Scaffold(
       body: Stack(
         children: [
@@ -121,7 +125,7 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                 _helloAnimationController.reset();
                 _chickguAnimationController.reset();
                 _helloAnimationController.forward();
-                Future.delayed(const Duration(milliseconds: 400), () {
+                Future.delayed(const Duration(milliseconds: 350), () {
                   _chickguAnimationController.forward();
                 });
               }
@@ -144,12 +148,12 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
           // Back button (top left - round outline)
           Positioned(
             top: MediaQuery.of(context).padding.top,
-            left: 20,
+            left: Responsive.scaleWidth(context, 20),
             child: GestureDetector(
               onTap: _previousPage,
               child: Container(
-                width: 50,
-                height: 50,
+                width: Responsive.scaleWidth(context, 50),
+                height: Responsive.scaleHeight(context, 50),
                 decoration: BoxDecoration(
                   color: Colors.transparent,
                   shape: BoxShape.circle,
@@ -158,10 +162,10 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
             ),
           ),
           
-          // Hello and Chickgu images overlay (only on last screen)
-          if (_currentPage == 3)
-            Positioned(
-              top: MediaQuery.of(context).size.height * 0.3,
+          
+           if (_currentPage == 3)
+             Positioned(
+               top: MediaQuery.of(context).padding.top + 10,
               left: 0,
               right: 0,
               child: Column(
@@ -170,31 +174,35 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                   AnimatedBuilder(
                     animation: _helloScaleAnimation,
                     builder: (context, child) {
-                      return Transform.scale(
-                        scale: _helloScaleAnimation.value,
-                        child: Image.asset(
-                          'assets/hello.png',
-                          width: 200,
-                          height: 100,
-                          fit: BoxFit.contain,
+                      return Transform.translate(
+                        offset: const Offset(0, 52),
+                        child: Transform.scale(
+                          scale: _helloScaleAnimation.value,
+                          child: Image.asset(
+                            'assets/hello.png',
+                            width: 200,
+                            height: 150,
+                          ),
                         ),
                       );
                     },
-                  ),
-                  
-                  const SizedBox(height: 10),
-                  
-                  // Chickgu image with fade animation
+                   ),
+                   
+                   
+                   
+                   // Chickgu image with fade animation
                   AnimatedBuilder(
                     animation: _chickguFadeAnimation,
                     builder: (context, child) {
                       return Opacity(
                         opacity: _chickguFadeAnimation.value,
-                        child: Image.asset(
-                          'assets/chickgu.png',
-                          width: 150,
-                          height: 150,
-                          fit: BoxFit.contain,
+                        child: Transform.translate(
+                          offset: const Offset(0, -12),
+                          child: Image.asset(
+                            'assets/chickgu.png',
+                            width: 250,
+                            height: 150,
+                          ),
                         ),
                       );
                     },
@@ -251,8 +259,8 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                         GestureDetector(
                           onTap: _nextPage,
                           child: Container(
-                            width: 160,
-                            height: 60,
+                            width: Responsive.scaleWidth(context, 160),
+                            height: Responsive.scaleHeight(context, 60),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(30),
@@ -268,8 +276,8 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                               alignment: const Alignment(0, -0.3),
                               child: Image.asset(
                                 _nextButtonImages[_currentPage],
-                                width: 100,
-                                height: 38,
+                                width: Responsive.scaleWidth(context, 100),
+                                height: Responsive.scaleHeight(context, 38),
                                 fit: BoxFit.contain,
                               ),
                             ),
