@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:hellochickgu/shared/utils/responsive.dart';
 
 class quiz1end extends StatelessWidget {
   final int correct;
@@ -21,6 +21,9 @@ class quiz1end extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = Responsive.isSmallScreen(context);
+    
     return Scaffold(
       body: 
       Stack( children: [
@@ -38,12 +41,14 @@ class quiz1end extends StatelessWidget {
       Center(
         child: 
       Container(
-          width: 350,
-         
-          padding: EdgeInsets.all(30),
+          width: Responsive.scaleWidth(context, 350),
+          constraints: BoxConstraints(
+            maxHeight: isSmallScreen ? screenSize.height * 0.8 : screenSize.height * 0.85,
+          ),
+          padding: Responsive.scalePaddingAll(context, 30),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: Responsive.scaleBorderRadiusAll(context, 30),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.2),
@@ -53,13 +58,15 @@ class quiz1end extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
               Text(
                 "Quiz Completed!",
-                style: GoogleFonts.baloo2(
+                style: TextStyle(
+                  fontFamily: 'Baloo2',
                   fontWeight: FontWeight.bold,
                   fontSize: 28,
                   color: Colors.green,
@@ -68,24 +75,32 @@ class quiz1end extends StatelessWidget {
               SizedBox(height: 20),
               Text(
                 "Time Taken: ${_formatTime(timeTaken)}",
-                style: GoogleFonts.baloo2(fontSize: 20),
+                style: TextStyle(
+                  fontFamily: 'Baloo2',fontSize: 20),
               ),
               SizedBox(height: 10),
               Text(
                 "Correct Answers: $correct",
-                style: GoogleFonts.baloo2(fontSize: 20, color: Colors.blue),
+                style: TextStyle(
+                  fontFamily: 'Baloo2',fontSize: 20, color: Colors.blue),
               ),
               SizedBox(height: 10),
               Text(
                 "Wrong Answers: $wrong",
-                style: GoogleFonts.baloo2(fontSize: 20, color: Colors.red),
+                style: TextStyle(
+                  fontFamily: 'Baloo2',fontSize: 20, color: Colors.red),
               ),
               SizedBox(height: 30),
               ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text("Back"),
+                onPressed: () {
+                  // Return to level page and mark level as completed
+                  Navigator.pop(context); // Go back to quiz1
+                  Navigator.pop(context); // Go back to level page
+                },
+                child: Text("Continue"),
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
