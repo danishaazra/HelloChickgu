@@ -4,6 +4,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import '../../shared/theme/theme.dart';
 import '../chatbot/chippy_chatbot.dart';
+import '../../services/download_service.dart';
+import '../../shared/widgets/ar_button.dart';
 
 class ModuleContentPage extends StatelessWidget {
   final String courseTitle;
@@ -124,13 +126,20 @@ class ModuleContentPage extends StatelessWidget {
                             },
                           ),
                           const SizedBox(width: 6),
+                          ARButton(
+                            size: 70,
+                            iconColor: Colors.black,
+                            backgroundColor: Colors.transparent,
+                            tooltip: 'AR Experience',
+                          ),
+                          const SizedBox(width: 6),
                           _AssetIconButton(
                             assetPath: 'assets/download icon.png',
                             tooltip: 'Download',
                             size: 70,
                             backgroundColor: Colors.transparent,
                             onTap: () async {
-                              await _exportLessonToPdf(
+                              await _downloadLessonAsPdf(
                                 context,
                                 title: moduleTitle,
                                 subtopic: subtopicTitle,
@@ -255,57 +264,201 @@ String _dummyContent(String moduleTitle) {
       'This is placeholder text. Replace with your lesson content later.';
 }
 
-Future<void> _exportLessonToPdf(
+Future<void> _downloadLessonAsPdf(
   BuildContext context, {
   required String title,
   required String subtopic,
   required String content,
 }) async {
   try {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => const Center(
+            child: Card(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Generating PDF...'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+    );
+
+    // Generate PDF
     final pdf = pw.Document();
     pdf.addPage(
       pw.MultiPage(
         pageTheme: const pw.PageTheme(margin: pw.EdgeInsets.all(24)),
-        build: (context) => [
-          pw.Header(
-            level: 0,
-            child: pw.Text(
-              title,
-              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-            ),
-          ),
-          pw.SizedBox(height: 6),
-          pw.Text(subtopic, style: const pw.TextStyle(fontSize: 14)),
-          pw.SizedBox(height: 12),
-          pw.Text(
-            content,
-            style: const pw.TextStyle(fontSize: 12),
-            textAlign: pw.TextAlign.left,
-          ),
-        ],
+        build:
+            (context) => [
+              pw.Header(
+                level: 0,
+                child: pw.Text(
+                  title,
+                  style: pw.TextStyle(
+                    fontSize: 24,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Text(subtopic, style: const pw.TextStyle(fontSize: 14)),
+              pw.SizedBox(height: 12),
+              pw.Text(
+                content,
+                style: const pw.TextStyle(fontSize: 12),
+                textAlign: pw.TextAlign.left,
+              ),
+              pw.SizedBox(height: 20),
+              pw.Text(
+                'Generated on: ${DateTime.now().toString()}',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  fontStyle: pw.FontStyle.italic,
+                ),
+              ),
+            ],
       ),
     );
 
-    final Directory dir = await getApplicationDocumentsDirectory();
-    final String filePath = '${dir.path}/$title.pdf';
+    // Get storage directory
+    Directory? directory;
+    if (Platform.isAndroid) {
+      directory = await getExternalStorageDirectory();
+    } else {
+      directory = await getApplicationDocumentsDirectory();
+    }
+
+    if (directory == null) {
+      throw Exception('Could not access storage directory');
+    }
+
+    final fileName = '${title.replaceAll(' ', '_')}_lesson.pdf';
+    final String filePath = '${directory.path}/$fileName';
     final file = File(filePath);
+
+    // Save PDF
     await file.writeAsBytes(await pdf.save());
 
+    // Close loading dialog
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Saved PDF to: $filePath'),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
-        ),
+      Navigator.of(context).pop();
+    }
+
+    // Show success dialog with options
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: const Text('Download Complete'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.green, size: 48),
+                  const SizedBox(height: 16),
+                  Text('PDF saved successfully!'),
+                  const SizedBox(height: 8),
+                  Text('File: $fileName'),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Close'),
+                ),
+                TextButton.icon(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    try {
+                      await DownloadService.showNativeOpenOptions(file);
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${e.toString()}'),
+                            backgroundColor: Colors.red,
+                            action: SnackBarAction(
+                              label: 'Install PDF Reader',
+                              textColor: Colors.white,
+                              onPressed: () async {
+                                try {
+                                  await DownloadService.openAppStoreForPDFReader();
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Could not open app store: ${e.toString()}',
+                                      ),
+                                      duration: const Duration(seconds: 3),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('Open with Device App'),
+                ),
+                TextButton.icon(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    try {
+                      await DownloadService.showNativeShareOptions(
+                        file,
+                        fileName,
+                      );
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to share: ${e.toString()}'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.share),
+                  label: const Text('Share via Device'),
+                ),
+              ],
+            ),
       );
     }
   } catch (e) {
+    // Close loading dialog if open
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
+
+    // Show error message
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to export PDF: $e'),
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text('Download failed: ${e.toString()}')),
+            ],
+          ),
+          backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
         ),
       );
     }
@@ -434,19 +587,21 @@ class _AssetIconButton extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
-          color: isTransparent
-              ? Colors.transparent
-              : (backgroundColor ?? Colors.white),
+          color:
+              isTransparent
+                  ? Colors.transparent
+                  : (backgroundColor ?? Colors.white),
           borderRadius: BorderRadius.circular(size / 2),
-          boxShadow: isTransparent
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
+          boxShadow:
+              isTransparent
+                  ? null
+                  : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
         ),
         padding: EdgeInsets.all(size * 0.06),
         child: Image.asset(assetPath, fit: BoxFit.contain),
