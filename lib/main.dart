@@ -20,11 +20,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'features/onboarding/onboarding.dart';
 import 'features/auth/login.dart';
 import 'firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {}
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
@@ -39,8 +43,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
 
-
-      home: const LoginPage(),
+      home: const LibraryPage(),
 
     );
   }
