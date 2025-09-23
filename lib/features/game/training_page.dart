@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hellochickgu/shared/theme/theme.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+class TrainingPage extends StatelessWidget {
+  const TrainingPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -12,21 +11,20 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Home',
+          'Training',
           style: TextStyle(
             fontSize: Responsive.scaleFont(context, 20),
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: AppTheme.primaryBlue,
       ),
       body: Center(
         child: Padding(
           padding: Responsive.scalePaddingAll(context, 20),
           child: Text(
-            'Welcome to Hello Chickgu! try jeeee',
+            'Training content will be here',
             style: TextStyle(
-              fontSize: Responsive.scaleFont(context, 18),
+              fontSize: Responsive.scaleFont(context, 16),
             ),
             textAlign: TextAlign.center,
           ),
@@ -35,3 +33,5 @@ class HomePage extends StatelessWidget {
     );
   }
 }
+
+

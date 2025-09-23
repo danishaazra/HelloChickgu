@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../profile/profile.dart';
+import 'package:hellochickgu/shared/utils/responsive.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -105,6 +106,9 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    final isSmallScreen = Responsive.isSmallScreen(context);
+    final isVerySmallScreen = Responsive.isVerySmallScreen(context);
+    
     return Scaffold(
       body: Stack(
         children: [
@@ -144,12 +148,12 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
           // Back button (top left - round outline)
           Positioned(
             top: MediaQuery.of(context).padding.top,
-            left: 20,
+            left: Responsive.scaleWidth(context, 20),
             child: GestureDetector(
               onTap: _previousPage,
               child: Container(
-                width: 50,
-                height: 50,
+                width: Responsive.scaleWidth(context, 50),
+                height: Responsive.scaleHeight(context, 50),
                 decoration: BoxDecoration(
                   color: Colors.transparent,
                   shape: BoxShape.circle,
@@ -251,8 +255,8 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                         GestureDetector(
                           onTap: _nextPage,
                           child: Container(
-                            width: 160,
-                            height: 60,
+                            width: Responsive.scaleWidth(context, 160),
+                            height: Responsive.scaleHeight(context, 60),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(30),
@@ -268,8 +272,8 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                               alignment: const Alignment(0, -0.3),
                               child: Image.asset(
                                 _nextButtonImages[_currentPage],
-                                width: 100,
-                                height: 38,
+                                width: Responsive.scaleWidth(context, 100),
+                                height: Responsive.scaleHeight(context, 38),
                                 fit: BoxFit.contain,
                               ),
                             ),
