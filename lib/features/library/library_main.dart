@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../shared/theme/theme.dart';
+import 'library_courseoutline.dart';
+import '../chatbot/chippy_chatbot.dart';
 
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
@@ -44,6 +46,8 @@ class _LibraryContent extends StatelessWidget {
           backgroundColor: AppTheme.primaryBlue,
         ),
         const SizedBox(height: 24),
+        _AskChippySection(),
+        const SizedBox(height: 24),
         Text(
           'Continue Lesson',
           style: theme.textTheme.titleMedium?.copyWith(
@@ -75,6 +79,135 @@ class _LibraryContent extends StatelessWidget {
         const SizedBox(height: 12),
         const _CoursesGrid(),
       ],
+    );
+  }
+}
+
+class _AskChippySection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: () {
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ChippyChatbotPage()));
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        clipBehavior: Clip.hardEdge,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.white,
+          border: Border.all(
+            color: AppTheme.primaryBlue.withOpacity(0.18),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryBlue.withOpacity(0.10),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -20,
+              top: -10,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryBlue.withOpacity(0.10),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Positioned(
+              left: -30,
+              bottom: -20,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: AppTheme.secondaryMint.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            Positioned(
+              right: 8,
+              bottom: -6,
+              child: SizedBox(
+                width: 140,
+                height: 140,
+                child: Image.asset(
+                  'assets/chippy chatbot.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ask Chippy!',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Our AI chatbot helps answer your study questions and keep you motivated.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.black.withOpacity(0.75),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 36,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const ChippyChatbotPage(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.arrow_forward, size: 16),
+                            label: const Text('Ask Now!'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryBlue,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 120),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -128,7 +261,7 @@ class LibraryBanner extends StatelessWidget {
                       maxWidth: 200,
                       maxHeight: 200,
                       child: Image.asset(
-                        'assets/images/library banner.png',
+                        'assets/library banner.png',
                         width: 180,
                         height: 180,
                         fit: BoxFit.contain,
@@ -300,6 +433,7 @@ class _ContinueLessonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    const double progress = 1 / 5;
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.primaryYellow,
@@ -314,16 +448,13 @@ class _ContinueLessonCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(
-                width: 84,
-                height: 84,
-                child: OverflowBox(
-                  alignment: Alignment.centerLeft,
-                  maxWidth: 160,
-                  maxHeight: 160,
+                width: 120,
+                height: 120,
+                child: Center(
                   child: Image.asset(
-                    'assets/images/learning process python.png',
-                    width: 150,
-                    height: 150,
+                    'assets/learning process python.png',
+                    width: 120,
+                    height: 120,
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -337,6 +468,7 @@ class _ContinueLessonCard extends StatelessWidget {
                       'Python Programming',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
+                        fontSize: 24,
                         color: Colors.white,
                       ),
                     ),
@@ -348,14 +480,28 @@ class _ContinueLessonCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: 1 / 5,
-                        minHeight: 8,
-                        color: Colors.white,
-                        backgroundColor: Colors.white.withOpacity(0.4),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: LinearProgressIndicator(
+                              value: progress,
+                              minHeight: 16,
+                              color: AppTheme.primaryBlue,
+                              backgroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          '${(progress * 100).round()}%',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -383,13 +529,12 @@ class _CoursesGrid extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.78,
+        childAspectRatio: 0.75,
       ),
       itemBuilder: (context, index) {
         final course = items[index];
         return CourseCard(
           title: course.title,
-          instructor: course.instructor,
           imageWidget: course.imageWidget,
           modulesText: course.modulesText,
           timeText: course.timeText,
@@ -404,7 +549,6 @@ class CourseCard extends StatelessWidget {
   const CourseCard({
     super.key,
     required this.title,
-    required this.instructor,
     required this.imageWidget,
     required this.modulesText,
     required this.timeText,
@@ -412,7 +556,6 @@ class CourseCard extends StatelessWidget {
   });
 
   final String title;
-  final String instructor;
   final Widget imageWidget;
   final String modulesText;
   final String timeText;
@@ -433,7 +576,7 @@ class CourseCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: SizedBox(
-              height: 90,
+              height: 84,
               width: double.infinity,
               child: ColoredBox(
                 color: AppTheme.bgLightBlue,
@@ -450,42 +593,64 @@ class CourseCard extends StatelessWidget {
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            instructor,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: Colors.black.withOpacity(0.7),
-            ),
-          ),
+          const SizedBox(height: 6),
           const Spacer(),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '$modulesText • $timeText',
-                  style: theme.textTheme.bodySmall,
+          Text('$modulesText • $timeText', style: theme.textTheme.bodySmall),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              style: ButtonStyle(
+                padding: MaterialStateProperty.all(
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
-              ),
-              if (isActive)
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
+                shape: MaterialStateProperty.all(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
                   ),
-                  onPressed: () {},
-                  child: const Text('Continue'),
                 ),
-            ],
+                side: MaterialStateProperty.all(
+                  BorderSide(color: AppTheme.primaryBlue, width: 2),
+                ),
+                backgroundColor: MaterialStateProperty.resolveWith((states) {
+                  if (states.contains(MaterialState.hovered) ||
+                      states.contains(MaterialState.pressed) ||
+                      states.contains(MaterialState.focused)) {
+                    return AppTheme.primaryBlue;
+                  }
+                  return Colors.white;
+                }),
+                foregroundColor: MaterialStateProperty.resolveWith((states) {
+                  if (states.contains(MaterialState.hovered) ||
+                      states.contains(MaterialState.pressed) ||
+                      states.contains(MaterialState.focused)) {
+                    return Colors.white;
+                  }
+                  return AppTheme.primaryBlue;
+                }),
+                overlayColor: MaterialStateProperty.all(
+                  AppTheme.primaryBlue.withOpacity(0.1),
+                ),
+                elevation: MaterialStateProperty.all(0),
+              ),
+              onPressed: () {
+                final int moduleCount =
+                    int.tryParse(modulesText.split(' ').first) ?? 0;
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => CourseOutlinePage(
+                      courseTitle: title,
+                      modules: moduleCount,
+                      duration: timeText,
+                    ),
+                  ),
+                );
+              },
+              child: Text(
+                isActive ? 'Continue' : 'Start',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
           ),
         ],
       ),
@@ -496,7 +661,6 @@ class CourseCard extends StatelessWidget {
 class _CourseItemData {
   _CourseItemData({
     required this.title,
-    required this.instructor,
     required this.imageWidget,
     required this.modulesText,
     required this.timeText,
@@ -504,7 +668,6 @@ class _CourseItemData {
   });
 
   final String title;
-  final String instructor;
   final Widget imageWidget;
   final String modulesText;
   final String timeText;
@@ -514,7 +677,6 @@ class _CourseItemData {
 final List<_CourseItemData> _sampleCourses = [
   _CourseItemData(
     title: 'Python Programming',
-    instructor: 'By Alex Chen',
     imageWidget: const Icon(Icons.code, size: 36, color: Colors.black87),
     modulesText: '5 modules',
     timeText: '3h 10m',
@@ -522,7 +684,6 @@ final List<_CourseItemData> _sampleCourses = [
   ),
   _CourseItemData(
     title: 'Computer Architecture',
-    instructor: 'By Dr. Rivera',
     imageWidget: const Icon(Icons.memory, size: 36, color: Colors.black87),
     modulesText: '8 modules',
     timeText: '6h 40m',
@@ -530,7 +691,6 @@ final List<_CourseItemData> _sampleCourses = [
   ),
   _CourseItemData(
     title: 'Data Structures',
-    instructor: 'By Priya N.',
     imageWidget: const Icon(Icons.hub, size: 36, color: Colors.black87),
     modulesText: '6 modules',
     timeText: '4h 25m',
@@ -538,7 +698,6 @@ final List<_CourseItemData> _sampleCourses = [
   ),
   _CourseItemData(
     title: 'Intro to Networking',
-    instructor: 'By Omar K.',
     imageWidget: const Icon(Icons.router, size: 36, color: Colors.black87),
     modulesText: '7 modules',
     timeText: '5h 05m',
