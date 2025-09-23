@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'shared/theme/theme.dart';
+import 'features/home/home.dart';
+import 'features/community/community.dart';
+import 'features/library/library_main.dart';
+import 'features/library/library_courseoutline.dart';
+
 import 'features/game/quiz1.dart';
 
 void main() {
@@ -16,6 +21,7 @@ class MyApp extends StatelessWidget {
       title: 'Hello Chickgu!',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+
       home: const quiz1(),
     );
   }
