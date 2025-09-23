@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hellochickgu/shared/utils/responsive.dart';
+
 import 'dart:math' as math;
+
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -8,6 +11,8 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color borderColor = Theme.of(context).colorScheme.primary;
     final TextTheme textTheme = Theme.of(context).textTheme;
+    final isSmallScreen = Responsive.isSmallScreen(context);
+    final isVerySmallScreen = Responsive.isVerySmallScreen(context);
 
     return Scaffold(
       body: SafeArea(

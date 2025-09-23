@@ -43,9 +43,7 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-  assets:
-    - assets/ 
-
+  
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
@@ -53,11 +51,27 @@ flutter:
   
 
   assets:
+
+    - assets/images/library banner.png
+    - assets/images/learning process python.png
     - assets/
+  fonts:
+    - family: Baloo2
+      fonts:
+        - asset: assets/fonts/Baloo2.ttf
+          weight: 400
+        - asset: assets/fonts/Baloo2.ttf
+          weight: 500
+        - asset: assets/fonts/Baloo2.ttf
+          weight: 600
+        - asset: assets/fonts/Baloo2.ttf
+          weight: 700
+        - asset: assets/fonts/Baloo2.ttf
+          weight: 800
+
+
 
   # To add assets to your application, add an assets section, like this:
-  assets:
-    - assets/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
