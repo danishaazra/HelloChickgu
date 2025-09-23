@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-// Auth forms will be embedded as pages inside onboarding
 import 'package:hellochickgu/shared/utils/responsive.dart';
+import 'package:hellochickgu/features/auth/login.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -81,8 +81,9 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
         curve: Curves.easeInOut,
       );
     } else if (_currentPage == 3) {
-      _pageController.animateToPage(4,
-          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
     }
   }
 
@@ -96,8 +97,9 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
   }
 
   void _skipOnboarding() {
-    _pageController.animateToPage(4,
-        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+    );
   }
 
   @override
@@ -129,7 +131,7 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                 });
               }
             },
-            itemCount: 6,
+            itemCount: 4,
             itemBuilder: (context, index) {
               if (index < 4) {
                 return Container(
@@ -142,10 +144,8 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                     ),
                   ),
                 );
-              } else if (index == 4) {
-                return _buildLoginPage(context, _pageController);
               } else {
-                return _buildSignUpPage(context, _pageController);
+                return const SizedBox.shrink();
               }
             },
           ),
@@ -297,293 +297,4 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
       ),
     );
   }
-}
-
-// Embedded auth pages
-Widget _buildLoginPage(BuildContext context, PageController pageController) {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  bool isSubmitting = false;
-
-  return StatefulBuilder(
-    builder: (context, setState) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset('assets/login.png', fit: BoxFit.cover),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.2),
-                  Colors.black.withOpacity(0.5),
-                ],
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextFormField(
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      labelStyle: TextStyle(color: Colors.white),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFF4FC3F7), width: 2),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFF4FC3F7), width: 2),
-                      ),
-                    ),
-                    style: const TextStyle(color: Colors.white),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return 'Enter your email';
-                      if (!value.contains('@')) return 'Enter a valid email';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      labelStyle: TextStyle(color: Colors.white),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFF4FC3F7), width: 2),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: Color(0xFF4FC3F7), width: 2),
-                      ),
-                    ),
-                    style: const TextStyle(color: Colors.white),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return 'Enter your password';
-                      if (value.length < 6) return 'Minimum 6 characters';
-                      return null;
-                    },
-                  ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: isSubmitting
-                          ? null
-                          : () async {
-                              if (!formKey.currentState!.validate()) return;
-                              setState(() => isSubmitting = true);
-                              await Future.delayed(const Duration(milliseconds: 800));
-                              setState(() => isSubmitting = false);
-                            },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        backgroundColor: const Color(0xFF4FC3F7),
-                        foregroundColor: Colors.white,
-                      ),
-                      child: isSubmitting
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text('Sign In', style: TextStyle(color: Colors.white)),
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: () {
-                        pageController.animateToPage(
-                          5,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        side: const BorderSide(color: Colors.transparent),
-                        foregroundColor: Colors.white,
-                        backgroundColor: const Color(0xFFF4B942),
-                      ),
-                      child: const Text('Sign Up', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-Widget _buildSignUpPage(BuildContext context, PageController pageController) {
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  bool isSubmitting = false;
-
-  return StatefulBuilder(
-    builder: (context, setState) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset('assets/login.png', fit: BoxFit.cover),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.2),
-                  Colors.black.withOpacity(0.5),
-                ],
-              ),
-            ),
-          ),
-          // Very top-left back button with white circular outline
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
-            left: 16,
-            child: GestureDetector(
-              onTap: () {
-                pageController.animateToPage(
-                  4,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              },
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-                child: const Icon(Icons.arrow_back, color: Colors.white),
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Align(
-              alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-                child: Form(
-                  key: formKey,
-                  child: SingleChildScrollView(
-                    reverse: true,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        TextFormField(
-                          controller: nameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Name',
-                            labelStyle: TextStyle(color: Colors.white),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF4FC3F7), width: 2),
-                            ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF4FC3F7), width: 2),
-                            ),
-                          ),
-                          style: const TextStyle(color: Colors.white),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) return 'Enter your name';
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                            labelStyle: TextStyle(color: Colors.white),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF4FC3F7), width: 2),
-                            ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF4FC3F7), width: 2),
-                            ),
-                          ),
-                          style: const TextStyle(color: Colors.white),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) return 'Enter your email';
-                            if (!value.contains('@')) return 'Enter a valid email';
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: passwordController,
-                          obscureText: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Password',
-                            labelStyle: TextStyle(color: Colors.white),
-                            enabledBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF4FC3F7), width: 2),
-                            ),
-                            focusedBorder: UnderlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xFF4FC3F7), width: 2),
-                            ),
-                          ),
-                          style: const TextStyle(color: Colors.white),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) return 'Enter your password';
-                            if (value.length < 6) return 'Minimum 6 characters';
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: isSubmitting
-                              ? null
-                              : () async {
-                                  if (!formKey.currentState!.validate()) return;
-                                  setState(() => isSubmitting = true);
-                                  await Future.delayed(const Duration(milliseconds: 800));
-                                  setState(() => isSubmitting = false);
-                                },
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            backgroundColor: const Color(0xFF4FC3F7),
-                            foregroundColor: Colors.white,
-                          ),
-                          child: isSubmitting
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                              : const Text('Create Account', style: TextStyle(color: Colors.white)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    },
-  );
 }
