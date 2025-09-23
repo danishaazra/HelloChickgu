@@ -44,7 +44,7 @@ class _LibraryContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isSmallScreen = Responsive.isSmallScreen(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -398,15 +398,16 @@ class CategoryChip extends StatelessWidget {
           color: background,
           borderRadius: BorderRadius.circular(24),
           border: borderColor == null ? null : Border.all(color: borderColor),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: AppTheme.primaryBlue.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          boxShadow:
+              selected
+                  ? [
+                    BoxShadow(
+                      color: AppTheme.primaryBlue.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                  : null,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -475,10 +476,8 @@ class _ContinueLessonCard extends StatelessWidget {
                     Text(
                       'Python Programming',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 24,
-
                         fontWeight: FontWeight.w700,
+                        fontSize: 24,
                         color: Colors.white,
                       ),
                     ),
@@ -648,11 +647,12 @@ class CourseCard extends StatelessWidget {
                     int.tryParse(modulesText.split(' ').first) ?? 0;
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => CourseOutlinePage(
-                      courseTitle: title,
-                      modules: moduleCount,
-                      duration: timeText,
-                    ),
+                    builder:
+                        (_) => CourseOutlinePage(
+                          courseTitle: title,
+                          modules: moduleCount,
+                          duration: timeText,
+                        ),
                   ),
                 );
               },
