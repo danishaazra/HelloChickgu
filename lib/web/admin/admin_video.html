@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Review - Hello Chickgu</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: #f8fafc;
+    }
+
+    .dashboard {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: #4FC3F7;
+      padding: 24px 0;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-header {
+      padding: 0 24px 24px;
+      border-bottom: 1px solid rgba(17, 24, 39, 0.1);
+      margin-bottom: 24px;
+    }
+
+    .sidebar-header h2 {
+      color: #111827;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .nav-menu {
+      flex: 1;
+      padding: 0 16px;
+    }
+
+    .nav-item {
+      display: block;
+      width: 100%;
+      padding: 16px 20px;
+      margin-bottom: 8px;
+      background: transparent;
+      border: none;
+      border-radius: 12px;
+      color: #111827;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .nav-item:hover {
+      background: rgba(17, 24, 39, 0.1);
+      transform: translateX(4px);
+    }
+
+    .nav-item.active {
+      background: rgba(17, 24, 39, 0.15);
+    }
+
+    .nav-item i {
+      margin-right: 12px;
+      width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 24px 16px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .tutor-image {
+      max-width: 120px;
+      height: auto;
+      opacity: 0.8;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .content-header {
+      margin-bottom: 32px;
+    }
+
+    .content-header h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+
+    .content-header p {
+      color: #6b7280;
+      font-size: 16px;
+    }
+
+    /* Search and Filter Bar */
+    .search-filter-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 300px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 12px 16px 12px 40px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 14px;
+      background: white;
+    }
+
+    .search-box .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6b7280;
+    }
+
+    .filter-dropdown {
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: white;
+      font-size: 14px;
+      min-width: 150px;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
+    }
+
+    .stat-card h3 {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card .number {
+      font-size: 28px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    .stat-card .change {
+      font-size: 14px;
+      color: #059669;
+      font-weight: 600;
+    }
+
+    /* Video Cards */
+    .videos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 24px;
+    }
+
+    .video-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
+      transition: all 0.2s ease;
+    }
+
+    .video-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .video-thumbnail {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 48px;
+      position: relative;
+    }
+
+    .video-duration {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .video-content {
+      padding: 20px;
+    }
+
+    .video-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .video-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #111827;
+      line-height: 1.4;
+      flex: 1;
+    }
+
+    .video-status {
+      margin-left: 12px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-approved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .video-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .video-description {
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .video-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 16px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    .video-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: #4FC3F7;
+      color: #111827;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .btn-success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .btn:hover {
+      opacity: 0.8;
+    }
+
+    /* Modal Styles */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 16px;
+      width: min(1000px, 96%);
+      max-height: 90vh;
+      overflow: auto;
+      box-shadow: 0 20px 50px rgba(17, 24, 39, 0.25);
+      border: 1px solid #e5e7eb;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #6b7280;
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .video-preview-section {
+      margin-bottom: 24px;
+    }
+
+    .video-player {
+      width: 100%;
+      height: 400px;
+      background: #000;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .video-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .info-section h4 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #4FC3F7;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .info-label {
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .info-value {
+      color: #111827;
+      font-weight: 600;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 20px 24px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .btn-large {
+      padding: 12px 24px;
+      font-size: 14px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .dashboard {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        padding: 16px;
+      }
+      
+      .sidebar-header {
+        display: none;
+      }
+      
+      .nav-menu {
+        display: flex;
+        gap: 8px;
+        padding: 0;
+      }
+      
+      .nav-item {
+        margin-bottom: 0;
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+      
+      .sidebar-footer {
+        display: none;
+      }
+      
+      .main-content {
+        padding: 16px;
+      }
+
+      .search-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-box {
+        min-width: auto;
+      }
+
+      .videos-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .video-info {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <h2>Admin Panel</h2>
+      </div>
+      <div class="nav-menu">
+        <a href="dashboard_admin.html" class="nav-item">
+          <i>📊</i> Dashboard
+        </a>
+        <a href="tutor_management.html" class="nav-item">
+          <i>👥</i> Tutor Management
+        </a>
+        <a href="application.html" class="nav-item">
+          <i>📝</i> Applications
+        </a>
+        <a href="admin_video.html" class="nav-item active">
+          <i>🎥</i> Video Review
+        </a>
+        <a href="login_admin.html" class="nav-item">
+          <i>🚪</i> Logout
+        </a>
+      </div>
+      <div class="sidebar-footer">
+        <img src="../../../assets/tutor_chickgu.png" alt="Admin Chickgu" class="tutor-image">
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="content-header">
+        <h1>Video Review</h1>
+        <p>Review and manage video content submitted by tutors.</p>
+      </div>
+
+      <!-- Search and Filter -->
+      <div class="search-filter-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search videos by title or tutor...">
+        </div>
+        <select class="filter-dropdown" id="statusFilter">
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <select class="filter-dropdown" id="subjectFilter">
+          <option value="all">All Subjects</option>
+          <option value="mathematics">Mathematics</option>
+          <option value="physics">Physics</option>
+          <option value="computer-science">Computer Science</option>
+          <option value="chemistry">Chemistry</option>
+        </select>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Videos</h3>
+          <div class="number">156</div>
+          <div class="change">+12 this week</div>
+        </div>
+        <div class="stat-card">
+          <h3>Pending Review</h3>
+          <div class="number">23</div>
+          <div class="change">8 new today</div>
+        </div>
+        <div class="stat-card">
+          <h3>Approved</h3>
+          <div class="number">118</div>
+          <div class="change">76% approval rate</div>
+        </div>
+        <div class="stat-card">
+          <h3>Rejected</h3>
+          <div class="number">15</div>
+          <div class="change">10% rejection rate</div>
+        </div>
+      </div>
+
+      <!-- Videos Grid -->
+      <div class="videos-grid" id="videosGrid">
+        <!-- Video cards will be populated here -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Video Review Modal -->
+  <div id="videoModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Video Review</h3>
+        <button class="close-btn" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body" id="videoContent">
+        <!-- Video content will be populated here -->
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+        <button class="btn btn-danger btn-large" id="rejectBtn" onclick="rejectVideo()">Reject Video</button>
+        <button class="btn btn-danger btn-large" id="deleteBtn" onclick="deleteVideo()">Delete Video</button>
+        <button class="btn btn-success btn-large" id="approveBtn" onclick="approveVideo()">Approve Video</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Sample video data
+    const videos = [
+      {
+        id: 1,
+        title: "Introduction to Python Programming",
+        description: "Learn the basics of Python programming language with practical examples and hands-on exercises.",
+        tutor: "Danisha Azra",
+        tutorEmail: "danishaazra34@gmail.com",
+        subject: "Computer Science",
+        duration: "15:30",
+        submittedDate: "2024-01-15",
+        status: "pending",
+        views: 0,
+        likes: 0,
+        comments: 0,
+        fileSize: "245 MB",
+        resolution: "1920x1080"
+      },
+      {
+        id: 2,
+        title: "Advanced JavaScript Concepts",
+        description: "Deep dive into advanced JavaScript features including closures, prototypes, and modern ES6+ syntax.",
+        tutor: "Ahmed Hassan",
+        tutorEmail: "ahmed.hassan@gmail.com",
+        subject: "Programming",
+        duration: "22:45",
+        submittedDate: "2024-01-14",
+        status: "pending",
+        views: 0,
+        likes: 0,
+        comments: 0,
+        fileSize: "387 MB",
+        resolution: "1920x1080"
+      },
+      {
+        id: 3,
+        title: "Data Structures and Algorithms",
+        description: "Comprehensive guide to understanding data structures and algorithm design patterns.",
+        tutor: "Sarah Johnson",
+        tutorEmail: "sarah.johnson@gmail.com",
+        subject: "Computer Science",
+        duration: "35:20",
+        submittedDate: "2024-01-12",
+        status: "approved",
+        views: 1250,
+        likes: 89,
+        comments: 23,
+        fileSize: "512 MB",
+        resolution: "1920x1080"
+      },
+      {
+        id: 4,
+        title: "Linear Algebra Fundamentals",
+        description: "Introduction to vectors, matrices, and linear transformations in mathematics.",
+        tutor: "Danisha Azra",
+        tutorEmail: "danishaazra34@gmail.com",
+        subject: "Mathematics",
+        duration: "28:15",
+        submittedDate: "2024-01-10",
+        status: "rejected",
+        views: 0,
+        likes: 0,
+        comments: 0,
+        fileSize: "298 MB",
+        resolution: "1920x1080"
+      },
+      {
+        id: 5,
+        title: "Quantum Physics Basics",
+        description: "Understanding the fundamental principles of quantum mechanics and their applications.",
+        tutor: "Nurin Sunoo",
+        tutorEmail: "nurinsunoo13@gmail.com",
+        subject: "Physics",
+        duration: "42:10",
+        submittedDate: "2024-01-08",
+        status: "pending",
+        views: 0,
+        likes: 0,
+        comments: 0,
+        fileSize: "678 MB",
+        resolution: "1920x1080"
+      }
+    ];
+
+    let currentVideoId = null;
+
+    // Render videos
+    function renderVideos() {
+      const grid = document.getElementById('videosGrid');
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const statusFilter = document.getElementById('statusFilter').value;
+      const subjectFilter = document.getElementById('subjectFilter').value;
+
+      const filteredVideos = videos.filter(video => {
+        const matchesSearch = video.title.toLowerCase().includes(searchTerm) || 
+                             video.tutor.toLowerCase().includes(searchTerm);
+        const matchesStatus = statusFilter === 'all' || video.status === statusFilter;
+        const matchesSubject = subjectFilter === 'all' || 
+                              video.subject.toLowerCase().includes(subjectFilter.replace('-', ' '));
+        return matchesSearch && matchesStatus && matchesSubject;
+      });
+
+      grid.innerHTML = filteredVideos.map(video => `
+        <div class="video-card">
+          <div class="video-thumbnail">
+            🎥
+            <div class="video-duration">${video.duration}</div>
+          </div>
+          <div class="video-content">
+            <div class="video-header">
+              <h3 class="video-title">${video.title}</h3>
+              <span class="video-status status-${video.status}">${video.status}</span>
+            </div>
+            <div class="video-meta">
+              <span>By ${video.tutor}</span>
+              <span>${new Date(video.submittedDate).toLocaleDateString()}</span>
+            </div>
+            <p class="video-description">${video.description}</p>
+            <div class="video-stats">
+              <div class="stat-item">
+                <div class="stat-number">${video.views}</div>
+                <div class="stat-label">Views</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">${video.likes}</div>
+                <div class="stat-label">Likes</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">${video.comments}</div>
+                <div class="stat-label">Comments</div>
+              </div>
+            </div>
+            <div class="video-actions">
+              <button class="btn btn-primary" onclick="viewVideo(${video.id})">Review</button>
+              ${video.status === 'pending' ? `
+                <button class="btn btn-success" onclick="approveVideo(${video.id})">Approve</button>
+                <button class="btn btn-danger" onclick="rejectVideo(${video.id})">Reject</button>
+              ` : video.status === 'approved' ? `
+                <button class="btn btn-secondary" onclick="viewVideo(${video.id})">View</button>
+                <button class="btn btn-danger" onclick="deleteVideo(${video.id})">Take Down</button>
+              ` : `
+                <button class="btn btn-secondary" onclick="viewVideo(${video.id})">View</button>
+                <button class="btn btn-danger" onclick="deleteVideo(${video.id})">Delete</button>
+              `}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // View video modal
+    function viewVideo(videoId) {
+      const video = videos.find(v => v.id === videoId);
+      if (!video) return;
+
+      currentVideoId = videoId;
+      const modal = document.getElementById('videoModal');
+      const content = document.getElementById('videoContent');
+      const approveBtn = document.getElementById('approveBtn');
+      const rejectBtn = document.getElementById('rejectBtn');
+      const deleteBtn = document.getElementById('deleteBtn');
+
+      content.innerHTML = `
+        <div class="video-preview-section">
+          <div class="video-player">
+            🎬 Video Player
+            <div style="font-size: 14px; margin-top: 8px; opacity: 0.7;">
+              ${video.title}
+            </div>
+          </div>
+          <div class="video-info">
+            <div class="info-section">
+              <h4>Video Details</h4>
+              <div class="info-item">
+                <span class="info-label">Title:</span>
+                <span class="info-value">${video.title}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Duration:</span>
+                <span class="info-value">${video.duration}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">File Size:</span>
+                <span class="info-value">${video.fileSize}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Resolution:</span>
+                <span class="info-value">${video.resolution}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Status:</span>
+                <span class="info-value status-${video.status}">${video.status}</span>
+              </div>
+            </div>
+            <div class="info-section">
+              <h4>Tutor Information</h4>
+              <div class="info-item">
+                <span class="info-label">Tutor:</span>
+                <span class="info-value">${video.tutor}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Email:</span>
+                <span class="info-value">${video.tutorEmail}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Subject:</span>
+                <span class="info-value">${video.subject}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Submitted:</span>
+                <span class="info-value">${new Date(video.submittedDate).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </div>
+          <div class="info-section">
+            <h4>Description</h4>
+            <p style="color: #374151; line-height: 1.6;">${video.description}</p>
+          </div>
+        </div>
+      `;
+
+      // Show/hide action buttons based on status
+      if (video.status === 'pending') {
+        approveBtn.style.display = 'inline-block';
+        rejectBtn.style.display = 'inline-block';
+        deleteBtn.style.display = 'none';
+      } else if (video.status === 'approved') {
+        approveBtn.style.display = 'none';
+        rejectBtn.style.display = 'none';
+        deleteBtn.style.display = 'inline-block';
+        deleteBtn.textContent = 'Take Down Video';
+      } else {
+        approveBtn.style.display = 'none';
+        rejectBtn.style.display = 'none';
+        deleteBtn.style.display = 'inline-block';
+        deleteBtn.textContent = 'Delete Video';
+      }
+      
+      modal.style.display = 'flex';
+    }
+
+    // Close modal
+    function closeModal() {
+      document.getElementById('videoModal').style.display = 'none';
+      currentVideoId = null;
+    }
+
+    // Approve video
+    function approveVideo(videoId = null) {
+      const vidId = videoId || currentVideoId;
+      const video = videos.find(v => v.id === vidId);
+      if (!video) return;
+
+      const confirmMsg = `Are you sure you want to approve "${video.title}"?`;
+      
+      if (confirm(confirmMsg)) {
+        video.status = 'approved';
+        renderVideos();
+        closeModal();
+        alert(`"${video.title}" has been approved successfully.`);
+      }
+    }
+
+    // Reject video
+    function rejectVideo(videoId = null) {
+      const vidId = videoId || currentVideoId;
+      const video = videos.find(v => v.id === vidId);
+      if (!video) return;
+
+      const confirmMsg = `Are you sure you want to reject "${video.title}"?`;
+      
+      if (confirm(confirmMsg)) {
+        video.status = 'rejected';
+        renderVideos();
+        closeModal();
+        alert(`"${video.title}" has been rejected.`);
+      }
+    }
+
+    // Delete video
+    function deleteVideo(videoId = null) {
+      const vidId = videoId || currentVideoId;
+      const video = videos.find(v => v.id === vidId);
+      if (!video) return;
+
+      const action = video.status === 'approved' ? 'take down' : 'delete';
+      const confirmMsg = `Are you sure you want to ${action} "${video.title}"?`;
+      
+      if (confirm(confirmMsg)) {
+        const index = videos.findIndex(v => v.id === vidId);
+        if (index > -1) {
+          videos.splice(index, 1);
+          renderVideos();
+          closeModal();
+          alert(`"${video.title}" has been ${action}ed successfully.`);
+        }
+      }
+    }
+
+    // Navigation highlighting
+    const currentPage = window.location.pathname.split('/').pop();
+    document.querySelectorAll('.nav-item').forEach(item => {
+      if (item.getAttribute('href') === currentPage) {
+        item.classList.add('active');
+      }
+    });
+
+    // Event listeners
+    document.getElementById('searchInput').addEventListener('input', renderVideos);
+    document.getElementById('statusFilter').addEventListener('change', renderVideos);
+    document.getElementById('subjectFilter').addEventListener('change', renderVideos);
+
+    // Close modal when clicking outside
+    document.getElementById('videoModal').addEventListener('click', (e) => {
+      if (e.target.id === 'videoModal') {
+        closeModal();
+      }
+    });
+
+    // Initialize
+    renderVideos();
+  </script>
+</body>
+</html>
