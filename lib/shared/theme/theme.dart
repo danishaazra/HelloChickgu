@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Colors
@@ -13,7 +12,6 @@ class AppTheme {
   // ThemeData
   static ThemeData get lightTheme {
     final base = ThemeData.light();
-    final baloo2TextTheme = GoogleFonts.baloo2TextTheme(base.textTheme);
 
     return base.copyWith(
       primaryColor: primaryBlue,
@@ -22,7 +20,8 @@ class AppTheme {
       // appbar theme
       appBarTheme: AppBarTheme(
         backgroundColor: bgWhite,
-        titleTextStyle: GoogleFonts.baloo2(
+        titleTextStyle: const TextStyle(
+          fontFamily: 'Baloo2',
           fontSize: 32,
           fontWeight: FontWeight.bold,
           color: Colors.black,
@@ -32,7 +31,8 @@ class AppTheme {
       ),
 
       // text theme
-      textTheme: baloo2TextTheme.apply(
+      textTheme: base.textTheme.apply(
+        fontFamily: 'Baloo2',
         bodyColor: Colors.black87,
         displayColor: Colors.black,
       ),

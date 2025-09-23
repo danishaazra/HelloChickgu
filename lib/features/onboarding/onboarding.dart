@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../profile/profile.dart';
+import 'package:hellochickgu/shared/utils/responsive.dart';
+import 'package:hellochickgu/features/auth/login.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -74,15 +75,14 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
   }
 
   void _nextPage() {
-    if (_currentPage < _onboardingImages.length - 1) {
+    if (_currentPage < 3) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
-    } else {
-      // Navigate to profile page
+    } else if (_currentPage == 3) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const ProfilePage()),
+        MaterialPageRoute(builder: (_) => const LoginPage()),
       );
     }
   }
@@ -97,14 +97,19 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
   }
 
   void _skipOnboarding() {
-    // Navigate to profile page
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const ProfilePage()),
+      MaterialPageRoute(builder: (_) => const LoginPage()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    // Using responsive helpers here in case future layout tweaks need them
+    // ignore: unused_local_variable
+    final isSmallScreen = Responsive.isSmallScreen(context);
+    // ignore: unused_local_variable
+    final isVerySmallScreen = Responsive.isVerySmallScreen(context);
+    
     return Scaffold(
       body: Stack(
         children: [
@@ -126,30 +131,34 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                 });
               }
             },
-            itemCount: _onboardingImages.length,
+            itemCount: 4,
             itemBuilder: (context, index) {
-              return Container(
-                width: double.infinity,
-                height: double.infinity,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage(_onboardingImages[index]),
-                    fit: BoxFit.cover,
+              if (index < 4) {
+                return Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage(_onboardingImages[index]),
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                ),
-              );
+                );
+              } else {
+                return const SizedBox.shrink();
+              }
             },
           ),
           
           // Back button (top left - round outline)
           Positioned(
             top: MediaQuery.of(context).padding.top,
-            left: 20,
+            left: Responsive.scaleWidth(context, 20),
             child: GestureDetector(
               onTap: _previousPage,
               child: Container(
-                width: 50,
-                height: 50,
+                width: Responsive.scaleWidth(context, 50),
+                height: Responsive.scaleHeight(context, 50),
                 decoration: BoxDecoration(
                   color: Colors.transparent,
                   shape: BoxShape.circle,
@@ -207,56 +216,55 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
               ),
             ),
           
-          // Skip button (top right)
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 20,
-            right: 20,
-            child: TextButton(
-              onPressed: _skipOnboarding,
-              child: const Text(
-                'Skip',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
+          // Skip button (top right) only for first 4 pages
+          if (_currentPage < 4)
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 20,
+              right: 20,
+              child: TextButton(
+                onPressed: _skipOnboarding,
+                child: const Text(
+                  'Skip',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
-          ),
           
-          // Bottom navigation area
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.3),
-                    Colors.black.withOpacity(0.7),
-                  ],
+          // Bottom navigation area only for first 4 pages
+          if (_currentPage < 4)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.3),
+                      Colors.black.withOpacity(0.7),
+                    ],
+                  ),
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(height: 10),
-                  
-                  // Next/Start button (for all screens)
-                  if (_nextButtonImages[_currentPage].isNotEmpty)
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         GestureDetector(
                           onTap: _nextPage,
                           child: Container(
-                            width: 160,
-                            height: 60,
+                            width: Responsive.scaleWidth(context, 160),
+                            height: Responsive.scaleHeight(context, 60),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(30),
@@ -272,8 +280,8 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                               alignment: const Alignment(0, -0.3),
                               child: Image.asset(
                                 _nextButtonImages[_currentPage],
-                                width: 100,
-                                height: 38,
+                                width: Responsive.scaleWidth(context, 100),
+                                height: Responsive.scaleHeight(context, 38),
                                 fit: BoxFit.contain,
                               ),
                             ),
@@ -281,11 +289,10 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                         ),
                       ],
                     ),
-                  
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
