@@ -7,6 +7,7 @@ import '../chatbot/chippy_chatbot.dart';
 import '../../services/download_service.dart';
 import '../ar/ar_page.dart';
 
+
 class ModuleContentPage extends StatelessWidget {
   final String courseTitle;
   final String moduleTitle;
@@ -126,6 +127,7 @@ class ModuleContentPage extends StatelessWidget {
                             },
                           ),
                           const SizedBox(width: 6),
+
                           _AssetIconButton(
                             assetPath: 'assets/ar icon.png',
                             tooltip: 'AR Experience',
@@ -140,6 +142,7 @@ class ModuleContentPage extends StatelessWidget {
                             },
                           ),
                           const SizedBox(width: 6),
+
                           _AssetIconButton(
                             assetPath: 'assets/download icon.png',
                             tooltip: 'Download',

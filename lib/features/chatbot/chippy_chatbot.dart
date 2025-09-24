@@ -1,8 +1,65 @@
 import 'package:flutter/material.dart';
 import '../../shared/theme/theme.dart';
+import 'package:hellochickgu/services/gemini_service.dart';
 
-class ChippyChatbotPage extends StatelessWidget {
+class ChippyChatbotPage extends StatefulWidget {
   const ChippyChatbotPage({super.key});
+
+  @override
+  State<ChippyChatbotPage> createState() => _ChippyChatbotPageState();
+}
+
+class _ChippyChatbotPageState extends State<ChippyChatbotPage> {
+  final TextEditingController _inputController = TextEditingController();
+  final List<_Message> _messages = <_Message>[
+    const _Message(
+      text: 'Hi, I am Chippy, the chatbot.',
+      isUser: false,
+      color: Color(0xFFF2B266),
+    ),
+  ];
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _inputController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _inputController.text.trim();
+    if (text.isEmpty || _sending) return;
+    setState(() {
+      _sending = true;
+      _messages.add(
+        _Message(text: text, isUser: true, color: AppTheme.primaryBlue),
+      );
+      _inputController.clear();
+    });
+    try {
+      final reply = await GeminiService.instance.askChippy(text);
+      if (!mounted) return;
+      setState(() {
+        _messages.add(
+          _Message(text: reply, isUser: false, color: const Color(0xFFF2B266)),
+        );
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _messages.add(
+          _Message(
+            text: e.toString(),
+            isUser: false,
+            color: Colors.red.shade200,
+          ),
+        );
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() => _sending = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,25 +88,21 @@ class ChippyChatbotPage extends StatelessWidget {
               const SizedBox(height: 8),
               // chat area
               Expanded(
-                child: ListView(
+                child: ListView.separated(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  children: const [
-                    _ChatBubble(
-                      text: 'Hi, I am Chippy, the chatbot.',
-                      isUser: false,
-                      color: Color(0xFFF2B266),
-                    ),
-                    SizedBox(height: 16),
-                    _ChatBubble(
-                      text:
-                          "I'm going through the Introduction to Python course, and I understand what variables are, but I'm still a bit confused about how they actually store data. For example, when I assign a number to a variable, where does it go, and why do we even need variables instead of just writing the number directly? Could you explain this in a simple way?",
-                      isUser: true,
-                      color: AppTheme.primaryBlue,
-                    ),
-                  ],
+                  itemBuilder: (context, index) {
+                    final m = _messages[index];
+                    return _ChatBubble(
+                      text: m.text,
+                      isUser: m.isUser,
+                      color: m.color,
+                    );
+                  },
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemCount: _messages.length,
                 ),
               ),
               // input bar
@@ -72,8 +125,11 @@ class ChippyChatbotPage extends StatelessWidget {
                             ],
                           ),
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: const TextField(
-                            decoration: InputDecoration(
+                          child: TextField(
+                            controller: _inputController,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _sendMessage(),
+                            decoration: const InputDecoration(
                               hintText: 'Ask anything...',
                               border: InputBorder.none,
                             ),
@@ -81,16 +137,31 @@ class ChippyChatbotPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: const BoxDecoration(
-                          color: AppTheme.primaryBlue,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_upward,
-                          color: Colors.white,
+                      InkWell(
+                        onTap: _sending ? null : _sendMessage,
+                        borderRadius: BorderRadius.circular(21),
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: const BoxDecoration(
+                            color: AppTheme.primaryBlue,
+                            shape: BoxShape.circle,
+                          ),
+                          child:
+                              _sending
+                                  ? const Padding(
+                                    padding: EdgeInsets.all(10),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                  : const Icon(
+                                    Icons.arrow_upward,
+                                    color: Colors.white,
+                                  ),
                         ),
                       ),
                     ],
@@ -145,4 +216,11 @@ class _ChatBubble extends StatelessWidget {
       ),
     );
   }
+}
+
+class _Message {
+  final String text;
+  final bool isUser;
+  final Color? color;
+  const _Message({required this.text, required this.isUser, this.color});
 }
