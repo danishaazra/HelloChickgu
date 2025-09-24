@@ -5,6 +5,7 @@ import 'package:hellochickgu/shared/utils/responsive.dart';
 import 'package:hellochickgu/features/game/quiz3.dart';
 import 'package:hellochickgu/features/game/quiz4.dart';
 import 'package:hellochickgu/features/game/training_page.dart';
+import 'package:hellochickgu/map.dart';
 
 class LevelPage extends StatefulWidget {
   final int? initialHighestUnlockedLevel;
@@ -28,7 +29,19 @@ class _LevelPageState extends State<LevelPage> {
   void _openTraining() {
     Navigator.of(
       context,
-    ).push(MaterialPageRoute(builder: (context) => const TrainingPage()));
+    )
+        .push(
+          MaterialPageRoute(
+            builder: (context) => const TrainingPage(),
+          ),
+        )
+        .then((_) {
+      if (mounted) {
+        setState(() {
+          _trainingSelected = false;
+        });
+      }
+    });
   }
 
   void _onTapLevel(int level) {
@@ -180,7 +193,13 @@ class _LevelPageState extends State<LevelPage> {
                         child: IconButton(
                           icon: const Icon(Icons.home_outlined, size: 20),
                           color: Colors.black,
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const MapChickgu(),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],

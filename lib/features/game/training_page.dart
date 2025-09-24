@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'quiz_upload.dart';
+import 'level_page.dart';
 import 'training_folder_page.dart';
 import '../../shared/theme/theme.dart';
 
@@ -15,7 +16,17 @@ class TrainingPage extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF4E342E)),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const LevelPage(),
+                ),
+              );
+            }
+          },
         ),
         title: Text(
           'Training',
