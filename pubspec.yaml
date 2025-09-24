@@ -39,7 +39,6 @@ dependencies:
   google_generative_ai: ^0.4.6
   flutter_dotenv: ^5.1.0
   model_viewer_plus: ^1.9.3
-  file_picker: ^8.0.0+1
 
 dev_dependencies:
   flutter_test:
@@ -66,7 +65,6 @@ flutter:
   assets:
     - assets/
     - assets/motherboard.glb
-    - .env
 
   fonts:
     - family: Baloo2
