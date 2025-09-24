@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:hellochickgu/features/game/quiz1.dart';
+import 'package:hellochickgu/features/game/quiz2.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
+import 'package:hellochickgu/features/game/quiz3.dart';
+import 'package:hellochickgu/features/game/quiz4.dart';
 
 class LevelPage extends StatefulWidget {
-  const LevelPage({super.key});
+  final int? initialHighestUnlockedLevel;
+  final int? completedLevel;
+
+  const LevelPage({super.key, this.initialHighestUnlockedLevel, this.completedLevel});
 
   @override
   State<LevelPage> createState() => _LevelPageState();
@@ -56,12 +62,19 @@ class _LevelPageState extends State<LevelPage> {
 
   void _navigateToQuiz(int level) {
     Navigator.of(context).pop(); // Close popup
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const quiz1(),
-      ),
-    ).then((_) {
-      // When returning from quiz, mark level as completed
+    Widget destination;
+    if (level == 2) {
+      destination = const quiz2();
+    } else if (level == 3) {
+      destination = const quiz3();
+    } else if (level == 4) {
+      destination = const quiz4();
+    } else {
+      destination = quiz1(level: level);
+    }
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => destination))
+        .then((_) {
       _completeLevel(level);
     });
   }
@@ -208,6 +221,17 @@ class _LevelPageState extends State<LevelPage> {
         ],
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialHighestUnlockedLevel != null) {
+      highestUnlockedLevel = widget.initialHighestUnlockedLevel!.clamp(1, 11);
+    }
+    if (widget.completedLevel != null) {
+      completedLevels.add(widget.completedLevel!.clamp(1, 11));
+    }
   }
 }
 
