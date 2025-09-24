@@ -15,6 +15,9 @@ import 'features/onboarding/onboarding.dart';
 import 'features/auth/login.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'features/library/ar_model.dart';
+import 'features/library/test_ar.dart';
+import 'features/library/ar_model.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +38,7 @@ class MyApp extends StatelessWidget {
       title: 'Hello Chickgu!',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const LibraryPage(),
+      home: const ArModel(),
     );
   }
 }
