@@ -1,10 +1,4 @@
-enum RoomType {
-  home,
-  kitchen,
-  bedroom,
-  bathroom,
-  livingRoom,
-}
+enum RoomType { home, kitchen, bedroom, bathroom, livingRoom }
 
 extension RoomTypeExtension on RoomType {
   String get displayName {
@@ -40,9 +34,9 @@ extension RoomTypeExtension on RoomType {
   String get mapIconAsset {
     switch (this) {
       case RoomType.home:
-        return 'assets/home_map.png';
+        return 'assets/maps icon.png';
       case RoomType.kitchen:
-        return 'assets/maps icon.png'; // Using default for kitchen
+        return 'assets/food icon (2).png';
       case RoomType.bedroom:
         return 'assets/maps icon.png'; // Using default for bedroom
       case RoomType.bathroom:
@@ -54,6 +48,8 @@ extension RoomTypeExtension on RoomType {
 
   String get mapButtonText {
     switch (this) {
+      case RoomType.kitchen:
+        return 'Food';
       case RoomType.bathroom:
         return 'Shower';
       default:
