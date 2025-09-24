@@ -76,10 +76,160 @@ class _UploadQuizPageState extends State<UploadQuizPage> {
 
   List<Map<String, dynamic>> _generateQuestionsFromFileName(String name) {
     final List<Map<String, dynamic>> qs = [];
+    final String baseName = name.split('.').first;
+
+    // Generate more realistic questions based on file type
+    final List<String> questionTemplates = [
+      'What is the main topic discussed in $baseName?',
+      'Which of the following is most relevant to $baseName?',
+      'Based on $baseName, what would be the best approach?',
+      'What key concept is highlighted in $baseName?',
+      'Which statement best summarizes $baseName?',
+      'What is the primary objective described in $baseName?',
+      'Based on $baseName, which method is most effective?',
+      'What important detail is mentioned in $baseName?',
+      'Which of the following applies to $baseName?',
+      'What conclusion can be drawn from $baseName?',
+      'How does $baseName relate to current industry practices?',
+      'What are the main challenges addressed in $baseName?',
+      'Which technology is most prominently featured in $baseName?',
+      'What is the recommended solution in $baseName?',
+      'How would you implement the concepts from $baseName?',
+      'What are the key benefits mentioned in $baseName?',
+      'Which approach is suggested for beginners in $baseName?',
+      'What tools are recommended in $baseName?',
+      'How does $baseName improve efficiency?',
+      'What are the prerequisites for understanding $baseName?',
+    ];
+
+    final List<List<String>> answerOptions = [
+      [
+        'A) Technical implementation',
+        'B) User experience design',
+        'C) Project management',
+        'D) Quality assurance',
+      ],
+      [
+        'A) Innovation and creativity',
+        'B) Efficiency and optimization',
+        'C) Security and reliability',
+        'D) Scalability and performance',
+      ],
+      [
+        'A) Iterative development',
+        'B) Waterfall methodology',
+        'C) Agile framework',
+        'D) DevOps practices',
+      ],
+      [
+        'A) Problem-solving approach',
+        'B) Data analysis method',
+        'C) Communication strategy',
+        'D) Risk management',
+      ],
+      [
+        'A) Comprehensive overview',
+        'B) Detailed analysis',
+        'C) Strategic planning',
+        'D) Implementation guide',
+      ],
+      [
+        'A) Improve performance',
+        'B) Enhance security',
+        'C) Increase usability',
+        'D) Optimize resources',
+      ],
+      [
+        'A) Systematic approach',
+        'B) Creative thinking',
+        'C) Collaborative work',
+        'D) Continuous improvement',
+      ],
+      [
+        'A) Performance metrics',
+        'B) User feedback',
+        'C) Technical specifications',
+        'D) Best practices',
+      ],
+      [
+        'A) Industry standard',
+        'B) Emerging trend',
+        'C) Best practice',
+        'D) Common solution',
+      ],
+      [
+        'A) Successful implementation',
+        'B) Positive outcomes',
+        'C) Improved efficiency',
+        'D) Better results',
+      ],
+      [
+        'A) Modern frameworks',
+        'B) Legacy systems',
+        'C) Cloud computing',
+        'D) Mobile development',
+      ],
+      [
+        'A) Resource constraints',
+        'B) Technical complexity',
+        'C) User adoption',
+        'D) Integration issues',
+      ],
+      [
+        'A) Python and JavaScript',
+        'B) Java and C++',
+        'C) React and Angular',
+        'D) Node.js and Django',
+      ],
+      [
+        'A) Step-by-step guide',
+        'B) Best practices',
+        'C) Automation tools',
+        'D) Code examples',
+      ],
+      [
+        'A) Following tutorials',
+        'B) Reading documentation',
+        'C) Hands-on practice',
+        'D) Seeking mentorship',
+      ],
+      [
+        'A) Visual Studio Code',
+        'B) Git version control',
+        'C) Docker containers',
+        'D) Testing frameworks',
+      ],
+      [
+        'A) Faster development',
+        'B) Better code quality',
+        'C) Reduced errors',
+        'D) All of the above',
+      ],
+      [
+        'A) Beginner-friendly',
+        'B) Expert-level',
+        'C) Intermediate',
+        'D) Advanced concepts',
+      ],
+      [
+        'A) Version control',
+        'B) Code editors',
+        'C) Testing tools',
+        'D) All of the above',
+      ],
+      [
+        'A) Programming fundamentals',
+        'B) Domain knowledge',
+        'C) Problem-solving skills',
+        'D) All of the above',
+      ],
+    ];
+
     for (int i = 0; i < 20; i++) {
       qs.add({
-        'question': 'Q$i) From $name: Which statement is most accurate?',
-        'answers': ['A) Option A', 'B) Option B', 'C) Option C', 'D) Option D'],
+        'question':
+            'Q${i + 1}) ${questionTemplates[i % questionTemplates.length]}',
+        'answers': answerOptions[i % answerOptions.length],
         'correctAnswer': i % 4,
       });
     }
@@ -134,7 +284,7 @@ class _UploadQuizPageState extends State<UploadQuizPage> {
                   border: Border.all(color: Colors.blue, width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -299,7 +449,7 @@ class _UploadQuizPageState extends State<UploadQuizPage> {
                                     const SizedBox(height: 10),
                                     Text(
                                       isNotesSelected
-                                          ? 'Select Your Notes File (PDF/DOC/Images)'
+                                          ? 'Select Your Notes File (PDF/PPT/Images)'
                                           : 'Select Your Video File',
                                       style: const TextStyle(
                                         fontFamily: 'Baloo2',

@@ -701,7 +701,7 @@ class _QuizEndPageState extends State<QuizEndPage>
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             child: Text(
-                              'Review Answers',
+                              'Review ',
                               style: TextStyle(
                                 fontFamily: 'Baloo2',
                                 fontWeight: FontWeight.w700,

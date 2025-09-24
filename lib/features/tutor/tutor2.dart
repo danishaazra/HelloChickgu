@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:hellochickgu/features/tutor/payment/payment_flow.dart';
-import 'package:hellochickgu/services/purchase_service.dart';
-import 'package:hellochickgu/features/tutor/course_outline.dart';
+import 'package:hellochickgu/features/tutor/widgets/youtube_video_list.dart';
+import 'package:hellochickgu/features/tutor/data/youtube_video_data.dart';
 
 class Course {
   final String title;
   final String university;
-  final String priceText; // e.g., RM30 or Free
   final String description;
   final String lecturesText; // e.g., 50+ Lectures
   final String durationText; // e.g., 4 Weeks
@@ -17,7 +15,6 @@ class Course {
   const Course({
     required this.title,
     required this.university,
-    required this.priceText,
     required this.description,
     required this.lecturesText,
     required this.durationText,
@@ -77,11 +74,22 @@ class TutorDetailPage extends StatelessWidget {
                         style: const TextStyle(color: Color(0xff1492e6)),
                       ),
                       const Spacer(),
-                      Text(
-                        course.priceText,
-                        style: const TextStyle(
-                          color: Color(0xff1492e6),
-                          fontWeight: FontWeight.w700,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Free',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ],
@@ -137,29 +145,18 @@ class TutorDetailPage extends StatelessWidget {
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  final purchased = PurchaseService.instance.isPurchased(
+                  final videos = YouTubeVideoData.getVideosByCourse(
                     course.title,
                   );
-                  if (purchased) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => CourseOutlinePage(
-                          courseTitle: course.title,
-                          university: course.university,
-                        ),
-                      ),
-                    );
-                  } else {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => PaymentFlow(
-                          courseTitle: course.title,
-                          totalPriceText: course.priceText,
-                          skills: course.skills,
-                        ),
-                      ),
-                    );
-                  }
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder:
+                          (context) => YouTubeVideoList(
+                            videos: videos,
+                            courseTitle: course.title,
+                          ),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xff47b2ff),
@@ -167,11 +164,9 @@ class TutorDetailPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(24),
                   ),
                 ),
-                child: Text(
-                  PurchaseService.instance.isPurchased(course.title)
-                      ? 'Learn Now'
-                      : 'Continue',
-                  style: const TextStyle(color: Colors.white),
+                child: const Text(
+                  'Learn Now',
+                  style: TextStyle(color: Colors.white),
                 ),
               ),
             ),
