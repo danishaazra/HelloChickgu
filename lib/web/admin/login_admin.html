@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login - Hello Chickgu</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: #ffffff;
+    }
+
+    .page {
+      display: flex;
+      height: 100%;
+      width: 100%;
+    }
+
+    .left {
+      flex: 0 0 40%; /* 2/5 of width */
+      background: #4FC3F7;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .right {
+      flex: 1;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .left-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 40px;
+    }
+
+    .welcome-images {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .welcome-images img {
+      height: auto;
+    }
+
+    .hello-img {
+      max-width: 280px;
+    }
+
+    .chickgu-img {
+      max-width: 320px;
+    }
+
+    .hero-wrap {
+      position: relative;
+      width: min(300px, 60%);
+      aspect-ratio: 1 / 1;
+    }
+
+    .tutor-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .msg-icon {
+      position: absolute;
+      top: 4%;
+      right: 4%;
+      width: 15%;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .book-icon {
+      position: absolute;
+      left: -8%;
+      bottom: 6%;
+      width: 22%;
+      height: auto;
+      object-fit: contain;
+      transform: rotate(-8deg);
+    }
+
+    .card {
+      width: min(480px, 95%);
+      border: 1px solid #eef2f6;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(20, 40, 80, 0.06);
+    }
+
+    .card h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .card p {
+      margin: 0 0 24px;
+      color: #667085;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    label { font-weight: 600; color: #344054; }
+
+    input[type="email"], input[type="password"] {
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #d0d5dd;
+      font-size: 14px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 8px 0 18px;
+      font-size: 14px;
+    }
+
+    .btn {
+      background: #4FC3F7;
+      color: #111827;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 16px;
+      width: 100%;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .btn:hover { filter: brightness(0.95); }
+
+    .below-link {
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .below-link a {
+      color: #111827;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .below-link a:hover { text-decoration: underline; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+
+    .modal {
+      background: #ffffff;
+      border-radius: 16px;
+      width: min(720px, 96%);
+      max-height: 90vh;
+      overflow: auto;
+      box-shadow: 0 20px 50px rgba(17, 24, 39, 0.25);
+      border: 1px solid #eef2f6;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 22px;
+      border-bottom: 1px solid #eef2f6;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: #111827;
+    }
+
+    .modal-body { padding: 20px 22px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .grid .field { margin-bottom: 0; }
+
+    .full { grid-column: 1 / -1; }
+
+    .file-input {
+      display: block;
+      padding: 10px;
+      border: 1px dashed #c7ced6;
+      border-radius: 10px;
+      background: #fafbfc;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding-top: 8px;
+    }
+
+    .btn.secondary {
+      background: #111827;
+      color: #ffffff;
+    }
+
+    @media (max-width: 900px) {
+      .left { flex-basis: 45%; }
+      .book-icon { left: -10%; width: 34%; }
+    }
+
+    @media (max-width: 720px) {
+      .left { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="left">
+      <div class="left-content">
+        <div class="welcome-images">
+          <img src="../../../assets/hello.png" alt="Hello" class="hello-img">
+          <img src="../../../assets/chickgu.png" alt="Chickgu" class="chickgu-img">
+        </div>
+        <div class="hero-wrap">
+          <img class="tutor-img" src="../../../assets/tutor_chickgu.png" alt="Admin Chickgu">
+          <img class="msg-icon" src="../../../assets/message_icon.png" alt="Message Icon">
+          <img class="book-icon" src="../../../assets/book.png" alt="Book">
+        </div>
+      </div>
+    </div>
+    <div class="right">
+      <form class="card">
+        <h1>Admin Login</h1>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="admin@gmail.com" required>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="********" required>
+        </div>
+
+        <div class="row">
+          <label style="display:flex; align-items:center; gap:8px;">
+            <input type="checkbox"> Remember me
+          </label>
+          <a href="#" style="color:#111827; text-decoration:none; font-weight:600;">Forgot password?</a>
+        </div>
+
+        <button class="btn" type="submit">Log in</button>
+      </form>
+    </div>
+  </div>
+
+
+  <script>
+    // Basic form submission handler
+    document.querySelector('form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      // Placeholder: integrate with backend as needed
+      alert('Login functionality would be implemented here');
+    });
+  </script>
+</body>
+</html>
