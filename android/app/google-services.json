@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "655104687890",
-    "project_id": "hellochickgu-15c69",
-    "storage_bucket": "hellochickgu-15c69.firebasestorage.app"
+    "project_number": "864651268854",
+    "project_id": "hellochickgu",
+    "storage_bucket": "hellochickgu.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:655104687890:android:98aa275de55cadf5debdcb",
+        "mobilesdk_app_id": "1:864651268854:android:a20b384092f4b73a6b92d7",
         "android_client_info": {
-          "package_name": "com.example.hellochickgu1"
+          "package_name": "com.example.hellochickgu"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyC3tIyDmc97ssmUr_eEnDRQn0PpvZZREb4"
+          "current_key": "AIzaSyDNjptoLfeMUBnD2OzaGzigFuq3M5hfKLo"
         }
       ],
       "services": {
