@@ -1,13 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'features/home/home.dart';
+import 'features/game/level_page.dart';
+import 'features/library/library_main.dart';
+import 'features/tutor/main_tutor.dart';
 
 class MapChickgu extends StatelessWidget {
   const MapChickgu({super.key});
 
   void navigateTo(BuildContext context, String place) {
+    Widget targetPage;
+
+    switch (place) {
+      case "Home":
+        targetPage = const HomePage();
+        break;
+      case "Library":
+        targetPage = const LibraryPage();
+        break;
+      case "Playground":
+        targetPage = const LevelPage();
+        break;
+      case "School":
+        targetPage = const TutorListPage();
+        break;
+      default:
+        targetPage = PlacePage(place: place);
+    }
+
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => PlacePage(place: place)),
+      MaterialPageRoute(builder: (context) => targetPage),
     );
   }
 
@@ -103,19 +126,45 @@ class MapChickgu extends StatelessWidget {
             child: AnimatedScale(
               scale: 1.1,
               duration: const Duration(milliseconds: 300),
-              child: Image.asset(image, height: 150),
+              child: Stack(
+                children: [
+                  Image.asset(image, height: 150),
+                  // Add a subtle glow effect
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            blurRadius: 15,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 5),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ),
         ],
