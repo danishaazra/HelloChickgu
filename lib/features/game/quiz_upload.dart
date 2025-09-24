@@ -90,6 +90,16 @@ class _UploadQuizPageState extends State<UploadQuizPage> {
       'What important detail is mentioned in $baseName?',
       'Which of the following applies to $baseName?',
       'What conclusion can be drawn from $baseName?',
+      'How does $baseName relate to current industry practices?',
+      'What are the main challenges addressed in $baseName?',
+      'Which technology is most prominently featured in $baseName?',
+      'What is the recommended solution in $baseName?',
+      'How would you implement the concepts from $baseName?',
+      'What are the key benefits mentioned in $baseName?',
+      'Which approach is suggested for beginners in $baseName?',
+      'What tools are recommended in $baseName?',
+      'How does $baseName improve efficiency?',
+      'What are the prerequisites for understanding $baseName?',
     ];
 
     final List<List<String>> answerOptions = [
@@ -153,9 +163,69 @@ class _UploadQuizPageState extends State<UploadQuizPage> {
         'C) Improved efficiency',
         'D) Better results',
       ],
+      [
+        'A) Modern frameworks',
+        'B) Legacy systems',
+        'C) Cloud computing',
+        'D) Mobile development',
+      ],
+      [
+        'A) Resource constraints',
+        'B) Technical complexity',
+        'C) User adoption',
+        'D) Integration issues',
+      ],
+      [
+        'A) Python and JavaScript',
+        'B) Java and C++',
+        'C) React and Angular',
+        'D) Node.js and Django',
+      ],
+      [
+        'A) Step-by-step guide',
+        'B) Best practices',
+        'C) Automation tools',
+        'D) Code examples',
+      ],
+      [
+        'A) Following tutorials',
+        'B) Reading documentation',
+        'C) Hands-on practice',
+        'D) Seeking mentorship',
+      ],
+      [
+        'A) Visual Studio Code',
+        'B) Git version control',
+        'C) Docker containers',
+        'D) Testing frameworks',
+      ],
+      [
+        'A) Faster development',
+        'B) Better code quality',
+        'C) Reduced errors',
+        'D) All of the above',
+      ],
+      [
+        'A) Beginner-friendly',
+        'B) Expert-level',
+        'C) Intermediate',
+        'D) Advanced concepts',
+      ],
+      [
+        'A) Version control',
+        'B) Code editors',
+        'C) Testing tools',
+        'D) All of the above',
+      ],
+      [
+        'A) Programming fundamentals',
+        'B) Domain knowledge',
+        'C) Problem-solving skills',
+        'D) All of the above',
+      ],
     ];
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 20; i++) {
       qs.add({
         'question':
             'Q${i + 1}) ${questionTemplates[i % questionTemplates.length]}',

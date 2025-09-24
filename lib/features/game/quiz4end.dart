@@ -23,18 +23,22 @@ class quiz4end extends StatefulWidget {
   State<quiz4end> createState() => _Quiz4EndState();
 }
 
-class _Quiz4EndState extends State<quiz4end> with SingleTickerProviderStateMixin {
+class _Quiz4EndState extends State<quiz4end>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
-    _scale = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(
+      begin: 0.95,
+      end: 1.05,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -71,7 +75,10 @@ class _Quiz4EndState extends State<quiz4end> with SingleTickerProviderStateMixin
             child: Container(
               width: Responsive.scaleWidth(context, 350),
               constraints: BoxConstraints(
-                maxHeight: isSmallScreen ? screenSize.height * 0.86 : screenSize.height * 0.7,
+                maxHeight:
+                    isSmallScreen
+                        ? screenSize.height * 0.86
+                        : screenSize.height * 0.7,
               ),
               padding: Responsive.scalePaddingAll(context, 26),
               decoration: BoxDecoration(
@@ -93,13 +100,17 @@ class _Quiz4EndState extends State<quiz4end> with SingleTickerProviderStateMixin
                     alignment: Alignment.topRight,
                     child: GestureDetector(
                       onTap: () {
-                        final int nextUnlocked = (widget.level + 1).clamp(1, 11);
+                        final int nextUnlocked = (widget.level + 1).clamp(
+                          1,
+                          11,
+                        );
                         Navigator.of(context).pushAndRemoveUntil(
                           MaterialPageRoute(
-                            builder: (_) => LevelPage(
-                              initialHighestUnlockedLevel: nextUnlocked,
-                              completedLevel: widget.level,
-                            ),
+                            builder:
+                                (_) => LevelPage(
+                                  initialHighestUnlockedLevel: nextUnlocked,
+                                  completedLevel: widget.level,
+                                ),
                           ),
                           (route) => false,
                         );
@@ -120,7 +131,10 @@ class _Quiz4EndState extends State<quiz4end> with SingleTickerProviderStateMixin
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Image.asset('assets/xbutton.png', fit: BoxFit.contain),
+                          child: Image.asset(
+                            'assets/xbutton.png',
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                     ),
@@ -165,7 +179,11 @@ class _Quiz4EndState extends State<quiz4end> with SingleTickerProviderStateMixin
                       ),
                       const SizedBox(height: 12),
                       _StatBadge(
-                        iconWidget: Image.asset('assets/clock.png', width: 22, height: 22),
+                        iconWidget: Image.asset(
+                          'assets/clock.png',
+                          width: 22,
+                          height: 22,
+                        ),
                         accentColor: const Color(0xFF4FC3F7),
                         label: 'Time Taken:',
                         value: _formatTime(widget.timeTaken),
@@ -182,24 +200,33 @@ class _Quiz4EndState extends State<quiz4end> with SingleTickerProviderStateMixin
                             backgroundColor: Colors.white,
                             foregroundColor: const Color(0xFF4FC3F7),
                             elevation: 4,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            side: const BorderSide(color: Color(0xFF4FC3F7), width: 2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            side: const BorderSide(
+                              color: Color(0xFF4FC3F7),
+                              width: 2,
+                            ),
                           ),
                           onPressed: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => Quiz4ReviewPage(
-                                  questions: widget.questions,
-                                ),
+                                builder:
+                                    (_) => Quiz4ReviewPage(
+                                      questions: widget.questions,
+                                    ),
                               ),
                             );
                           },
                           child: const Padding(
                             padding: EdgeInsets.symmetric(vertical: 12),
                             child: Text(
-                              'Review Answers',
-                              style: TextStyle(fontFamily: 'Baloo2', fontWeight: FontWeight.w700),
+                              'Review ',
+                              style: TextStyle(
+                                fontFamily: 'Baloo2',
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ),
@@ -211,17 +238,26 @@ class _Quiz4EndState extends State<quiz4end> with SingleTickerProviderStateMixin
                             backgroundColor: const Color(0xFF4FC3F7),
                             foregroundColor: Colors.white,
                             elevation: 6,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            side: const BorderSide(color: Colors.white, width: 2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            side: const BorderSide(
+                              color: Colors.white,
+                              width: 2,
+                            ),
                           ),
                           onPressed: () {
-                            final int nextLevel = (widget.level + 1).clamp(1, 11);
+                            final int nextLevel = (widget.level + 1).clamp(
+                              1,
+                              11,
+                            );
                             Navigator.of(context).pushAndRemoveUntil(
                               MaterialPageRoute(
-                                builder: (_) => LevelPage(
-                                  initialHighestUnlockedLevel: nextLevel,
-                                  completedLevel: widget.level,
-                                ),
+                                builder:
+                                    (_) => LevelPage(
+                                      initialHighestUnlockedLevel: nextLevel,
+                                      completedLevel: widget.level,
+                                    ),
                               ),
                               (route) => false,
                             );
@@ -230,7 +266,10 @@ class _Quiz4EndState extends State<quiz4end> with SingleTickerProviderStateMixin
                             padding: EdgeInsets.symmetric(vertical: 12),
                             child: Text(
                               'DONE!',
-                              style: TextStyle(fontFamily: 'Baloo2', fontWeight: FontWeight.w800),
+                              style: TextStyle(
+                                fontFamily: 'Baloo2',
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
                         ),
@@ -323,5 +362,3 @@ class _StatBadge extends StatelessWidget {
     );
   }
 }
-
-
