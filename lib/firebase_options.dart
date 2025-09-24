@@ -69,3 +69,5 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.hellochickgu',
   );
 }
+
+// firebase config
