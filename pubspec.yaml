@@ -65,7 +65,6 @@ flutter:
   assets:
     - assets/
     - assets/motherboard.glb
-    - .env
 
   fonts:
     - family: Baloo2
