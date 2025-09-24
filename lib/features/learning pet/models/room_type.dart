@@ -19,7 +19,7 @@ extension RoomTypeExtension on RoomType {
   String get backgroundAsset {
     switch (this) {
       case RoomType.home:
-        return 'assets/pet home bg.png';
+        return 'assets/homepet.png';
       case RoomType.kitchen:
         return 'assets/pet kitchen bg.png';
       case RoomType.bedroom:
