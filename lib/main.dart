@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
       title: 'Hello Chickgu!',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const TutorListPage(),
+      home: const LevelPage(),
     );
   }
 }
