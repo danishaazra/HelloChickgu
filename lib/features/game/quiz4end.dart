@@ -1,31 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
 import 'package:hellochickgu/features/game/level_page.dart';
-import 'package:hellochickgu/features/game/quiz_review.dart';
+import 'package:hellochickgu/features/game/quiz4_review.dart';
 
-class quiz1end extends StatefulWidget {
+class quiz4end extends StatefulWidget {
   final int correct;
   final int wrong;
   final int timeTaken;
-  final List<Map<String, dynamic>> questions;
-  final List<int?> selectedAnswers;
   final int level;
+  final List<Map<String, dynamic>> questions;
 
-  const quiz1end({
+  const quiz4end({
     Key? key,
     required this.correct,
     required this.wrong,
     required this.timeTaken,
-    required this.questions,
-    required this.selectedAnswers,
     required this.level,
+    required this.questions,
   }) : super(key: key);
 
   @override
-  State<quiz1end> createState() => _Quiz1EndState();
+  State<quiz4end> createState() => _Quiz4EndState();
 }
 
-class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin {
+class _Quiz4EndState extends State<quiz4end> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scale;
 
@@ -51,7 +49,7 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
     return '${minutes.toString().padLeft(2, '0')}.${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
-  int get _points => widget.correct * 10; // simple points rule
+  int get _points => widget.correct * 10;
 
   @override
   Widget build(BuildContext context) {
@@ -61,16 +59,14 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
     return Scaffold(
       body: Stack(
         children: [
-          // Background
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               image: DecorationImage(
                 image: AssetImage("assets/backgroundgame.png"),
                 fit: BoxFit.cover,
               ),
             ),
           ),
-          // Card
           Center(
             child: Container(
               width: Responsive.scaleWidth(context, 350),
@@ -86,14 +82,13 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                     color: Colors.black.withOpacity(0.15),
                     blurRadius: 12,
                     spreadRadius: 1,
-                    offset: Offset(0, 6),
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Close (X) button
                   Align(
                     alignment: Alignment.topRight,
                     child: GestureDetector(
@@ -131,7 +126,7 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  const Text(
                     "Level Completed",
                     style: TextStyle(
                       fontFamily: 'Baloo2',
@@ -140,7 +135,6 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // Chicken with floating sparkles animation (bigger)
                   SizedBox(
                     width: 260,
                     height: 230,
@@ -153,56 +147,12 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                             'assets/chickenYes.png',
                             width: 600,
                             height: 600,
-                           
                           ),
-                        ),
-                        // left sparkle
-                        AnimatedBuilder(
-                          animation: _controller,
-                          builder: (_, __) {
-                            final t = _controller.value;
-                            return Opacity(
-                              opacity: (0.2 + 0.8 * (1 - (t - 0.1).abs())).clamp(0.0, 1.0),
-                              child: Transform.translate(
-                                offset: Offset(-60 + 6 * (1 - t) * 4, -20 - 14 * t),
-                                child: Icon(Icons.auto_awesome_rounded, color: Colors.amber[600], size: 20 + 6 * t),
-                              ),
-                            );
-                          },
-                        ),
-                        // right sparkle
-                        AnimatedBuilder(
-                          animation: _controller,
-                          builder: (_, __) {
-                            final t = (0.5 + _controller.value) % 1.0;
-                            return Opacity(
-                              opacity: (0.2 + 0.8 * (1 - (t - 0.1).abs())).clamp(0.0, 1.0),
-                              child: Transform.translate(
-                                offset: Offset(62 - 4 * t * 6, -10 - 18 * t),
-                                child: Icon(Icons.auto_awesome_rounded, color: Colors.orange[400], size: 18 + 8 * t),
-                              ),
-                            );
-                          },
-                        ),
-                        // top sparkle
-                        AnimatedBuilder(
-                          animation: _controller,
-                          builder: (_, __) {
-                            final t = (0.25 + _controller.value) % 1.0;
-                            return Opacity(
-                              opacity: (0.2 + 0.8 * (1 - (t - 0.1).abs())).clamp(0.0, 1.0),
-                              child: Transform.translate(
-                                offset: Offset(0, -40 - 20 * t),
-                                child: Icon(Icons.auto_awesome_rounded, color: Colors.amber[300], size: 16 + 10 * t),
-                              ),
-                            );
-                          },
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Points & Time badges styled like level popup (stacked vertically)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -224,7 +174,6 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                     ],
                   ),
                   const Spacer(),
-                  // Review and Done buttons
                   Row(
                     children: [
                       Expanded(
@@ -240,15 +189,14 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => QuizReviewPage(
+                                builder: (_) => Quiz4ReviewPage(
                                   questions: widget.questions,
-                                  selectedAnswers: widget.selectedAnswers,
                                 ),
                               ),
                             );
                           },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
                             child: Text(
                               'Review Answers',
                               style: TextStyle(fontFamily: 'Baloo2', fontWeight: FontWeight.w700),
@@ -260,7 +208,7 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF4FC3F7),
+                            backgroundColor: const Color(0xFF4FC3F7),
                             foregroundColor: Colors.white,
                             elevation: 6,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -278,8 +226,8 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                               (route) => false,
                             );
                           },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
                             child: Text(
                               'DONE!',
                               style: TextStyle(fontFamily: 'Baloo2', fontWeight: FontWeight.w800),
@@ -375,3 +323,5 @@ class _StatBadge extends StatelessWidget {
     );
   }
 }
+
+
