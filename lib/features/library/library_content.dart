@@ -4,7 +4,9 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:path_provider/path_provider.dart';
 import '../../shared/theme/theme.dart';
 import '../chatbot/chippy_chatbot.dart';
-import '../../services/download_service.dart'; // TODO: Remove this
+import '../../services/download_service.dart';
+import '../ar/ar_page.dart';
+
 
 class ModuleContentPage extends StatelessWidget {
   final String courseTitle;
@@ -125,6 +127,22 @@ class ModuleContentPage extends StatelessWidget {
                             },
                           ),
                           const SizedBox(width: 6),
+
+                          _AssetIconButton(
+                            assetPath: 'assets/ar icon.png',
+                            tooltip: 'AR Experience',
+                            size: 70,
+                            backgroundColor: Colors.transparent,
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const ARPage(),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 6),
+
                           _AssetIconButton(
                             assetPath: 'assets/download icon.png',
                             tooltip: 'Download',
