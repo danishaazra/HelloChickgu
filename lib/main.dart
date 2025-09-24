@@ -18,6 +18,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'features/library/ar_model.dart';
 import 'features/library/test_ar.dart';
 import 'features/library/ar_model.dart';
+import 'features/game/level_page.dart';
+import 'features/library/library_main.dart';
+import 'features/ar/ar_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,7 +41,7 @@ class MyApp extends StatelessWidget {
       title: 'Hello Chickgu!',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const ArModel(),
+      home: const ARPage(),
     );
   }
 }

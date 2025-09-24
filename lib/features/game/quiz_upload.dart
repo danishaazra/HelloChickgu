@@ -76,10 +76,90 @@ class _UploadQuizPageState extends State<UploadQuizPage> {
 
   List<Map<String, dynamic>> _generateQuestionsFromFileName(String name) {
     final List<Map<String, dynamic>> qs = [];
-    for (int i = 0; i < 20; i++) {
+    final String baseName = name.split('.').first;
+
+    // Generate more realistic questions based on file type
+    final List<String> questionTemplates = [
+      'What is the main topic discussed in $baseName?',
+      'Which of the following is most relevant to $baseName?',
+      'Based on $baseName, what would be the best approach?',
+      'What key concept is highlighted in $baseName?',
+      'Which statement best summarizes $baseName?',
+      'What is the primary objective described in $baseName?',
+      'Based on $baseName, which method is most effective?',
+      'What important detail is mentioned in $baseName?',
+      'Which of the following applies to $baseName?',
+      'What conclusion can be drawn from $baseName?',
+    ];
+
+    final List<List<String>> answerOptions = [
+      [
+        'A) Technical implementation',
+        'B) User experience design',
+        'C) Project management',
+        'D) Quality assurance',
+      ],
+      [
+        'A) Innovation and creativity',
+        'B) Efficiency and optimization',
+        'C) Security and reliability',
+        'D) Scalability and performance',
+      ],
+      [
+        'A) Iterative development',
+        'B) Waterfall methodology',
+        'C) Agile framework',
+        'D) DevOps practices',
+      ],
+      [
+        'A) Problem-solving approach',
+        'B) Data analysis method',
+        'C) Communication strategy',
+        'D) Risk management',
+      ],
+      [
+        'A) Comprehensive overview',
+        'B) Detailed analysis',
+        'C) Strategic planning',
+        'D) Implementation guide',
+      ],
+      [
+        'A) Improve performance',
+        'B) Enhance security',
+        'C) Increase usability',
+        'D) Optimize resources',
+      ],
+      [
+        'A) Systematic approach',
+        'B) Creative thinking',
+        'C) Collaborative work',
+        'D) Continuous improvement',
+      ],
+      [
+        'A) Performance metrics',
+        'B) User feedback',
+        'C) Technical specifications',
+        'D) Best practices',
+      ],
+      [
+        'A) Industry standard',
+        'B) Emerging trend',
+        'C) Best practice',
+        'D) Common solution',
+      ],
+      [
+        'A) Successful implementation',
+        'B) Positive outcomes',
+        'C) Improved efficiency',
+        'D) Better results',
+      ],
+    ];
+
+    for (int i = 0; i < 10; i++) {
       qs.add({
-        'question': 'Q$i) From $name: Which statement is most accurate?',
-        'answers': ['A) Option A', 'B) Option B', 'C) Option C', 'D) Option D'],
+        'question':
+            'Q${i + 1}) ${questionTemplates[i % questionTemplates.length]}',
+        'answers': answerOptions[i % answerOptions.length],
         'correctAnswer': i % 4,
       });
     }
@@ -134,7 +214,7 @@ class _UploadQuizPageState extends State<UploadQuizPage> {
                   border: Border.all(color: Colors.blue, width: 2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -299,7 +379,7 @@ class _UploadQuizPageState extends State<UploadQuizPage> {
                                     const SizedBox(height: 10),
                                     Text(
                                       isNotesSelected
-                                          ? 'Select Your Notes File (PDF/DOC/Images)'
+                                          ? 'Select Your Notes File (PDF/PPT/Images)'
                                           : 'Select Your Video File',
                                       style: const TextStyle(
                                         fontFamily: 'Baloo2',
