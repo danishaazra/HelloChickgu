@@ -2,11 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:hellochickgu/features/auth/login.dart';
 import 'package:hellochickgu/services/auth_service.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'dart:math' as math;
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
+
+  Future<String> _fetchUsername() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return 'Guest';
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final data = doc.data() as Map<String, dynamic>?;
+      return (data?['username'] as String?)?.trim().isNotEmpty == true
+          ? (data!['username'] as String)
+          : (user.displayName ?? user.email ?? 'User');
+    } catch (_) {
+      return user.displayName ?? user.email ?? 'User';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,11 +104,17 @@ class ProfilePage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
-                      Text(
-                        'Nurin Sunoo',
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      FutureBuilder<String>(
+                        future: _fetchUsername(),
+                        builder: (context, snapshot) {
+                          final name = snapshot.data ?? '...';
+                          return Text(
+                            name,
+                            style: textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -225,7 +247,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
       'Curious learner and community member. I enjoy reading, writing, and collecting badges along the journey!';
   late final List<_Post> _posts = <_Post>[
     _Post(
-      authorName: 'Nurin Sunoo',
+      authorName: '',
       authorAvatarUrl:
           'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
       timeAgo: '1s',
@@ -236,7 +258,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
       badgeColor: Colors.orange,
     ),
     _Post(
-      authorName: 'Nurin Sunoo',
+      authorName: '',
       authorAvatarUrl:
           'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
       timeAgo: '30m',
@@ -246,7 +268,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
       badgeColor: Colors.amber,
     ),
     _Post(
-      authorName: 'Nurin Sunoo',
+      authorName: '',
       authorAvatarUrl:
           'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
       timeAgo: '1h',
@@ -258,6 +280,37 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
     ),
   ];
   int _activeTabIndex = 0; // 0 = Recent Posts, 1 = Achievements
+  String? _username;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+  }
+
+  Future<void> _loadUsername() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final data = doc.data() as Map<String, dynamic>?;
+      final name = (data?['username'] as String?) ?? user.displayName ?? user.email ?? 'User';
+      setState(() {
+        _username = name;
+        // Update posts authorName dynamically
+        for (var i = 0; i < _posts.length; i++) {
+          _posts[i] = _posts[i].copyWith(authorName: name);
+        }
+      });
+    } catch (_) {
+      setState(() {
+        _username = user.displayName ?? user.email ?? 'User';
+        for (var i = 0; i < _posts.length; i++) {
+          _posts[i] = _posts[i].copyWith(authorName: _username!);
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -669,6 +722,18 @@ class _Post {
     required this.comments,
     required this.badgeColor,
   });
+
+  _Post copyWith({String? authorName}) {
+    return _Post(
+      authorName: authorName ?? this.authorName,
+      authorAvatarUrl: authorAvatarUrl,
+      timeAgo: timeAgo,
+      content: content,
+      likes: likes,
+      comments: comments,
+      badgeColor: badgeColor,
+    );
+  }
 }
 
 class _PostCard extends StatelessWidget {
