@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hellochickgu/features/auth/signup.dart';
+import 'package:hellochickgu/features/learning%20pet/pet_home.dart';
 import 'package:hellochickgu/services/auth_service.dart';
 import 'package:hellochickgu/features/home/home.dart';
 
@@ -140,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
                                     );
                                     Navigator.of(context).pushReplacement(
                                       MaterialPageRoute(
-                                        builder: (_) => const HomePage(),
+                                        builder: (_) => const PetHomePage(),
                                       ),
                                     );
                                   }
