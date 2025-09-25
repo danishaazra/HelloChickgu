@@ -500,6 +500,9 @@
         <a href="tutor_management.html" class="nav-item">
           <i>👥</i> Tutor Management
         </a>
+        <a href="courses.html" class="nav-item">
+          <i>📚</i> Courses
+        </a>
         <a href="application.html" class="nav-item active">
           <i>📝</i> Applications
         </a>
@@ -547,23 +550,23 @@
       <div class="stats-grid">
         <div class="stat-card">
           <h3>Total Applications</h3>
-          <div class="number">47</div>
-          <div class="change">+5 this week</div>
+          <div class="number" id="appsTotalNum">0</div>
+          <div class="change" id="appsTotalNote"></div>
         </div>
         <div class="stat-card">
           <h3>Pending Review</h3>
-          <div class="number">23</div>
-          <div class="change">12 new today</div>
+          <div class="number" id="appsPendingNum">0</div>
+          <div class="change" id="appsPendingNote"></div>
         </div>
         <div class="stat-card">
           <h3>Approved</h3>
-          <div class="number">18</div>
-          <div class="change">38% approval rate</div>
+          <div class="number" id="appsApprovedNum">0</div>
+          <div class="change" id="appsApprovedNote"></div>
         </div>
         <div class="stat-card">
           <h3>Rejected</h3>
-          <div class="number">6</div>
-          <div class="change">13% rejection rate</div>
+          <div class="number" id="appsRejectedNum">0</div>
+          <div class="change" id="appsRejectedNote"></div>
         </div>
       </div>
 
@@ -610,26 +613,39 @@
     </div>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script>
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+      appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+      messagingSenderId: '864651268854',
+      projectId: 'hellochickgu',
+      authDomain: 'hellochickgu.firebaseapp.com',
+      storageBucket: 'hellochickgu.appspot.com',
+      measurementId: 'G-52RMQVE2SQ',
+    };
+    if (firebase.apps && firebase.apps.length) { firebase.app(); } else { firebase.initializeApp(firebaseConfig); }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
     let applicationsCache = [];
     let currentApplicationId = null;
 
     async function fetchApplications() {
-      const res = await fetch('../server/admin_applications_list.php');
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        alert(data && data.error ? data.error : 'Failed to load applications');
-        return [];
-      }
-      return data.data.map(r => ({
-        id: r.application_id,
-        name: r.name,
-        email: r.email,
-        subject: r.subjects || '',
-        qualification: r.qualification || '',
-        appliedDate: r.applied_date,
-        status: r.status,
-        resumeUrl: r.resume_url || ''
+      const snap = await db.collection('tutor_applicants').orderBy('appliedAt', 'desc').get();
+      return snap.docs.map(d => ({
+        id: d.id,
+        name: (d.data().applicantName || ''),
+        email: (d.data().applicantEmail || ''),
+        subject: Array.isArray(d.data().subjects) ? d.data().subjects.join(', ') : (d.data().subject || ''),
+        qualification: (d.data().qualification || ''),
+        appliedDate: d.data().appliedAt && d.data().appliedAt.toDate ? d.data().appliedAt.toDate().toISOString() : null,
+        status: (d.data().status || 'pending'),
+        resumeUrl: (d.data().resumeUrl || ''),
+        tutorUid: (d.data().tutorUid || null),
       }));
     }
 
@@ -639,6 +655,21 @@
       const searchTerm = document.getElementById('searchInput').value.toLowerCase();
       const statusFilter = document.getElementById('statusFilter').value;
       const subjectFilter = document.getElementById('subjectFilter').value;
+
+      // Stats counts
+      const total = applicationsCache.length;
+      const pending = applicationsCache.filter(a => a.status === 'pending').length;
+      const approved = applicationsCache.filter(a => a.status === 'approved').length;
+      const rejected = applicationsCache.filter(a => a.status === 'rejected').length;
+      document.getElementById('appsTotalNum').textContent = total;
+      document.getElementById('appsPendingNum').textContent = pending;
+      document.getElementById('appsApprovedNum').textContent = approved;
+      document.getElementById('appsRejectedNum').textContent = rejected;
+      const pct = (n) => total ? Math.round((n/total)*100) : 0;
+      document.getElementById('appsTotalNote').textContent = '';
+      document.getElementById('appsPendingNote').textContent = `${pct(pending)}% pending`;
+      document.getElementById('appsApprovedNote').textContent = `${pct(approved)}% approved`;
+      document.getElementById('appsRejectedNote').textContent = `${pct(rejected)}% rejected`;
 
       const filtered = applicationsCache.filter(app => {
         const matchesSearch = app.name.toLowerCase().includes(searchTerm) || app.email.toLowerCase().includes(searchTerm);
@@ -656,12 +687,12 @@
           <td>${app.appliedDate ? new Date(app.appliedDate).toLocaleDateString() : ''}</td>
           <td><span class="status-badge status-${app.status}">${app.status}</span></td>
           <td class="action-buttons">
-            <button class="btn btn-primary" onclick="viewApplication(${app.id})">Review</button>
+            <button class="btn btn-primary" onclick="viewApplication('${app.id}')">Review</button>
             ${app.status === 'pending' ? `
-              <button class="btn btn-success" onclick="approveApplication(${app.id})">Approve</button>
-              <button class="btn btn-danger" onclick="rejectApplication(${app.id})">Reject</button>
+              <button class="btn btn-success" onclick="approveApplication('${app.id}')">Approve</button>
+              <button class="btn btn-danger" onclick="rejectApplication('${app.id}')">Reject</button>
             ` : `
-              <button class="btn btn-secondary" onclick="viewApplication(${app.id})">View Details</button>
+              <button class="btn btn-secondary" onclick="viewApplication('${app.id}')">View Details</button>
             `}
           </td>
         </tr>
@@ -669,7 +700,7 @@
     }
 
     function viewApplication(applicationId) {
-      const application = applicationsCache.find(app => Number(app.id) === Number(applicationId));
+      const application = applicationsCache.find(app => String(app.id) === String(applicationId));
       if (!application) return;
 
       currentApplicationId = applicationId;
@@ -691,7 +722,7 @@
               <span>${application.email}</span>
             </div>
             <div class="info-item">
-              <label>Subject</label>
+              <label>Subject(s)</label>
               <span>${application.subject}</span>
             </div>
             <div class="info-item">
@@ -710,7 +741,7 @@
         </div>
         <div class="application-section">
           <h4>Resume</h4>
-          ${application.resumeUrl ? `<a href="${application.resumeUrl}" class="file-download" target="_blank" rel="noopener">📄 View Resume</a>` : '<span>No resume uploaded</span>'}
+          ${application.resumeUrl ? `<a href="${application.resumeUrl}" class="file-download" target="_blank" rel="noopener">📄 View Resume</a>` : '<span>No resume provided</span>'}
         </div>
       `;
 
@@ -733,38 +764,55 @@
     }
 
     async function approveApplication(applicationId = null) {
-      const appId = Number(applicationId || currentApplicationId);
-      const application = applicationsCache.find(app => Number(app.id) === appId);
+      const appId = String(applicationId || currentApplicationId);
+      const application = applicationsCache.find(app => String(app.id) === appId);
       if (!application) return;
       if (!confirm(`Are you sure you want to approve ${application.name}'s application?`)) return;
-      await updateApplicationStatus(appId, 'approve');
+      await updateApplicationStatus(appId, 'approved');
     }
 
     async function rejectApplication(applicationId = null) {
-      const appId = Number(applicationId || currentApplicationId);
-      const application = applicationsCache.find(app => Number(app.id) === appId);
+      const appId = String(applicationId || currentApplicationId);
+      const application = applicationsCache.find(app => String(app.id) === appId);
       if (!application) return;
       if (!confirm(`Are you sure you want to reject ${application.name}'s application?`)) return;
-      await updateApplicationStatus(appId, 'reject');
+      await updateApplicationStatus(appId, 'rejected');
     }
 
-    async function updateApplicationStatus(application_id, action) {
+    async function updateApplicationStatus(application_id, newStatus) {
       try {
-        const res = await fetch('../server/admin_application_update.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ application_id, action })
+        await db.collection('tutor_applicants').doc(String(application_id)).update({
+          status: newStatus,
+          reviewedAt: firebase.firestore.FieldValue.serverTimestamp(),
         });
-        const data = await res.json();
-        if (!res.ok || !data.success) {
-          alert(data && data.error ? data.error : 'Action failed');
-          return;
+        if (newStatus === 'approved') {
+          const application = applicationsCache.find(app => String(app.id) === String(application_id));
+          if (application) {
+            sendApprovalEmail(application.email, application.name);
+          }
         }
         await renderApplications();
         closeModal();
       } catch (e) {
-        alert('Network error: ' + (e && e.message ? e.message : e));
+        alert('Update failed: ' + (e && e.message ? e.message : e));
       }
+    }
+
+    // Initialize EmailJS (replace with your public key)
+    try { emailjs.init('YOUR_EMAILJS_PUBLIC_KEY'); } catch (_) {}
+
+    function sendApprovalEmail(toEmail, toName) {
+      if (!toEmail) return;
+      const serviceId = 'YOUR_EMAILJS_SERVICE_ID';
+      const templateId = 'YOUR_EMAILJS_TEMPLATE_ID';
+      const params = {
+        to_email: toEmail,
+        to_name: toName || 'Tutor',
+        subject: 'Hello Chickgu - Application Approved',
+        message: 'Thank you, accepted! You can sign up now on the tutor portal.'
+      };
+      // Best-effort; do not block UI on failure
+      try { emailjs.send(serviceId, templateId, params); } catch (_) {}
     }
 
     // Navigation highlighting

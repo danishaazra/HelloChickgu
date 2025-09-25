@@ -347,35 +347,22 @@
             <h3>Personal Information</h3>
             <div class="info-item">
               <div class="info-label">Full Name</div>
-              <div class="info-value">Danisha Azra Binti Mohamad</div>
+              <div class="info-value" id="profileName">-</div>
             </div>
             <div class="info-item">
               <div class="info-label">Email Address</div>
-              <div class="info-value">danishaazra34@gmail.com</div>
+              <div class="info-value" id="profileEmail">-</div>
             </div>
           </div>
 
           <div class="info-section">
             <h3>Subjects I Teach</h3>
-            <div class="subjects-list">
-              <span class="subject-tag">Mathematics</span>
-              <span class="subject-tag">Physics</span>
-              <span class="subject-tag">Chemistry</span>
-              <span class="subject-tag">Biology</span>
-              <span class="subject-tag">Computer Science</span>
-              <span class="subject-tag">Programming</span>
-            </div>
+            <div class="subjects-list" id="subjectsList"></div>
           </div>
 
           <div class="info-section">
             <h3>Qualifications</h3>
-            <ul class="qualifications-list">
-              <li>Bachelor of Science in Mathematics</li>
-              <li>Master of Education in Curriculum and Instruction</li>
-              <li>PhD in Applied Mathematics</li>
-              <li>Certified Mathematics Teacher (CMT)</li>
-              <li>Advanced Certificate in Educational Technology</li>
-            </ul>
+            <ul class="qualifications-list" id="qualificationsList"></ul>
           </div>
         </div>
 
@@ -390,6 +377,9 @@
     </main>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
   <script>
     // Navigation highlighting based on current page
     const currentPage = window.location.pathname.split('/').pop();
@@ -403,6 +393,43 @@
     document.querySelector('.edit-profile-btn').addEventListener('click', () => {
       alert('Edit profile functionality would open here');
     });
+
+    // Firebase init
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+      appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+      messagingSenderId: '864651268854',
+      projectId: 'hellochickgu',
+      authDomain: 'hellochickgu.firebaseapp.com',
+      storageBucket: 'hellochickgu.appspot.com',
+      measurementId: 'G-52RMQVE2SQ',
+    };
+    if (firebase.apps && firebase.apps.length) { firebase.app(); } else { firebase.initializeApp(firebaseConfig); }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    async function loadProfile() {
+      try {
+        // Wait briefly for an existing session (if came from login)
+        await new Promise(r => setTimeout(r, 300));
+        const user = auth.currentUser;
+        if (!user) { /* optional: redirect to login */ return; }
+        const uid = user.uid;
+        const doc = await db.collection('tutors').doc(uid).get();
+        if (!doc.exists) return;
+        const data = doc.data();
+        document.getElementById('profileName').textContent = data.name || user.displayName || '-';
+        document.getElementById('profileEmail').textContent = data.email || user.email || '-';
+        const subjects = Array.isArray(data.subjects) ? data.subjects : [];
+        document.getElementById('subjectsList').innerHTML = subjects.map(s => `<span class="subject-tag">${s}</span>`).join('');
+        const quals = Array.isArray(data.qualifications) ? data.qualifications : (data.qualification ? [data.qualification] : []);
+        document.getElementById('qualificationsList').innerHTML = quals.map(q => `<li>${q}</li>`).join('');
+      } catch (_) {}
+    }
+
+    // If auth state changes, reload profile
+    auth.onAuthStateChanged(() => loadProfile());
+    loadProfile();
   </script>
 </body>
 </html>

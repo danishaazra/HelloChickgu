@@ -274,6 +274,7 @@
         <div class="field">
           <label for="email">Email</label>
           <input id="email" type="email" placeholder="you@gmail.com" required>
+        </div>
 
         <div class="field">
           <label for="password">Password</label>
@@ -290,6 +291,7 @@
         <button class="btn" type="submit">Log in</button>
         <div class="below-link">
           <a id="openTutorForm" href="#">Interested to be a tutor?</a>
+          <div style="margin-top:8px;"><a href="signup_tutor.html">Don't have an account? Sign up</a></div>
         </div>
       </form>
     </div>
@@ -314,10 +316,6 @@
               <input id="tutorEmail" name="email" type="email" placeholder="you@gmail.com" required>
             </div>
             <div class="field">
-              <label for="tutorPassword">Password</label>
-              <input id="tutorPassword" name="password" type="password" placeholder="Create a password" required>
-            </div>
-            <div class="field">
               <label for="tutorSubject">Subject</label>
               <input id="tutorSubject" name="subject" type="text" placeholder="e.g., Mathematics" required>
             </div>
@@ -326,12 +324,8 @@
               <input id="tutorQualification" name="qualification" type="text" placeholder="e.g., BSc in Mathematics" required>
             </div>
             <div class="field full">
-              <label for="tutorResume">Upload Resume (PDF/DOC)</label>
-              <input id="tutorResume" name="resume" class="file-input" type="file" accept=".pdf,.doc,.docx" required>
-            </div>
-            <div class="field full">
-              <label for="tutorCertificates">Upload Certificates (PDF/Image)</label>
-              <input id="tutorCertificates" name="certificates" class="file-input" type="file" accept=".pdf,.png,.jpg,.jpeg" multiple required>
+              <label for="tutorResumeLink">Please upload your Canva resume link here</label>
+              <input id="tutorResumeLink" name="resumeLink" type="url" placeholder="https://www.canva.com/..." required>
             </div>
           </div>
           <div class="modal-actions">
@@ -343,7 +337,11 @@
     </div>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
   <script>
+    // Modal wiring (independent from Firebase so it still works without config)
     const openBtn = document.getElementById('openTutorForm');
     const closeBtn = document.getElementById('closeTutorForm');
     const cancelBtn = document.getElementById('cancelTutorForm');
@@ -366,13 +364,103 @@
       if (e.target === modal) closeModal();
     });
 
-    form.addEventListener('submit', (e) => {
+    // Firebase init (robust)
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+      appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+      messagingSenderId: '864651268854',
+      projectId: 'hellochickgu',
+      authDomain: 'hellochickgu.firebaseapp.com',
+      storageBucket: 'hellochickgu.appspot.com',
+      measurementId: 'G-52RMQVE2SQ',
+    };
+
+    let fbReady = false;
+    let auth = null;
+    let db = null;
+    try {
+      if (firebase.apps && firebase.apps.length) {
+        firebase.app();
+      } else {
+        firebase.initializeApp(firebaseConfig);
+      }
+      auth = firebase.auth();
+      db = firebase.firestore();
+      fbReady = true;
+    } catch (err) {
+      console.warn('Firebase init failed:', err);
+      try {
+        if (firebase.apps && firebase.apps.length) {
+          auth = firebase.auth();
+          db = firebase.firestore();
+          fbReady = true;
+        }
+      } catch (_) {}
+    }
+
+    // Login form
+    const loginForm = document.querySelector('form.card');
+    const emailEl = document.getElementById('email');
+    const passwordEl = document.getElementById('password');
+
+    loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const data = new FormData(form);
-      // Placeholder: integrate with backend as needed
-      alert('Application submitted!');
-      form.reset();
-      closeModal();
+      if (!fbReady) { alert('Firebase is not configured. Please add your Firebase web config.'); return; }
+      const email = emailEl.value.trim();
+      const password = passwordEl.value;
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        const uid = auth.currentUser.uid;
+        const tutorDoc = await db.collection('tutors').doc(uid).get();
+        if (!tutorDoc.exists) {
+          alert('This account is not a tutor.');
+          await auth.signOut();
+          return;
+        }
+        const status = (tutorDoc.data() || {}).status;
+        if (status !== 'active') {
+          if (status === 'pending') alert('Your tutor account is pending approval.');
+          else alert('Tutor account is not active.');
+          await auth.signOut();
+          return;
+        }
+        // Redirect to tutor dashboard
+        window.location.href = '../tutor/dashboard_tutor.html';
+      } catch (err) {
+        alert(err.message || 'Login failed');
+      }
+    });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!fbReady) { alert('Firebase is not configured. Please add your Firebase web config.'); return; }
+      const name = document.getElementById('tutorName').value.trim();
+      const email = document.getElementById('tutorEmail').value.trim();
+      const subject = document.getElementById('tutorSubject').value.trim();
+      const qualification = document.getElementById('tutorQualification').value.trim();
+      const resumeLink = document.getElementById('tutorResumeLink').value.trim();
+      if (!name || !email || !subject || !qualification || !resumeLink) {
+        alert('Please fill all fields and provide your Canva resume link.');
+        return;
+      }
+      try {
+        // 1) Create a new application doc (pending)
+        const appRef = await db.collection('tutor_applicants').add({
+          applicantName: name,
+          applicantEmail: email,
+          subjects: [subject],
+          qualification: qualification,
+          resumeUrl: resumeLink,
+          status: 'pending',
+          tutorUid: null,
+          appliedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+
+        alert('Application submitted!');
+        form.reset();
+        closeModal();
+      } catch (err) {
+        alert(err && err.message ? err.message : 'Failed to submit application');
+      }
     });
   </script>
 </body>

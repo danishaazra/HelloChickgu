@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Courses - Hello Chickgu</title>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background: #f8fafc; }
+    .dashboard { display: flex; height: 100vh; }
+    .sidebar { width: 280px; background: #4FC3F7; padding: 24px 0; display: flex; flex-direction: column; box-shadow: 2px 0 8px rgba(0,0,0,.1); }
+    .sidebar-header { padding: 0 24px 24px; border-bottom: 1px solid rgba(17,24,39,.1); margin-bottom: 24px; }
+    .sidebar-header h2 { color: #111827; font-size: 24px; font-weight: 800; }
+    .nav-menu { flex: 1; padding: 0 16px; }
+    .nav-item { display: block; padding: 16px 20px; border-radius: 12px; color: #111827; font-weight: 600; text-decoration: none; margin-bottom: 8px; }
+    .nav-item.active { background: rgba(17,24,39,.15); }
+    .nav-item:hover { background: rgba(17,24,39,.1); transform: translateX(4px); }
+    .sidebar-footer { padding: 24px 16px 0; display: flex; justify-content: center; }
+    .tutor-image { max-width: 120px; height: auto; opacity: .8; }
+    .main-content { flex: 1; padding: 24px; overflow-y: auto; }
+    .content-header { margin-bottom: 24px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,.05); }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    input, textarea { padding: 12px 14px; border: 1px solid #d0d5dd; border-radius: 10px; font-size: 14px; }
+    .btn { padding: 10px 14px; border: none; border-radius: 10px; background: #4FC3F7; color: #111827; font-weight: 700; cursor: pointer; }
+    .course-item { border-bottom: 1px solid #e5e7eb; padding: 12px 0; }
+    .module { padding: 10px; border: 1px dashed #d0d5dd; border-radius: 12px; margin-bottom: 10px; }
+    .module header { display:flex; gap:10px; align-items:center; margin-bottom:8px; }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <nav class="sidebar">
+      <div class="sidebar-header"><h2>Admin Panel</h2></div>
+      <div class="nav-menu">
+        <a href="dashboard_admin.html" class="nav-item"><i>📊</i> Dashboard</a>
+        <a href="tutor_management.html" class="nav-item"><i>👥</i> Tutor Management</a>
+        <a href="courses.html" class="nav-item active"><i>📚</i> Courses</a>
+        <a href="application.html" class="nav-item"><i>📝</i> Applications</a>
+        <a href="admin_video.html" class="nav-item"><i>🎥</i> Video Review</a>
+        <a href="login_admin.html" class="nav-item"><i>🚪</i> Logout</a>
+      </div>
+      <div class="sidebar-footer">
+        <img src="../../../assets/tutor_chickgu.png" class="tutor-image" alt="Admin Chickgu" />
+      </div>
+    </nav>
+
+    <main class="main-content">
+      <div class="content-header">
+        <h1>Courses</h1>
+        <p>Create and manage courses and modules.</p>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3 style="margin-top:0;">Create Course</h3>
+          <form id="courseForm">
+            <div class="field">
+              <label for="courseTitle">Course Title</label>
+              <input id="courseTitle" type="text" placeholder="e.g., Python, Data Structures" required />
+            </div>
+            <button class="btn" type="submit">Create Course</button>
+          </form>
+          <hr style="margin:16px 0;border:none;border-top:1px solid #e5e7eb;" />
+          <h3>Add Modules</h3>
+          <div class="field">
+            <label for="courseSelect">Select Course</label>
+            <select id="courseSelect" style="padding:10px;border:1px solid #d0d5dd;border-radius:10px;"></select>
+          </div>
+          <div id="modulesContainer"></div>
+          <button id="addModuleBtn" class="btn" type="button">Add Module</button>
+          <button id="saveModulesBtn" class="btn" type="button" style="margin-left:8px;">Save Modules</button>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top:0;">Course List</h3>
+          <div id="coursesList"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+      appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+      messagingSenderId: '864651268854',
+      projectId: 'hellochickgu',
+      authDomain: 'hellochickgu.firebaseapp.com',
+      storageBucket: 'hellochickgu.appspot.com',
+      measurementId: 'G-52RMQVE2SQ',
+    };
+    if (firebase.apps && firebase.apps.length) { firebase.app(); } else { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.firestore();
+
+    async function loadCourses() {
+      const snap = await db.collection('courses').orderBy('createdAt', 'desc').get();
+      const list = document.getElementById('coursesList');
+      const select = document.getElementById('courseSelect');
+      const courses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      list.innerHTML = courses.map(c => `
+        <div class="course-item">
+          <strong>${c.title}</strong>
+          <div style="font-size:12px;color:#6b7280;">ID: ${c.id}</div>
+        </div>
+      `).join('');
+      select.innerHTML = courses.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+
+      if (courses.length) {
+        await loadModulesFor(courses[0].id);
+      } else {
+        document.getElementById('modulesContainer').innerHTML = '<div style="color:#6b7280;">No course yet. Create one on the left.</div>';
+      }
+    }
+
+    document.getElementById('courseForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('courseTitle').value.trim();
+      if (!title) return;
+      await db.collection('courses').add({
+        title,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        visibility: 'public',
+      });
+      document.getElementById('courseTitle').value = '';
+      await loadCourses();
+      alert('Course created');
+    });
+
+    document.getElementById('courseSelect').addEventListener('change', (e) => loadModulesFor(e.target.value));
+
+    function moduleTemplate(idx, title = '', content = '') {
+      return `
+        <div class="module" data-index="${idx}">
+          <header>
+            <strong>Module ${idx+1}</strong>
+            <input type="text" placeholder="Module title" value="${title}" style="flex:1;" />
+          </header>
+          <textarea rows="6" placeholder="Course content (text/markdown) ...">${content}</textarea>
+        </div>
+      `;
+    }
+
+    async function loadModulesFor(courseId) {
+      const container = document.getElementById('modulesContainer');
+      const snap = await db.collection('courses').doc(courseId).collection('modules').orderBy('index').get();
+      const modules = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (!modules.length) {
+        container.innerHTML = moduleTemplate(0);
+        return;
+      }
+      container.innerHTML = modules.map((m, i) => moduleTemplate(i, m.title || '', m.content || '')).join('');
+    }
+
+    document.getElementById('addModuleBtn').addEventListener('click', () => {
+      const container = document.getElementById('modulesContainer');
+      const count = container.children.length;
+      container.insertAdjacentHTML('beforeend', moduleTemplate(count));
+    });
+
+    document.getElementById('saveModulesBtn').addEventListener('click', async () => {
+      const courseId = document.getElementById('courseSelect').value;
+      if (!courseId) { alert('Select a course'); return; }
+      const container = document.getElementById('modulesContainer');
+      const updates = [];
+      Array.from(container.children).forEach((node, idx) => {
+        const title = node.querySelector('input').value.trim();
+        const content = node.querySelector('textarea').value.trim();
+        const modRef = db.collection('courses').doc(courseId).collection('modules').doc(String(idx+1));
+        updates.push(modRef.set({ title, content, index: idx, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }));
+      });
+      await Promise.all(updates);
+      alert('Modules saved');
+      await loadModulesFor(courseId);
+    });
+
+    loadCourses();
+  </script>
+</body>
+</html>
+
+
