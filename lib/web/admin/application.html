@@ -611,100 +611,49 @@
   </div>
 
   <script>
-    // Sample application data
-    const applications = [
-      {
-        id: 1,
-        name: "Danisha Azra",
-        email: "danishaazra34@gmail.com",
-        subject: "Mathematics",
-        qualification: "Bachelor of Mathematics in Education",
-        appliedDate: "2024-01-15",
-        status: "pending",
-        password: "encrypted_password",
-        resume: "danisha_resume.pdf",
-        certificates: ["degree_certificate.pdf", "teaching_certificate.pdf"],
-        motivation: "I am passionate about mathematics and want to help students understand complex concepts through interactive teaching methods."
-      },
-      {
-        id: 2,
-        name: "Nurin Sunoo",
-        email: "nurinsunoo13@gmail.com",
-        subject: "Physics",
-        qualification: "Master of Science in Physics",
-        appliedDate: "2024-01-14",
-        status: "pending",
-        password: "encrypted_password",
-        resume: "nurin_resume.pdf",
-        certificates: ["msc_physics.pdf", "research_certificate.pdf"],
-        motivation: "Physics is my passion and I believe in making it accessible to all students through practical demonstrations and real-world applications."
-      },
-      {
-        id: 3,
-        name: "Nayeon Badri",
-        email: "nayeonbadri14@gmail.com",
-        subject: "Computer Science",
-        qualification: "Bachelor of Computer Science",
-        appliedDate: "2024-01-12",
-        status: "approved",
-        password: "encrypted_password",
-        resume: "nayeon_resume.pdf",
-        certificates: ["bsc_cs.pdf", "programming_certificate.pdf"],
-        motivation: "I want to share my programming knowledge with students and help them develop problem-solving skills through coding."
-      },
-      {
-        id: 4,
-        name: "Ahmed Hassan",
-        email: "ahmed.hassan@gmail.com",
-        subject: "Mathematics",
-        qualification: "PhD in Applied Mathematics",
-        appliedDate: "2024-01-10",
-        status: "rejected",
-        password: "encrypted_password",
-        resume: "ahmed_resume.pdf",
-        certificates: ["phd_mathematics.pdf", "research_paper.pdf"],
-        motivation: "With my extensive research background, I can provide students with deep insights into mathematical concepts."
-      },
-      {
-        id: 5,
-        name: "Sarah Johnson",
-        email: "sarah.johnson@gmail.com",
-        subject: "Computer Science",
-        qualification: "PhD in Computer Science",
-        appliedDate: "2024-01-08",
-        status: "pending",
-        password: "encrypted_password",
-        resume: "sarah_resume.pdf",
-        certificates: ["phd_cs.pdf", "ai_certificate.pdf", "teaching_certificate.pdf"],
-        motivation: "I specialize in artificial intelligence and want to prepare students for the future of technology through innovative teaching approaches."
-      }
-    ];
-
+    let applicationsCache = [];
     let currentApplicationId = null;
 
-    // Render applications table
-    function renderApplications() {
+    async function fetchApplications() {
+      const res = await fetch('../server/admin_applications_list.php');
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        alert(data && data.error ? data.error : 'Failed to load applications');
+        return [];
+      }
+      return data.data.map(r => ({
+        id: r.application_id,
+        name: r.name,
+        email: r.email,
+        subject: r.subjects || '',
+        qualification: r.qualification || '',
+        appliedDate: r.applied_date,
+        status: r.status,
+        resumeUrl: r.resume_url || ''
+      }));
+    }
+
+    async function renderApplications() {
+      applicationsCache = await fetchApplications();
       const tbody = document.getElementById('applicationsTableBody');
       const searchTerm = document.getElementById('searchInput').value.toLowerCase();
       const statusFilter = document.getElementById('statusFilter').value;
       const subjectFilter = document.getElementById('subjectFilter').value;
 
-      const filteredApplications = applications.filter(app => {
-        const matchesSearch = app.name.toLowerCase().includes(searchTerm) || 
-                             app.email.toLowerCase().includes(searchTerm);
+      const filtered = applicationsCache.filter(app => {
+        const matchesSearch = app.name.toLowerCase().includes(searchTerm) || app.email.toLowerCase().includes(searchTerm);
         const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
-        const matchesSubject = subjectFilter === 'all' || 
-                              app.subject.toLowerCase().includes(subjectFilter.replace('-', ' '));
+        const matchesSubject = subjectFilter === 'all' || app.subject.toLowerCase().includes(subjectFilter.replace('-', ' '));
         return matchesSearch && matchesStatus && matchesSubject;
       });
 
-      tbody.innerHTML = filteredApplications.map(app => `
+      tbody.innerHTML = filtered.map(app => `
         <tr>
           <td>${app.name}</td>
           <td>${app.email}</td>
           <td>${app.subject}</td>
           <td>${app.qualification}</td>
-          <td>${new Date(app.appliedDate).toLocaleDateString()}</td>
+          <td>${app.appliedDate ? new Date(app.appliedDate).toLocaleDateString() : ''}</td>
           <td><span class="status-badge status-${app.status}">${app.status}</span></td>
           <td class="action-buttons">
             <button class="btn btn-primary" onclick="viewApplication(${app.id})">Review</button>
@@ -719,9 +668,8 @@
       `).join('');
     }
 
-    // View application modal
     function viewApplication(applicationId) {
-      const application = applications.find(app => app.id === applicationId);
+      const application = applicationsCache.find(app => Number(app.id) === Number(applicationId));
       if (!application) return;
 
       currentApplicationId = applicationId;
@@ -752,7 +700,7 @@
             </div>
             <div class="info-item">
               <label>Applied Date</label>
-              <span>${new Date(application.appliedDate).toLocaleDateString()}</span>
+              <span>${application.appliedDate ? new Date(application.appliedDate).toLocaleDateString() : ''}</span>
             </div>
             <div class="info-item">
               <label>Status</label>
@@ -761,26 +709,11 @@
           </div>
         </div>
         <div class="application-section">
-          <h4>Motivation</h4>
-          <p style="color: #374151; line-height: 1.6;">${application.motivation}</p>
-        </div>
-        <div class="application-section">
           <h4>Resume</h4>
-          <a href="#" class="file-download" onclick="downloadFile('${application.resume}')">
-            📄 ${application.resume}
-          </a>
-        </div>
-        <div class="application-section">
-          <h4>Certificates</h4>
-          ${application.certificates.map(cert => `
-            <a href="#" class="file-download" onclick="downloadFile('${cert}')">
-              🏆 ${cert}
-            </a>
-          `).join('')}
+          ${application.resumeUrl ? `<a href="${application.resumeUrl}" class="file-download" target="_blank" rel="noopener">📄 View Resume</a>` : '<span>No resume uploaded</span>'}
         </div>
       `;
 
-      // Show/hide action buttons based on status
       if (application.status === 'pending') {
         approveBtn.style.display = 'inline-block';
         rejectBtn.style.display = 'inline-block';
@@ -794,48 +727,44 @@
       modal.style.display = 'flex';
     }
 
-    // Close modal
     function closeModal() {
       document.getElementById('applicationModal').style.display = 'none';
       currentApplicationId = null;
     }
 
-    // Approve application
-    function approveApplication(applicationId = null) {
-      const appId = applicationId || currentApplicationId;
-      const application = applications.find(app => app.id === appId);
+    async function approveApplication(applicationId = null) {
+      const appId = Number(applicationId || currentApplicationId);
+      const application = applicationsCache.find(app => Number(app.id) === appId);
       if (!application) return;
-
-      const confirmMsg = `Are you sure you want to approve ${application.name}'s application?`;
-      
-      if (confirm(confirmMsg)) {
-        application.status = 'approved';
-        renderApplications();
-        closeModal();
-        alert(`${application.name}'s application has been approved successfully.`);
-      }
+      if (!confirm(`Are you sure you want to approve ${application.name}'s application?`)) return;
+      await updateApplicationStatus(appId, 'approve');
     }
 
-    // Reject application
-    function rejectApplication(applicationId = null) {
-      const appId = applicationId || currentApplicationId;
-      const application = applications.find(app => app.id === appId);
+    async function rejectApplication(applicationId = null) {
+      const appId = Number(applicationId || currentApplicationId);
+      const application = applicationsCache.find(app => Number(app.id) === appId);
       if (!application) return;
-
-      const confirmMsg = `Are you sure you want to reject ${application.name}'s application?`;
-      
-      if (confirm(confirmMsg)) {
-        application.status = 'rejected';
-        renderApplications();
-        closeModal();
-        alert(`${application.name}'s application has been rejected.`);
-      }
+      if (!confirm(`Are you sure you want to reject ${application.name}'s application?`)) return;
+      await updateApplicationStatus(appId, 'reject');
     }
 
-    // Download file (placeholder)
-    function downloadFile(filename) {
-      alert(`Downloading ${filename}...`);
-      // In a real application, this would trigger an actual download
+    async function updateApplicationStatus(application_id, action) {
+      try {
+        const res = await fetch('../server/admin_application_update.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ application_id, action })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          alert(data && data.error ? data.error : 'Action failed');
+          return;
+        }
+        await renderApplications();
+        closeModal();
+      } catch (e) {
+        alert('Network error: ' + (e && e.message ? e.message : e));
+      }
     }
 
     // Navigation highlighting
