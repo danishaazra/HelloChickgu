@@ -1,4 +1,13 @@
-enum RoomType { home, kitchen, bedroom, bathroom, livingRoom }
+
+enum RoomType {
+  home,
+  kitchen,
+  bedroom,
+  bathroom,
+  livingRoom,
+}
+
+
 
 extension RoomTypeExtension on RoomType {
   String get displayName {

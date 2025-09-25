@@ -9,7 +9,9 @@ class BasePetRoom extends StatefulWidget {
   final VoidCallback? onMapsPressed;
   final VoidCallback? onShopPressed;
   final VoidCallback? onLeaderboardPressed;
+
   final VoidCallback? onProfilePressed;
+
 
   const BasePetRoom({
     super.key,
@@ -89,6 +91,7 @@ class _BasePetRoomState extends State<BasePetRoom>
     });
   }
 
+
   @override
   void dispose() {
     _idleController.dispose();
@@ -105,10 +108,12 @@ class _BasePetRoomState extends State<BasePetRoom>
         children: [
           // Room Background
           Positioned.fill(
+
             child: Image.asset(
               widget.roomType.backgroundAsset,
               fit: BoxFit.cover,
             ),
+
           ),
 
           // Top Bar - Centered
@@ -139,6 +144,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                         ),
                       ),
                       const SizedBox(width: 8),
+
                       GestureDetector(
                         onTap: widget.onProfilePressed,
                         child: Container(
@@ -203,6 +209,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                       ],
                     ),
                     const SizedBox(width: 8),
+
                     _buildAssetStatusIcon('assets/food.png', 0.7),
                     const SizedBox(width: 8),
                     _buildAssetStatusIcon('assets/sleep.png', 0.5),
@@ -454,6 +461,7 @@ class _BasePetRoomState extends State<BasePetRoom>
       child: Center(
         child: Image.asset(
           assetPath,
+
           width: isCoin ? 45 : (isFoodSleepShower ? 34 : 38),
           height: isCoin ? 45 : (isFoodSleepShower ? 34 : 38),
           fit: BoxFit.contain,
