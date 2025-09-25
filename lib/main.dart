@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
       title: 'Hello Chickgu!',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const PetHomePage(),
+      home: const OnboardingPage(),
     );
   }
 }
