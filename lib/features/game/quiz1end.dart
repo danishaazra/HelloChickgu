@@ -25,18 +25,22 @@ class quiz1end extends StatefulWidget {
   State<quiz1end> createState() => _Quiz1EndState();
 }
 
-class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin {
+class _Quiz1EndState extends State<quiz1end>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
-    _scale = Tween<double>(begin: 0.95, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(
+      begin: 0.95,
+      end: 1.05,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -75,7 +79,10 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
             child: Container(
               width: Responsive.scaleWidth(context, 350),
               constraints: BoxConstraints(
-                maxHeight: isSmallScreen ? screenSize.height * 0.86 : screenSize.height * 0.7,
+                maxHeight:
+                    isSmallScreen
+                        ? screenSize.height * 0.86
+                        : screenSize.height * 0.7,
               ),
               padding: Responsive.scalePaddingAll(context, 26),
               decoration: BoxDecoration(
@@ -98,13 +105,17 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                     alignment: Alignment.topRight,
                     child: GestureDetector(
                       onTap: () {
-                        final int nextUnlocked = (widget.level + 1).clamp(1, 11);
+                        final int nextUnlocked = (widget.level + 1).clamp(
+                          1,
+                          11,
+                        );
                         Navigator.of(context).pushAndRemoveUntil(
                           MaterialPageRoute(
-                            builder: (_) => LevelPage(
-                              initialHighestUnlockedLevel: nextUnlocked,
-                              completedLevel: widget.level,
-                            ),
+                            builder:
+                                (_) => LevelPage(
+                                  initialHighestUnlockedLevel: nextUnlocked,
+                                  completedLevel: widget.level,
+                                ),
                           ),
                           (route) => false,
                         );
@@ -125,7 +136,10 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Image.asset('assets/xbutton.png', fit: BoxFit.contain),
+                          child: Image.asset(
+                            'assets/xbutton.png',
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                     ),
@@ -151,9 +165,8 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                           scale: _scale,
                           child: Image.asset(
                             'assets/chickenYes.png',
-                            width: 600,
-                            height: 600,
-                           
+                            width: 1000,
+                            height: 1000,
                           ),
                         ),
                         // left sparkle
@@ -162,10 +175,18 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                           builder: (_, __) {
                             final t = _controller.value;
                             return Opacity(
-                              opacity: (0.2 + 0.8 * (1 - (t - 0.1).abs())).clamp(0.0, 1.0),
+                              opacity: (0.2 + 0.8 * (1 - (t - 0.1).abs()))
+                                  .clamp(0.0, 1.0),
                               child: Transform.translate(
-                                offset: Offset(-60 + 6 * (1 - t) * 4, -20 - 14 * t),
-                                child: Icon(Icons.auto_awesome_rounded, color: Colors.amber[600], size: 20 + 6 * t),
+                                offset: Offset(
+                                  -60 + 6 * (1 - t) * 4,
+                                  -20 - 14 * t,
+                                ),
+                                child: Icon(
+                                  Icons.auto_awesome_rounded,
+                                  color: Colors.amber[600],
+                                  size: 20 + 6 * t,
+                                ),
                               ),
                             );
                           },
@@ -176,10 +197,15 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                           builder: (_, __) {
                             final t = (0.5 + _controller.value) % 1.0;
                             return Opacity(
-                              opacity: (0.2 + 0.8 * (1 - (t - 0.1).abs())).clamp(0.0, 1.0),
+                              opacity: (0.2 + 0.8 * (1 - (t - 0.1).abs()))
+                                  .clamp(0.0, 1.0),
                               child: Transform.translate(
                                 offset: Offset(62 - 4 * t * 6, -10 - 18 * t),
-                                child: Icon(Icons.auto_awesome_rounded, color: Colors.orange[400], size: 18 + 8 * t),
+                                child: Icon(
+                                  Icons.auto_awesome_rounded,
+                                  color: Colors.orange[400],
+                                  size: 18 + 8 * t,
+                                ),
                               ),
                             );
                           },
@@ -190,10 +216,15 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                           builder: (_, __) {
                             final t = (0.25 + _controller.value) % 1.0;
                             return Opacity(
-                              opacity: (0.2 + 0.8 * (1 - (t - 0.1).abs())).clamp(0.0, 1.0),
+                              opacity: (0.2 + 0.8 * (1 - (t - 0.1).abs()))
+                                  .clamp(0.0, 1.0),
                               child: Transform.translate(
                                 offset: Offset(0, -40 - 20 * t),
-                                child: Icon(Icons.auto_awesome_rounded, color: Colors.amber[300], size: 16 + 10 * t),
+                                child: Icon(
+                                  Icons.auto_awesome_rounded,
+                                  color: Colors.amber[300],
+                                  size: 16 + 10 * t,
+                                ),
                               ),
                             );
                           },
@@ -215,7 +246,11 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                       ),
                       const SizedBox(height: 12),
                       _StatBadge(
-                        iconWidget: Image.asset('assets/clock.png', width: 22, height: 22),
+                        iconWidget: Image.asset(
+                          'assets/clock.png',
+                          width: 22,
+                          height: 22,
+                        ),
                         accentColor: const Color(0xFF4FC3F7),
                         label: 'Time Taken:',
                         value: _formatTime(widget.timeTaken),
@@ -233,25 +268,34 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                             backgroundColor: Colors.white,
                             foregroundColor: const Color(0xFF4FC3F7),
                             elevation: 4,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            side: const BorderSide(color: Color(0xFF4FC3F7), width: 2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            side: const BorderSide(
+                              color: Color(0xFF4FC3F7),
+                              width: 2,
+                            ),
                           ),
                           onPressed: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => QuizReviewPage(
-                                  questions: widget.questions,
-                                  selectedAnswers: widget.selectedAnswers,
-                                ),
+                                builder:
+                                    (_) => QuizReviewPage(
+                                      questions: widget.questions,
+                                      selectedAnswers: widget.selectedAnswers,
+                                    ),
                               ),
                             );
                           },
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             child: Text(
-                              'Review Answers',
-                              style: TextStyle(fontFamily: 'Baloo2', fontWeight: FontWeight.w700),
+                              'Review ',
+                              style: TextStyle(
+                                fontFamily: 'Baloo2',
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ),
@@ -263,17 +307,26 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                             backgroundColor: Color(0xFF4FC3F7),
                             foregroundColor: Colors.white,
                             elevation: 6,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            side: const BorderSide(color: Colors.white, width: 2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            side: const BorderSide(
+                              color: Colors.white,
+                              width: 2,
+                            ),
                           ),
                           onPressed: () {
-                            final int nextLevel = (widget.level + 1).clamp(1, 11);
+                            final int nextLevel = (widget.level + 1).clamp(
+                              1,
+                              11,
+                            );
                             Navigator.of(context).pushAndRemoveUntil(
                               MaterialPageRoute(
-                                builder: (_) => LevelPage(
-                                  initialHighestUnlockedLevel: nextLevel,
-                                  completedLevel: widget.level,
-                                ),
+                                builder:
+                                    (_) => LevelPage(
+                                      initialHighestUnlockedLevel: nextLevel,
+                                      completedLevel: widget.level,
+                                    ),
                               ),
                               (route) => false,
                             );
@@ -282,7 +335,10 @@ class _Quiz1EndState extends State<quiz1end> with SingleTickerProviderStateMixin
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             child: Text(
                               'DONE!',
-                              style: TextStyle(fontFamily: 'Baloo2', fontWeight: FontWeight.w800),
+                              style: TextStyle(
+                                fontFamily: 'Baloo2',
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
                           ),
                         ),
