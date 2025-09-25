@@ -574,7 +574,25 @@ class _BasePetRoomState extends State<BasePetRoom>
                   ),
                   onPressed:
                       widget.roomType == RoomType.bathroom
-                          ? _playShowerAnimation
+                          ? () async {
+                              try {
+                                await UserService.instance.updatePetStats(cleanliness: 100);
+                                if (!mounted) return;
+                                setState(() {
+                                  widget.userData!['cleanliness'] = 100;
+                                  _lastNotificationLevels.remove('toilet');
+                                });
+                                _playShowerAnimation();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Cleanliness restored to 100')),
+                                );
+                              } catch (e) {
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Failed to update cleanliness: $e')),
+                                );
+                              }
+                            }
                           : widget.onMapsPressed,
                 ),
                 const SizedBox(height: 2),
@@ -814,22 +832,20 @@ class _BasePetRoomState extends State<BasePetRoom>
   }
 
   String _getPetImage() {
-    switch (petState) {
-      case 'happy':
-        return 'assets/chickenHappy.png';
-      case 'hungry':
-        return 'assets/chicken_payment.png';
-      case 'sleepy':
-        return 'assets/chickenLevel.png';
-      case 'dirty':
-        return 'assets/dirty chick.png';
-      case 'clean':
-        return 'assets/chickenHappy.png';
-      case 'showering':
-        return 'assets/shower chick.png';
-      default:
-        return 'assets/pett.png';
+    // Priority states first
+    if (petState == 'showering') return 'assets/shower chick.png';
+    if (petState == 'happy') return 'assets/chickenHappy.png';
+    if (petState == 'hungry') return 'assets/chicken_payment.png';
+    if (petState == 'sleepy') return 'assets/chickenLevel.png';
+
+    // Automatic dirty state based on cleanliness level
+    final cleanlinessLevel = _getCleanlinessLevel(); // 0.0 - 1.0
+    if (cleanlinessLevel < 0.5) {
+      return 'assets/dirty chick.png';
     }
+
+    // Default/clean image
+    return 'assets/pett.png';
   }
 
   // Helper methods to get data from userData
