@@ -573,6 +573,9 @@
           <span class="search-icon">🔍</span>
           <input type="text" id="searchInput" placeholder="Search videos by title or tutor...">
         </div>
+        <select class="filter-dropdown" id="tutorFilter">
+          <option value="all">All Tutors</option>
+        </select>
         <select class="filter-dropdown" id="statusFilter">
           <option value="all">All Status</option>
           <option value="pending">Pending</option>
@@ -592,23 +595,23 @@
       <div class="stats-grid">
         <div class="stat-card">
           <h3>Total Videos</h3>
-          <div class="number">156</div>
-          <div class="change">+12 this week</div>
+          <div class="number" id="videosTotalNum">0</div>
+          <div class="change" id="videosTotalNote"></div>
         </div>
         <div class="stat-card">
           <h3>Pending Review</h3>
-          <div class="number">23</div>
-          <div class="change">8 new today</div>
+          <div class="number" id="videosPendingNum">0</div>
+          <div class="change" id="videosPendingNote"></div>
         </div>
         <div class="stat-card">
           <h3>Approved</h3>
-          <div class="number">118</div>
-          <div class="change">76% approval rate</div>
+          <div class="number" id="videosApprovedNum">0</div>
+          <div class="change" id="videosApprovedNote"></div>
         </div>
         <div class="stat-card">
           <h3>Rejected</h3>
-          <div class="number">15</div>
-          <div class="change">10% rejection rate</div>
+          <div class="number" id="videosRejectedNum">0</div>
+          <div class="change" id="videosRejectedNote"></div>
         </div>
       </div>
 
@@ -638,106 +641,124 @@
     </div>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
   <script>
-    // Sample video data (placeholder)
-    const videos = [
-      {
-        id: 1,
-        title: "Introduction to Python Programming",
-        description: "Learn the basics of Python programming language with practical examples and hands-on exercises.",
-        tutor: "Danisha Azra",
-        tutorEmail: "danishaazra34@gmail.com",
-        subject: "Computer Science",
-        duration: "15:30",
-        submittedDate: "2024-01-15",
-        status: "pending",
-        views: 0,
-        likes: 0,
-        comments: 0,
-        fileSize: "245 MB",
-        resolution: "1920x1080"
-      },
-      {
-        id: 2,
-        title: "Advanced JavaScript Concepts",
-        description: "Deep dive into advanced JavaScript features including closures, prototypes, and modern ES6+ syntax.",
-        tutor: "Ahmed Hassan",
-        tutorEmail: "ahmed.hassan@gmail.com",
-        subject: "Programming",
-        duration: "22:45",
-        submittedDate: "2024-01-14",
-        status: "pending",
-        views: 0,
-        likes: 0,
-        comments: 0,
-        fileSize: "387 MB",
-        resolution: "1920x1080"
-      },
-      {
-        id: 3,
-        title: "Data Structures and Algorithms",
-        description: "Comprehensive guide to understanding data structures and algorithm design patterns.",
-        tutor: "Sarah Johnson",
-        tutorEmail: "sarah.johnson@gmail.com",
-        subject: "Computer Science",
-        duration: "35:20",
-        submittedDate: "2024-01-12",
-        status: "approved",
-        views: 1250,
-        likes: 89,
-        comments: 23,
-        fileSize: "512 MB",
-        resolution: "1920x1080"
-      },
-      {
-        id: 4,
-        title: "Linear Algebra Fundamentals",
-        description: "Introduction to vectors, matrices, and linear transformations in mathematics.",
-        tutor: "Danisha Azra",
-        tutorEmail: "danishaazra34@gmail.com",
-        subject: "Mathematics",
-        duration: "28:15",
-        submittedDate: "2024-01-10",
-        status: "rejected",
-        views: 0,
-        likes: 0,
-        comments: 0,
-        fileSize: "298 MB",
-        resolution: "1920x1080"
-      },
-      {
-        id: 5,
-        title: "Quantum Physics Basics",
-        description: "Understanding the fundamental principles of quantum mechanics and their applications.",
-        tutor: "Nurin Sunoo",
-        tutorEmail: "nurinsunoo13@gmail.com",
-        subject: "Physics",
-        duration: "42:10",
-        submittedDate: "2024-01-08",
-        status: "pending",
-        views: 0,
-        likes: 0,
-        comments: 0,
-        fileSize: "678 MB",
-        resolution: "1920x1080"
-      }
-    ];
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+      appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+      messagingSenderId: '864651268854',
+      projectId: 'hellochickgu',
+      authDomain: 'hellochickgu.firebaseapp.com',
+      storageBucket: 'hellochickgu.appspot.com',
+      measurementId: 'G-52RMQVE2SQ',
+    };
+    if (firebase.apps && firebase.apps.length) { firebase.app(); } else { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.firestore();
 
+    let videos = [];
     let currentVideoId = null;
+
+    async function loadTutorsIntoFilter() {
+      const sel = document.getElementById('tutorFilter');
+      const snap = await db.collection('tutors').get();
+      const items = snap.docs.map(d => ({ id: d.id, ...(d.data()) }));
+      sel.innerHTML = '<option value="all">All Tutors</option>' + items.map(t => `<option value="${t.id}">${t.name || t.email || t.id}</option>`).join('');
+    }
+
+    async function loadVideos() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const statusFilter = document.getElementById('statusFilter').value;
+      const subjectFilter = document.getElementById('subjectFilter').value;
+      const tutorFilter = document.getElementById('tutorFilter').value;
+
+      let query = db.collection('videos');
+
+      if (tutorFilter !== 'all') {
+        query = query.where('tutorUid', '==', tutorFilter);
+      }
+
+      if (statusFilter !== 'all') {
+        query = query.where('status', '==', statusFilter);
+      }
+
+      if (subjectFilter !== 'all') {
+        query = query.where('subject', '==', subjectFilter.replace('-', ' '));
+      }
+
+      if (searchTerm) {
+        query = query.where('title', '>=', searchTerm)
+                     .where('title', '<=', searchTerm + '\uf8ff');
+      }
+
+      query = query.orderBy('createdAt', 'desc');
+
+      const videoSnap = await query.get();
+      videos = videoSnap.docs.map(d => {
+        const v = d.data();
+        return {
+          id: d.id,
+          title: v.title || '',
+          description: v.description || '',
+          tutorUid: v.tutorUid || '-',
+          duration: v.duration || '00:00',
+          submittedDate: v.createdAt && v.createdAt.toDate ? v.createdAt.toDate().toISOString() : new Date().toISOString(),
+          status: v.status || 'pending',
+          price: v.price || 0,
+          youtube: v.youtube || '',
+          views: v.views || 0,
+          likes: v.likes || 0,
+          comments: v.comments || 0,
+          tutorName: '-',
+        };
+      }).sort((a,b)=> new Date(b.submittedDate) - new Date(a.submittedDate));
+
+      // Enrich with tutor names
+      const uidSet = Array.from(new Set(videos.map(v => v.tutorUid).filter(Boolean)));
+      await Promise.all(uidSet.map(async (uid) => {
+        try {
+          const t = await db.collection('tutors').doc(uid).get();
+          const name = (t.exists && (t.data().name || t.data().email)) ? (t.data().name || t.data().email) : uid;
+          videos.filter(v => v.tutorUid === uid).forEach(v => v.tutorName = name);
+        } catch (_) {}
+      }));
+
+      renderVideos();
+      updateStats();
+    }
+
+    function updateStats() {
+      const total = videos.length;
+      const pending = videos.filter(v => v.status === 'pending').length;
+      const approved = videos.filter(v => v.status === 'approved').length;
+      const rejected = videos.filter(v => v.status === 'rejected').length;
+      const pct = (n) => total ? Math.round((n/total)*100) : 0;
+      document.getElementById('videosTotalNum').textContent = total;
+      document.getElementById('videosTotalNote').textContent = `${pct(total)}% total`;
+      document.getElementById('videosPendingNum').textContent = pending;
+      document.getElementById('videosPendingNote').textContent = `${pct(pending)}% pending`;
+      document.getElementById('videosApprovedNum').textContent = approved;
+      document.getElementById('videosApprovedNote').textContent = `${pct(approved)}% approved`;
+      document.getElementById('videosRejectedNum').textContent = rejected;
+      document.getElementById('videosRejectedNote').textContent = `${pct(rejected)}% rejected`;
+    }
 
     function renderVideos() {
       const grid = document.getElementById('videosGrid');
       const searchTerm = document.getElementById('searchInput').value.toLowerCase();
       const statusFilter = document.getElementById('statusFilter').value;
       const subjectFilter = document.getElementById('subjectFilter').value;
+      const tutorFilter = document.getElementById('tutorFilter').value;
 
       const filteredVideos = videos.filter(video => {
         const matchesSearch = video.title.toLowerCase().includes(searchTerm) || 
-                             video.tutor.toLowerCase().includes(searchTerm);
+                             video.tutorUid.toLowerCase().includes(searchTerm);
         const matchesStatus = statusFilter === 'all' || video.status === statusFilter;
         const matchesSubject = subjectFilter === 'all' || 
                              video.subject.toLowerCase().includes(subjectFilter.replace('-', ' '));
-        return matchesSearch && matchesStatus && matchesSubject;
+        const matchesTutor = tutorFilter === 'all' || video.tutorUid === tutorFilter;
+        return matchesSearch && matchesStatus && matchesSubject && matchesTutor;
       });
 
       grid.innerHTML = filteredVideos.map(video => `
@@ -752,11 +773,15 @@
               <span class="video-status status-${video.status}">${video.status}</span>
             </div>
             <div class="video-meta">
-              <span>By ${video.tutor}</span>
+              <span>By ${video.tutorName || video.tutorUid}</span>
               <span>${new Date(video.submittedDate).toLocaleDateString()}</span>
             </div>
             <p class="video-description">${video.description}</p>
             <div class="video-stats">
+              <div class="stat-item">
+                <div class="stat-number">RM ${Number(video.price||0).toFixed(2)}</div>
+                <div class="stat-label">Price</div>
+              </div>
               <div class="stat-item">
                 <div class="stat-number">${video.views}</div>
                 <div class="stat-label">Views</div>
@@ -765,22 +790,19 @@
                 <div class="stat-number">${video.likes}</div>
                 <div class="stat-label">Likes</div>
               </div>
-              <div class="stat-item">
-                <div class="stat-number">${video.comments}</div>
-                <div class="stat-label">Comments</div>
-              </div>
+              <a class="btn btn-secondary" href="${video.youtube||'#'}" target="_blank" rel="noopener">Watch</a>
             </div>
             <div class="video-actions">
-              <button class="btn btn-primary" onclick="viewVideo(${video.id})">Review</button>
               ${video.status === 'pending' ? `
-                <button class="btn btn-success" onclick="approveVideo(${video.id})">Approve</button>
-                <button class="btn btn-danger" onclick="rejectVideo(${video.id})">Reject</button>
+                <button class="btn btn-primary" onclick="viewVideo('${video.id}')">Review</button>
+                <button class="btn btn-success" onclick="approveVideo('${video.id}')">Approve</button>
+                <button class="btn btn-danger" onclick="rejectVideo('${video.id}')">Reject</button>
               ` : video.status === 'approved' ? `
-                <button class="btn btn-secondary" onclick="viewVideo(${video.id})">View</button>
-                <button class="btn btn-danger" onclick="deleteVideo(${video.id})">Take Down</button>
+                <button class="btn btn-secondary" onclick="viewVideo('${video.id}')">View</button>
+                <button class="btn btn-danger" onclick="deleteVideo('${video.id}')">Take Down</button>
               ` : `
-                <button class="btn btn-secondary" onclick="viewVideo(${video.id})">View</button>
-                <button class="btn btn-danger" onclick="deleteVideo(${video.id})">Delete</button>
+                <button class="btn btn-secondary" onclick="viewVideo('${video.id}')">View</button>
+                <button class="btn btn-danger" onclick="deleteVideo('${video.id}')">Delete</button>
               `}
             </div>
           </div>
@@ -820,12 +842,12 @@
                 <span class="info-value">${video.duration}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">File Size:</span>
-                <span class="info-value">${video.fileSize}</span>
+                <span class="info-label">Price:</span>
+                <span class="info-value">RM ${Number(video.price||0).toFixed(2)}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Resolution:</span>
-                <span class="info-value">${video.resolution}</span>
+                <span class="info-label">YouTube:</span>
+                <span class="info-value"><a href="${video.youtube||'#'}" target="_blank" rel="noopener">Open</a></span>
               </div>
               <div class="info-item">
                 <span class="info-label">Status:</span>
@@ -835,16 +857,12 @@
             <div class="info-section">
               <h4>Tutor Information</h4>
               <div class="info-item">
-                <span class="info-label">Tutor:</span>
-                <span class="info-value">${video.tutor}</span>
+                <span class="info-label">Tutor Name:</span>
+                <span class="info-value">${video.tutorName || '-'}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Email:</span>
-                <span class="info-value">${video.tutorEmail}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Subject:</span>
-                <span class="info-value">${video.subject}</span>
+                <span class="info-label">Tutor UID:</span>
+                <span class="info-value">${video.tutorUid}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Submitted:</span>
@@ -885,50 +903,36 @@
       currentVideoId = null;
     }
 
-    // Approve video
-    function approveVideo(videoId = null) {
+    async function approveVideo(videoId = null) {
       const vidId = videoId || currentVideoId;
       const video = videos.find(v => v.id === vidId);
       if (!video) return;
-      const confirmMsg = `Are you sure you want to approve "${video.title}"?`;
-      if (confirm(confirmMsg)) {
-        video.status = 'approved';
-        renderVideos();
-        closeModal();
-        alert(`"${video.title}" has been approved successfully.`);
-      }
+      if (!confirm(`Approve "${video.title}"?`)) return;
+      await db.collection('videos').doc(String(vidId)).update({ status: 'approved', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      video.status = 'approved';
+      renderVideos(); updateStats(); closeModal();
     }
 
-    // Reject video
-    function rejectVideo(videoId = null) {
+    async function rejectVideo(videoId = null) {
       const vidId = videoId || currentVideoId;
       const video = videos.find(v => v.id === vidId);
       if (!video) return;
-      const confirmMsg = `Are you sure you want to reject "${video.title}"?`;
-      if (confirm(confirmMsg)) {
-        video.status = 'rejected';
-        renderVideos();
-        closeModal();
-        alert(`"${video.title}" has been rejected.`);
-      }
+      if (!confirm(`Reject "${video.title}"?`)) return;
+      await db.collection('videos').doc(String(vidId)).update({ status: 'rejected', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      video.status = 'rejected';
+      renderVideos(); updateStats(); closeModal();
     }
 
-    // Delete video
-    function deleteVideo(videoId = null) {
+    async function deleteVideo(videoId = null) {
       const vidId = videoId || currentVideoId;
       const video = videos.find(v => v.id === vidId);
       if (!video) return;
       const action = video.status === 'approved' ? 'take down' : 'delete';
-      const confirmMsg = `Are you sure you want to ${action} "${video.title}"?`;
-      if (confirm(confirmMsg)) {
-        const index = videos.findIndex(v => v.id === vidId);
-        if (index > -1) {
-          videos.splice(index, 1);
-          renderVideos();
-          closeModal();
-          alert(`"${video.title}" has been ${action}ed successfully.`);
-        }
-      }
+      if (!confirm(`Are you sure you want to ${action} "${video.title}"?`)) return;
+      await db.collection('videos').doc(String(vidId)).delete();
+      const index = videos.findIndex(v => v.id === vidId);
+      if (index > -1) { videos.splice(index, 1); renderVideos(); updateStats(); }
+      closeModal();
     }
 
     // Navigation highlighting
@@ -943,6 +947,7 @@
     document.getElementById('searchInput').addEventListener('input', renderVideos);
     document.getElementById('statusFilter').addEventListener('change', renderVideos);
     document.getElementById('subjectFilter').addEventListener('change', renderVideos);
+    document.getElementById('tutorFilter').addEventListener('change', () => loadVideos());
 
     // Close modal when clicking outside
     document.getElementById('videoModal').addEventListener('click', (e) => {
@@ -952,7 +957,7 @@
     });
 
     // Initialize
-    renderVideos();
+    loadTutorsIntoFilter().then(loadVideos);
   </script>
 </body>
 </html>
