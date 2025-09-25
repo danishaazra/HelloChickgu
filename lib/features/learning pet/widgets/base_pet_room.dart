@@ -43,12 +43,10 @@ class _BasePetRoomState extends State<BasePetRoom>
   late Animation<double> _hungryAnimation;
   late Animation<double> _showerAnimation;
 
-
   String petState = 'idle'; // idle, happy, hungry, sleepy, dirty
   Timer? _levelReductionTimer;
   Set<String> _pendingNotifications = {};
   Map<String, double> _lastNotificationLevels = {};
-
 
   @override
   void initState() {
@@ -81,11 +79,8 @@ class _BasePetRoomState extends State<BasePetRoom>
       CurvedAnimation(parent: _hungryController, curve: Curves.easeInOut),
     );
 
-
-
     // Start level reduction timer
     _startLevelReductionTimer();
-
 
     // Shower animation (bubbling effect)
     _showerController = AnimationController(
@@ -95,7 +90,6 @@ class _BasePetRoomState extends State<BasePetRoom>
     _showerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _showerController, curve: Curves.easeInOut),
     );
-
 
     // Start idle animation - DISABLED FOR TESTING
     // _startIdleAnimation();
@@ -180,7 +174,9 @@ class _BasePetRoomState extends State<BasePetRoom>
     if (newEnergy > 30) _lastNotificationLevels.remove('sleep');
     if (newCleanliness > 30) _lastNotificationLevels.remove('toilet');
 
-    print('Pet levels updated - Hunger: $newHunger, Energy: $newEnergy, Cleanliness: $newCleanliness');
+    print(
+      'Pet levels updated - Hunger: $newHunger, Energy: $newEnergy, Cleanliness: $newCleanliness',
+    );
   }
 
   void _scheduleLowLevelNotification(String assetPath) {
@@ -193,21 +189,20 @@ class _BasePetRoomState extends State<BasePetRoom>
     } else if (assetPath.contains('toilet')) {
       currentLevel = _getCleanlinessLevel();
     }
-    
+
     // Get the last level we notified about for this asset
     double lastNotifiedLevel = _lastNotificationLevels[assetPath] ?? 1.0;
-    
+
     // Only notify if:
     // 1. Current level is 30% or below
     // 2. We haven't already notified for this level
     // 3. The level has actually dropped (not just a rebuild)
-    if (currentLevel <= 0.3 && 
+    if (currentLevel <= 0.3 &&
         !_pendingNotifications.contains(assetPath) &&
         lastNotifiedLevel > 0.3) {
-      
       _pendingNotifications.add(assetPath);
       _lastNotificationLevels[assetPath] = currentLevel;
-      
+
       // Schedule the notification to show after the current frame
       SchedulerBinding.instance.addPostFrameCallback((_) {
         _showLowLevelNotification(assetPath);
@@ -218,7 +213,7 @@ class _BasePetRoomState extends State<BasePetRoom>
   void _showLowLevelNotification(String assetPath) {
     // Remove from pending notifications
     _pendingNotifications.remove(assetPath);
-    
+
     String message = '';
     String action = '';
 
@@ -335,7 +330,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                     Stack(
                       alignment: Alignment.bottomCenter,
                       children: [
-                        _buildAssetStatusIcon('assets/coin.png', 0.9),
+                        _buildPetCareIcon('assets/coin.png', _getPointsLevel()),
                         Positioned(
                           bottom: -8,
                           child: Text(
@@ -376,17 +371,20 @@ class _BasePetRoomState extends State<BasePetRoom>
                     _buildPetCareIcon(
                       'assets/shower.png',
                       _getCleanlinessLevel(),
-                      onTap: widget.roomType == RoomType.bathroom
-                          ? () async {
-                              // Set cleanliness to 100 in Firebase and locally
-                              await UserService.instance.updatePetStats(cleanliness: 100);
-                              if (mounted && widget.userData != null) {
-                                setState(() {
-                                  widget.userData!['cleanliness'] = 100;
-                                });
+                      onTap:
+                          widget.roomType == RoomType.bathroom
+                              ? () async {
+                                // Set cleanliness to 100 in Firebase and locally
+                                await UserService.instance.updatePetStats(
+                                  cleanliness: 100,
+                                );
+                                if (mounted && widget.userData != null) {
+                                  setState(() {
+                                    widget.userData!['cleanliness'] = 100;
+                                  });
+                                }
                               }
-                            }
-                          : null,
+                              : null,
                     ),
 
                     const SizedBox(width: 8),
@@ -575,24 +573,32 @@ class _BasePetRoomState extends State<BasePetRoom>
                   onPressed:
                       widget.roomType == RoomType.bathroom
                           ? () async {
-                              try {
-                                await UserService.instance.updatePetStats(cleanliness: 100);
-                                if (!mounted) return;
-                                setState(() {
-                                  widget.userData!['cleanliness'] = 100;
-                                  _lastNotificationLevels.remove('toilet');
-                                });
-                                _playShowerAnimation();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Cleanliness restored to 100')),
-                                );
-                              } catch (e) {
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed to update cleanliness: $e')),
-                                );
-                              }
+                            try {
+                              await UserService.instance.updatePetStats(
+                                cleanliness: 100,
+                              );
+                              if (!mounted) return;
+                              setState(() {
+                                widget.userData!['cleanliness'] = 100;
+                                _lastNotificationLevels.remove('toilet');
+                              });
+                              _playShowerAnimation();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Cleanliness restored to 100'),
+                                ),
+                              );
+                            } catch (e) {
+                              if (!mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Failed to update cleanliness: $e',
+                                  ),
+                                ),
+                              );
                             }
+                          }
                           : widget.onMapsPressed,
                 ),
                 const SizedBox(height: 2),
@@ -685,16 +691,22 @@ class _BasePetRoomState extends State<BasePetRoom>
     return iconWidget;
   }
 
-  Widget _buildPetCareIcon(String assetPath, double fillLevel, {VoidCallback? onTap}) {
+  Widget _buildPetCareIcon(
+    String assetPath,
+    double fillLevel, {
+    VoidCallback? onTap,
+  }) {
     // Determine color based on level
     Color progressColor;
     if (fillLevel <= 0.3) {
       progressColor = Colors.red.shade600; // Bright red for low levels (≤30%)
       _scheduleLowLevelNotification(assetPath);
     } else if (fillLevel <= 0.6) {
-      progressColor = Colors.yellow.shade600; // Bright yellow for medium levels (31-60%)
+      progressColor =
+          Colors.yellow.shade600; // Bright yellow for medium levels (31-60%)
     } else {
-      progressColor = Colors.green.shade600; // Bright green for high levels (61-100%)
+      progressColor =
+          Colors.green.shade600; // Bright green for high levels (61-100%)
     }
 
     final content = Container(
@@ -702,10 +714,7 @@ class _BasePetRoomState extends State<BasePetRoom>
       height: 70,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(
-          color: Colors.white,
-          width: 3,
-        ),
+        border: Border.all(color: Colors.white, width: 3),
       ),
       child: Stack(
         alignment: Alignment.center,
@@ -854,6 +863,14 @@ class _BasePetRoomState extends State<BasePetRoom>
     return (widget.userData!['points'] ?? 0).toString();
   }
 
+  double _getPointsLevel() {
+    if (widget.userData == null) return 0.0;
+    final points = (widget.userData!['points'] ?? 0) as int;
+    // Map points to 0.0 - 1.0 range for ring fill. Assuming 0-100 baseline.
+    // If your economy allows more than 100 coins, cap at 1.0.
+    return (points / 100.0).clamp(0.0, 1.0);
+  }
+
   double _getHungerLevel() {
     if (widget.userData == null) return 0.0;
     final hunger = widget.userData!['hunger'] ?? 0;
@@ -895,26 +912,33 @@ class CircleProgressPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(inset, inset, size.width - inset * 2, size.height - inset * 2);
+    final rect = Rect.fromLTWH(
+      inset,
+      inset,
+      size.width - inset * 2,
+      size.height - inset * 2,
+    );
     final startAngle = -3.14159 / 2; // start at top
     final sweepAngle = 2 * 3.14159 * progress;
 
     // Background ring (optional)
     if (backgroundColor != null) {
-      final bgPaint = Paint()
-        ..color = backgroundColor!
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.round;
+      final bgPaint =
+          Paint()
+            ..color = backgroundColor!
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = strokeWidth
+            ..strokeCap = StrokeCap.round;
       canvas.drawArc(rect, 0, 2 * 3.14159, false, bgPaint);
     }
 
     // Progress ring
-    final fgPaint = Paint()
-      ..color = color.withOpacity(0.95)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
+    final fgPaint =
+        Paint()
+          ..color = color.withOpacity(0.95)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth
+          ..strokeCap = StrokeCap.round;
     canvas.drawArc(rect, startAngle, sweepAngle, false, fgPaint);
   }
 
@@ -922,9 +946,9 @@ class CircleProgressPainter extends CustomPainter {
   bool shouldRepaint(CustomPainter oldDelegate) {
     return oldDelegate is CircleProgressPainter &&
         (oldDelegate.progress != progress ||
-         oldDelegate.color != color ||
-         oldDelegate.strokeWidth != strokeWidth ||
-         oldDelegate.inset != inset ||
-         oldDelegate.backgroundColor != backgroundColor);
+            oldDelegate.color != color ||
+            oldDelegate.strokeWidth != strokeWidth ||
+            oldDelegate.inset != inset ||
+            oldDelegate.backgroundColor != backgroundColor);
   }
 }
