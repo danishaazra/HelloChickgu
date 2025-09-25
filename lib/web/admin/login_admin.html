@@ -268,7 +268,7 @@
       </div>
     </div>
     <div class="right">
-      <form class="card">
+      <form class="card" action="dashboard_admin.html" method="get">
         <h1>Admin Login</h1>
 
         <div class="field">
@@ -288,19 +288,35 @@
           <a href="#" style="color:#111827; text-decoration:none; font-weight:600;">Forgot password?</a>
         </div>
 
-        <button class="btn" type="submit">Log in</button>
+        <a class="btn" href="dashboard_admin.html" style="display:inline-block; text-align:center;">Log in</a>
       </form>
     </div>
   </div>
 
 
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js"></script>
   <script>
-    // Basic form submission handler
-    document.querySelector('form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      // Placeholder: integrate with backend as needed
-      alert('Login functionality would be implemented here');
-    });
+    // TODO: replace with your Firebase web app config from Firebase Console
+    const firebaseConfig = {
+    apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+    appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+    messagingSenderId: '864651268854',
+    projectId: 'hellochickgu',
+    authDomain: 'hellochickgu.firebaseapp.com',
+    storageBucket: 'hellochickgu.appspot.com',
+    measurementId: 'G-52RMQVE2SQ',
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const form = document.querySelector('form');
+    const emailEl = document.getElementById('email');
+    const passwordEl = document.getElementById('password');
+
+    // Navigation is handled by the anchor/button or form action above
   </script>
 </body>
 </html>

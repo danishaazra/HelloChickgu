@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hellochickgu/features/auth/login.dart';
+import 'package:hellochickgu/services/auth_service.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
 
 import 'dart:math' as math;
@@ -1586,7 +1588,13 @@ class _SettingsPageState extends State<SettingsPage> {
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // Add sign out logic here
+                  // Sign out and return to login screen
+                  AuthService.instance.signOut().then((_) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                      (route) => false,
+                    );
+                  });
                 },
                 child: const Text('Sign Out'),
               ),

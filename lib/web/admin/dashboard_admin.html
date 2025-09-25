@@ -379,23 +379,23 @@
       <div class="stats-grid">
         <div class="stat-card">
           <h3>Total Tutors</h3>
-          <div class="number">127</div>
-          <div class="change">+8 this month</div>
+          <div class="number" id="dashTutorsTotal">0</div>
+          <div class="change" id="dashTutorsNote"></div>
         </div>
         <div class="stat-card">
           <h3>Pending Applications</h3>
-          <div class="number">23</div>
-          <div class="change">5 new today</div>
+          <div class="number" id="dashAppsPending">0</div>
+          <div class="change" id="dashAppsNote"></div>
         </div>
         <div class="stat-card">
           <h3>Videos Under Review</h3>
-          <div class="number">156</div>
-          <div class="change">+12 this week</div>
+          <div class="number" id="dashVideosPending">0</div>
+          <div class="change" id="dashVideosPendingNote"></div>
         </div>
         <div class="stat-card">
           <h3>Total Videos</h3>
-          <div class="number">2,847</div>
-          <div class="change">+89 this week</div>
+          <div class="number" id="dashVideosTotal">0</div>
+          <div class="change" id="dashVideosTotalNote"></div>
         </div>
       </div>
 
@@ -417,44 +417,7 @@
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>Danisha Azra</td>
-              <td>danishaazra34@gmail.com</td>
-              <td>Mathematics</td>
-              <td>Bachelor of Mathematics in Education</td>
-              <td><span class="status-badge status-pending">Pending</span></td>
-              <td>2024-01-15</td>
-              <td class="action-buttons">
-                <button class="btn btn-primary">Review</button>
-                <button class="btn btn-secondary">Details</button>
-              </td>
-            </tr>
-            <tr>
-              <td>Nurin Sunoo</td>
-              <td>nurinsunoo13@gmail.com</td>
-              <td>Physics</td>
-              <td>Master of Science</td>
-              <td><span class="status-badge status-pending">Pending</span></td>
-              <td>2024-01-14</td>
-              <td class="action-buttons">
-                <button class="btn btn-primary">Review</button>
-                <button class="btn btn-secondary">Details</button>
-              </td>
-            </tr>
-            <tr>
-              <td>Nayeon Badri</td>
-              <td>nayeonbadri14@gmail.com</td>
-              <td>Computer Science</td>
-              <td>Bachelor of Computer Science</td>
-              <td><span class="status-badge status-approved">Approved</span></td>
-              <td>2024-01-12</td>
-              <td class="action-buttons">
-                <button class="btn btn-secondary">View</button>
-                <button class="btn btn-danger">Revoke</button>
-              </td>
-            </tr>
-          </tbody>
+          <tbody id="recentAppsBody"></tbody>
         </table>
       </div>
 
@@ -476,44 +439,7 @@
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>Introduction to Python Programming</td>
-              <td>Danisha Azra</td>
-              <td>Computer Science</td>
-              <td>15:30</td>
-              <td><span class="status-badge status-pending">Pending</span></td>
-              <td>2024-01-15</td>
-              <td class="action-buttons">
-                <button class="btn btn-primary">Review</button>
-                <button class="btn btn-secondary">Preview</button>
-              </td>
-            </tr>
-            <tr>
-              <td>Advanced JavaScript Concepts</td>
-              <td>Ahmed Hassan</td>
-              <td>Programming</td>
-              <td>22:45</td>
-              <td><span class="status-badge status-pending">Pending</span></td>
-              <td>2024-01-14</td>
-              <td class="action-buttons">
-                <button class="btn btn-primary">Review</button>
-                <button class="btn btn-secondary">Preview</button>
-              </td>
-            </tr>
-            <tr>
-              <td>Data Structures and Algorithms</td>
-              <td>Sarah Johnson</td>
-              <td>Computer Science</td>
-              <td>35:20</td>
-              <td><span class="status-badge status-approved">Approved</span></td>
-              <td>2024-01-12</td>
-              <td class="action-buttons">
-                <button class="btn btn-secondary">View</button>
-                <button class="btn btn-danger">Reject</button>
-              </td>
-            </tr>
-          </tbody>
+          <tbody id="recentVideosBody"></tbody>
         </table>
       </div>
 
@@ -535,53 +461,27 @@
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>Danisha Azra</td>
-              <td>danishaazra34@gmail.com</td>
-              <td>Math, Physics, CS</td>
-              <td>47</td>
-              <td><span class="status-badge status-active">Active</span></td>
-              <td>2023-11-15</td>
-              <td class="action-buttons">
-                <button class="btn btn-primary">Profile</button>
-                <button class="btn btn-secondary">Videos</button>
-                <button class="btn btn-danger">Suspend</button>
-              </td>
-            </tr>
-            <tr>
-              <td>Sarah Johnson</td>
-              <td>sarah.johnson@gmail.com</td>
-              <td>Computer Science</td>
-              <td>23</td>
-              <td><span class="status-badge status-active">Active</span></td>
-              <td>2023-12-01</td>
-              <td class="action-buttons">
-                <button class="btn btn-primary">Profile</button>
-                <button class="btn btn-secondary">Videos</button>
-                <button class="btn btn-danger">Suspend</button>
-              </td>
-            </tr>
-            <tr>
-              <td>Michael Chen</td>
-              <td>michael.chen@gmail.com</td>
-              <td>Mathematics, Statistics</td>
-              <td>31</td>
-              <td><span class="status-badge status-active">Active</span></td>
-              <td>2023-10-20</td>
-              <td class="action-buttons">
-                <button class="btn btn-primary">Profile</button>
-                <button class="btn btn-secondary">Videos</button>
-                <button class="btn btn-danger">Suspend</button>
-              </td>
-            </tr>
-          </tbody>
+          <tbody id="activeTutorsBody"></tbody>
         </table>
       </div>
     </main>
   </div>
-
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
   <script>
+    // Firebase init
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+      appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+      messagingSenderId: '864651268854',
+      projectId: 'hellochickgu',
+      authDomain: 'hellochickgu.firebaseapp.com',
+      storageBucket: 'hellochickgu.appspot.com',
+      measurementId: 'G-52RMQVE2SQ',
+    };
+    if (firebase.apps && firebase.apps.length) { firebase.app(); } else { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.firestore();
+
     // Navigation highlighting based on current page
     const currentPage = window.location.pathname.split('/').pop();
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -590,59 +490,97 @@
       }
     });
 
-    // Action button handlers
-    document.querySelectorAll('.btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const action = btn.textContent.trim();
-        const row = btn.closest('tr');
-        const name = row.querySelector('td:first-child').textContent;
-        
-        switch(action) {
-          case 'Review':
-            alert(`Reviewing ${name}'s submission`);
-            break;
-          case 'Details':
-            alert(`Viewing details for ${name}`);
-            break;
-          case 'View':
-            alert(`Viewing ${name}'s content`);
-            break;
-          case 'Preview':
-            alert(`Previewing ${name}'s video`);
-            break;
-          case 'Profile':
-            alert(`Opening ${name}'s profile`);
-            break;
-          case 'Videos':
-            alert(`Viewing ${name}'s videos`);
-            break;
-          case 'Suspend':
-            if (confirm(`Are you sure you want to suspend ${name}?`)) {
-              alert(`${name} has been suspended`);
-            }
-            break;
-          case 'Revoke':
-            if (confirm(`Are you sure you want to revoke ${name}'s access?`)) {
-              alert(`${name}'s access has been revoked`);
-            }
-            break;
-          case 'Reject':
-            if (confirm(`Are you sure you want to reject ${name}'s video?`)) {
-              alert(`${name}'s video has been rejected`);
-            }
-            break;
-        }
-      });
-    });
+    async function loadStatsAndLists() {
+      const [tutorsSnap, appsPendingSnap, videosPendingSnap, videosAllSnap] = await Promise.all([
+        db.collection('tutors').get(),
+        db.collection('tutor_applicants').where('status', '==', 'pending').get(),
+        db.collection('videos').where('status', '==', 'pending').get(),
+        db.collection('videos').get(),
+      ]);
 
-    // View all buttons
-    document.querySelectorAll('.view-all-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const section = btn.closest('.section-card');
-        const title = section.querySelector('h2').textContent;
-        alert(`Opening full ${title.toLowerCase()} page`);
-      });
-    });
+      // Stats
+      document.getElementById('dashTutorsTotal').textContent = tutorsSnap.size;
+      document.getElementById('dashAppsPending').textContent = appsPendingSnap.size;
+      document.getElementById('dashVideosPending').textContent = videosPendingSnap.size;
+      document.getElementById('dashVideosTotal').textContent = videosAllSnap.size;
+
+      // Recent Applications (latest 5)
+      const appsSnap = await db.collection('tutor_applicants').orderBy('appliedAt', 'desc').limit(5).get();
+      const appsRows = appsSnap.docs.map(d => {
+        const a = d.data();
+        const date = a.appliedAt && a.appliedAt.toDate ? a.appliedAt.toDate().toLocaleDateString() : '';
+        const statusCls = a.status === 'approved' ? 'status-approved' : a.status === 'rejected' ? 'status-rejected' : 'status-pending';
+        const subject = Array.isArray(a.subjects) ? a.subjects.join(', ') : (a.subject || '');
+        return `
+          <tr>
+            <td>${a.applicantName || '-'}</td>
+            <td>${a.applicantEmail || '-'}</td>
+            <td>${subject}</td>
+            <td>${a.qualification || '-'}</td>
+            <td><span class="status-badge ${statusCls}">${a.status || 'pending'}</span></td>
+            <td>${date}</td>
+            <td class="action-buttons">
+              <a class="btn btn-primary" href="application.html">Review</a>
+              <a class="btn btn-secondary" href="application.html">Details</a>
+            </td>
+          </tr>`;
+      }).join('');
+      document.getElementById('recentAppsBody').innerHTML = appsRows;
+
+      // Recent Videos (latest 5)
+      const videosSnap = await db.collection('videos').orderBy('createdAt', 'desc').limit(5).get();
+      const tutorCache = {};
+      async function tutorName(uid) {
+        if (!uid) return '-';
+        if (tutorCache[uid]) return tutorCache[uid];
+        try { const t = await db.collection('tutors').doc(uid).get(); tutorCache[uid] = t.exists ? (t.data().name || t.data().email || uid) : uid; } catch (_) { tutorCache[uid] = uid; }
+        return tutorCache[uid];
+      }
+      const rows = [];
+      for (const doc of videosSnap.docs) {
+        const v = doc.data();
+        const date = v.createdAt && v.createdAt.toDate ? v.createdAt.toDate().toLocaleDateString() : '';
+        const statusCls = v.status === 'approved' ? 'status-approved' : v.status === 'rejected' ? 'status-rejected' : 'status-pending';
+        const name = await tutorName(v.tutorUid);
+        rows.push(`
+          <tr>
+            <td>${v.title || '-'}</td>
+            <td>${name}</td>
+            <td>-</td>
+            <td>${v.duration || '00:00'}</td>
+            <td><span class="status-badge ${statusCls}">${v.status || 'pending'}</span></td>
+            <td>${date}</td>
+            <td class="action-buttons">
+              <a class="btn ${v.status==='pending' ? 'btn-primary' : 'btn-secondary'}" href="admin_video.html">${v.status==='pending' ? 'Review' : 'View'}</a>
+            </td>
+          </tr>`);
+      }
+      document.getElementById('recentVideosBody').innerHTML = rows.join('');
+
+      // Active tutors (latest 5 active)
+      const activeSnap = await db.collection('tutors').where('status','==','active').limit(5).get();
+      const activeRows = activeSnap.docs.map(d => {
+        const t = d.data();
+        const subjects = Array.isArray(t.subjects) ? t.subjects.join(', ') : '';
+        const joinDate = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : '';
+        return `
+          <tr>
+            <td>${t.name || '-'}</td>
+            <td>${t.email || '-'}</td>
+            <td>${subjects}</td>
+            <td>${t.videosCount || 0}</td>
+            <td><span class="status-badge status-active">Active</span></td>
+            <td>${joinDate}</td>
+            <td class="action-buttons">
+              <a class="btn btn-primary" href="tutor_management.html">Profile</a>
+              <a class="btn btn-secondary" href="admin_video.html">Videos</a>
+            </td>
+          </tr>`;
+      }).join('');
+      document.getElementById('activeTutorsBody').innerHTML = activeRows;
+    }
+
+    loadStatsAndLists();
   </script>
 </body>
 </html>

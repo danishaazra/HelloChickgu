@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:hellochickgu/shared/theme/theme.dart';
+import 'package:hellochickgu/services/quiz_service.dart';
 import 'package:hellochickgu/features/game/level_page.dart';
 // import removed: was used by old close button
 import 'package:hellochickgu/features/game/quiz1end.dart';
@@ -330,6 +331,22 @@ class _Quiz1State extends State<quiz1> {
       }
     }
     wrongCount = questions.length - correctCount;
+    // Save result
+    final points = correctCount * 10; // simple scoring: 10 per correct
+    QuizService.instance.saveQuizResult(
+      quizNumber: 1,
+      correct: correctCount,
+      incorrect: wrongCount,
+      pointsCollected: points,
+      answers: selectedAnswers,
+      timeTakenSeconds: _secondsElapsed,
+    );
+    QuizService.instance.saveLevelSummary(
+      level: widget.level,
+      pointsCollected: points,
+      timeTakenSeconds: _secondsElapsed,
+    );
+
     Navigator.push(
       context,
       MaterialPageRoute(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hellochickgu/shared/theme/theme.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
 import 'package:hellochickgu/features/game/quiz2end.dart';
+import 'package:hellochickgu/services/quiz_service.dart';
 
 class quiz2 extends StatefulWidget {
   const quiz2({super.key});
@@ -146,6 +147,21 @@ final List<Map<String, dynamic>> questions = [
       });
     } else {
       _stopTimer();
+      // Save result at end
+      final points = correctCount * 10;
+      QuizService.instance.saveQuizResult(
+        quizNumber: 2,
+        correct: correctCount,
+        incorrect: wrongCount,
+        pointsCollected: points,
+        answers: typedAnswers,
+        timeTakenSeconds: _secondsElapsed,
+      );
+      QuizService.instance.saveLevelSummary(
+        level: 2,
+        pointsCollected: points,
+        timeTakenSeconds: _secondsElapsed,
+      );
       Navigator.push(
         context,
         MaterialPageRoute(
