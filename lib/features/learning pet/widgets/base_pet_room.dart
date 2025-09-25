@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:hellochickgu/shared/theme/theme.dart';
 import 'package:hellochickgu/services/user_service.dart';
+import 'package:hellochickgu/services/notification_service.dart';
 import '../models/room_type.dart';
 
 class BasePetRoom extends StatefulWidget {
@@ -184,7 +185,7 @@ class _BasePetRoomState extends State<BasePetRoom>
   }
 
   void _scheduleLowLevelNotification(String assetPath) {
-    // Only show notification if level is exactly 30% or below
+    // Only show system notification if level is <= 50%
     double currentLevel = 0.0;
     if (assetPath.contains('food')) {
       currentLevel = _getHungerLevel();
@@ -198,10 +199,10 @@ class _BasePetRoomState extends State<BasePetRoom>
     double lastNotifiedLevel = _lastNotificationLevels[assetPath] ?? 1.0;
     
     // Only notify if:
-    // 1. Current level is 30% or below
+    // 1. Current level is 50% or below
     // 2. We haven't already notified for this level
     // 3. The level has actually dropped (not just a rebuild)
-    if (currentLevel <= 0.3 && 
+    if (currentLevel <= 0.5 && 
         !_pendingNotifications.contains(assetPath) &&
         lastNotifiedLevel > 0.3) {
       
@@ -224,39 +225,19 @@ class _BasePetRoomState extends State<BasePetRoom>
 
     if (assetPath.contains('food')) {
       message = 'Your pet is hungry!';
-      action = 'Feed your pet some food';
+      action = 'Feed your pet some food.';
     } else if (assetPath.contains('sleep')) {
       message = 'Your pet is tired!';
-      action = 'Let your pet rest';
+      action = 'Let your pet rest.';
     } else if (assetPath.contains('toilet')) {
       message = 'Your pet needs cleaning!';
-      action = 'Clean your pet';
+      action = 'Give your pet a shower.';
     }
 
-    if (message.isNotEmpty && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                message,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text(action),
-            ],
-          ),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-          action: SnackBarAction(
-            label: 'OK',
-            textColor: Colors.white,
-            onPressed: () {
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            },
-          ),
-        ),
+    if (message.isNotEmpty) {
+      NotificationService.instance.showLowStatNotification(
+        title: message,
+        body: action,
       );
     }
   }
@@ -369,9 +350,31 @@ class _BasePetRoomState extends State<BasePetRoom>
                     ),
                     const SizedBox(width: 8),
 
-                    _buildPetCareIcon('assets/food.png', _getHungerLevel()),
+                    _buildPetCareIcon('assets/food.png', _getHungerLevel(),
+                       onTap: widget.roomType == RoomType.kitchen
+                          ? () async {
+                              // Set cleanliness to 100 in Firebase and locally
+                              await UserService.instance.updatePetStats(hunger: 100);
+                              if (mounted && widget.userData != null) {
+                                setState(() {
+                                  widget.userData!['hunger'] = 100;
+                                });
+                              }
+                            }
+                          : null,),
                     const SizedBox(width: 8),
-                    _buildPetCareIcon('assets/sleep.png', _getEnergyLevel()),
+                    _buildPetCareIcon('assets/sleep.png', _getEnergyLevel(),
+                       onTap: widget.roomType == RoomType.bedroom
+                          ? () async {
+                              // Set cleanliness to 100 in Firebase and locally
+                              await UserService.instance.updatePetStats(energy: 100);
+                              if (mounted && widget.userData != null) {
+                                setState(() {
+                                  widget.userData!['energy'] = 100;
+                                });
+                              }
+                            }
+                          : null,),
                     const SizedBox(width: 8),
                     _buildPetCareIcon(
                       'assets/shower.png',
@@ -524,8 +527,10 @@ class _BasePetRoomState extends State<BasePetRoom>
             ),
           ),
 
-          // Animated Chick Pet
-          Align(
+          // Animated Chick Pet (ignore pointer so it doesn't block taps)
+          IgnorePointer(
+            ignoring: true,
+            child: Align(
             alignment: Alignment(
               0,
               0.4,
@@ -537,23 +542,14 @@ class _BasePetRoomState extends State<BasePetRoom>
                   offset: _getPetOffset(),
                   child: Transform.scale(
                     scale: _getPetScale(),
-                    child: GestureDetector(
-                      onTap: () {
-                        // For testing: make chicken dirty when tapped
-                        if (petState == 'idle') {
-                          _makeChickenDirty();
-                        } else if (petState == 'clean') {
-                          _playHappyAnimation();
-                        }
-                      },
                       child: Container(
                         height: 350, // Much bigger size (was 300)
                         child: Image.asset(_getPetImage(), fit: BoxFit.contain),
                       ),
-                    ),
                   ),
                 );
               },
+            ),
             ),
           ),
 
@@ -567,39 +563,69 @@ class _BasePetRoomState extends State<BasePetRoom>
                   icon: Image.asset(
                     widget.roomType == RoomType.bathroom
                         ? 'assets/soap.png'
-                        : widget.roomType.mapIconAsset,
+                        : widget.roomType == RoomType.kitchen
+                            ? 'assets/corn.png'
+                            : widget.roomType == RoomType.bedroom
+                                ? 'assets/lamp.png'
+                                : widget.roomType.mapIconAsset,
                     width: 75,
                     height: 75,
                     fit: BoxFit.contain,
                   ),
-                  onPressed:
-                      widget.roomType == RoomType.bathroom
-                          ? () async {
-                              try {
-                                await UserService.instance.updatePetStats(cleanliness: 100);
-                                if (!mounted) return;
-                                setState(() {
-                                  widget.userData!['cleanliness'] = 100;
-                                  _lastNotificationLevels.remove('toilet');
-                                });
-                                _playShowerAnimation();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Cleanliness restored to 100')),
-                                );
-                              } catch (e) {
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed to update cleanliness: $e')),
-                                );
-                              }
-                            }
-                          : widget.onMapsPressed,
+                  onPressed: () async {
+                    try {
+                      if (widget.roomType == RoomType.bathroom) {
+                        await UserService.instance.updatePetStats(cleanliness: 100);
+                        if (!mounted) return;
+                        setState(() {
+                          widget.userData!['cleanliness'] = 100;
+                          _lastNotificationLevels.remove('toilet');
+                        });
+                        _playShowerAnimation();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Cleanliness restored to 100')),
+                        );
+                      } else if (widget.roomType == RoomType.kitchen) {
+                        await UserService.instance.updatePetStats(hunger: 100);
+                        if (!mounted) return;
+                        setState(() {
+                          widget.userData!['hunger'] = 100;
+                          _lastNotificationLevels.remove('food');
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Hunger restored to 100')),
+                        );
+                      } else if (widget.roomType == RoomType.bedroom) {
+                        await UserService.instance.updatePetStats(energy: 100);
+                        if (!mounted) return;
+                        setState(() {
+                          widget.userData!['energy'] = 100;
+                          _lastNotificationLevels.remove('sleep');
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Energy restored to 100')),
+                        );
+                      } else {
+                        // Default action (e.g., Maps)
+                        if (widget.onMapsPressed != null) widget.onMapsPressed!();
+                      }
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Action failed: $e')),
+                      );
+                    }
+                  },
                 ),
                 const SizedBox(height: 2),
                 Text(
                   widget.roomType == RoomType.bathroom
                       ? "Shower"
-                      : widget.roomType.mapButtonText,
+                      : widget.roomType == RoomType.kitchen
+                          ? "Feed"
+                          : widget.roomType == RoomType.bedroom
+                              ? "Sleep"
+                              : widget.roomType.mapButtonText,
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -689,12 +715,12 @@ class _BasePetRoomState extends State<BasePetRoom>
     // Determine color based on level
     Color progressColor;
     if (fillLevel <= 0.3) {
-      progressColor = Colors.red.shade600; // Bright red for low levels (≤30%)
+      progressColor = const Color.fromARGB(255, 255, 4, 0); // Bright red for low levels (≤30%)
       _scheduleLowLevelNotification(assetPath);
     } else if (fillLevel <= 0.6) {
-      progressColor = Colors.yellow.shade600; // Bright yellow for medium levels (31-60%)
+      progressColor = const Color.fromARGB(255, 248, 202, 0); // Bright yellow for medium levels (31-60%)
     } else {
-      progressColor = Colors.green.shade600; // Bright green for high levels (61-100%)
+      progressColor = const Color.fromARGB(255, 0, 208, 10); // Bright green for high levels (61-100%)
     }
 
     final content = Container(

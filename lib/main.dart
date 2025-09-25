@@ -22,6 +22,7 @@ import 'features/game/level_page.dart';
 import 'features/library/library_main.dart';
 import 'features/ar/ar_page.dart';
 import 'features/learning pet/pet_home.dart';
+import 'package:hellochickgu/services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +31,7 @@ Future<void> main() async {
     await dotenv.load(fileName: '.env');
   } catch (_) {}
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await NotificationService.instance.initialize();
   runApp(const MyApp());
 }
 
@@ -42,7 +44,7 @@ class MyApp extends StatelessWidget {
       title: 'Hello Chickgu!',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const OnboardingPage(),
+      home: const PetHomePage(),
     );
   }
 }

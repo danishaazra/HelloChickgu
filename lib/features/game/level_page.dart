@@ -6,6 +6,9 @@ import 'package:hellochickgu/features/game/quiz3.dart';
 import 'package:hellochickgu/features/game/quiz4.dart';
 import 'package:hellochickgu/features/game/training_page.dart';
 import 'package:hellochickgu/map.dart';
+import 'package:hellochickgu/services/quiz_service.dart';
+import 'package:hellochickgu/features/game/quiz_review.dart';
+import 'package:hellochickgu/features/game/quiz_bank.dart';
 
 class LevelPage extends StatefulWidget {
   final int? initialHighestUnlockedLevel;
@@ -71,13 +74,31 @@ class _LevelPageState extends State<LevelPage> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return LevelCompletionPopup(
-          level: level,
-          isCompleted: completedLevels.contains(level),
-          onStartGame: () => _navigateToQuiz(level),
+        return FutureBuilder<Map<String, dynamic>?>(
+          future: QuizService.instance.getLevelSummaryOrResult(level: level),
+          builder: (context, snapshot) {
+            final hasResult = snapshot.hasData && snapshot.data != null;
+            final data = snapshot.data;
+            final pointsText = hasResult ? (data!['points_collected'] ?? '-') .toString() : '---';
+            final timeText = hasResult ? _formatSeconds(((data!['time_taken_seconds'] ?? 0) as num).toInt()) : '---';
+            return LevelCompletionPopup(
+              level: level,
+              isCompleted: hasResult,
+              onStartGame: hasResult ? () => _openReview(level, data!) : () => _navigateToQuiz(level),
+              overridePointsText: pointsText,
+              overrideTimeText: timeText,
+              startLabel: hasResult ? 'Review Questions' : 'Start Game!',
+            );
+          },
         );
       },
     );
+  }
+
+  String _formatSeconds(int seconds) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
   }
 
   void _navigateToQuiz(int level) {
@@ -96,6 +117,70 @@ class _LevelPageState extends State<LevelPage> {
       context,
     ).push(MaterialPageRoute(builder: (context) => destination)).then((_) {
       _completeLevel(level);
+      // Refresh highest unlocked level from server after returning
+      QuizService.instance.getHighestUnlockedLevel().then((lvl) {
+        if (!mounted) return;
+        setState(() {
+          highestUnlockedLevel = lvl.clamp(1, 11);
+        });
+      });
+    });
+  }
+
+  void _openReview(int level, Map<String, dynamic> result) {
+    Navigator.of(context).pop();
+    // Navigate to appropriate review UI based on level
+    // Fetch detailed answers from quiz_results
+    QuizService.instance.getLatestQuizResult(quizNumber: level).then((detail) {
+      if (!mounted) return;
+      if (detail == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No saved answers found to review.')),
+        );
+        return;
+      }
+      if (level == 1) {
+        // Prefer built-in bank for consistent layout
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => QuizReviewPage(
+              questions: quiz1Questions(),
+              selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
+            ),
+          ),
+        );
+      } else if (level == 2) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => QuizReviewPage(
+              questions: quiz2Questions(),
+              selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
+            ),
+          ),
+        );
+      } else if (level == 3) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => QuizReviewPage(
+              questions: quiz3Questions(),
+              selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
+            ),
+          ),
+        );
+      } else if (level == 4) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => QuizReviewPage(
+              questions: quiz4Questions(),
+              selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
+            ),
+          ),
+        );
+      }
     });
   }
 
@@ -278,6 +363,13 @@ class _LevelPageState extends State<LevelPage> {
     if (widget.completedLevel != null) {
       completedLevels.add(widget.completedLevel!.clamp(1, 11));
     }
+    // Also fetch latest unlocked level from Firestore to preserve progress across navigation
+    QuizService.instance.getHighestUnlockedLevel().then((lvl) {
+      if (!mounted) return;
+      setState(() {
+        highestUnlockedLevel = lvl.clamp(1, 11);
+      });
+    });
   }
 }
 
@@ -599,12 +691,18 @@ class LevelCompletionPopup extends StatefulWidget {
   final int level;
   final bool isCompleted;
   final VoidCallback onStartGame;
+  final String? overridePointsText;
+  final String? overrideTimeText;
+  final String? startLabel;
 
   const LevelCompletionPopup({
     super.key,
     required this.level,
     required this.isCompleted,
     required this.onStartGame,
+    this.overridePointsText,
+    this.overrideTimeText,
+    this.startLabel,
   });
 
   @override
@@ -797,7 +895,7 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                                 ),
                                 Text(
                                   widget.isCompleted
-                                      ? 'Points: 850'
+                                      ? 'Points: ${widget.overridePointsText ?? '---'}'
                                       : 'Points: ---',
                                   style: TextStyle(
                                     fontFamily: 'Baloo2',
@@ -848,7 +946,7 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                                 ),
                                 Text(
                                   widget.isCompleted
-                                      ? 'Time Taken: 2:45'
+                                      ? 'Time Taken: ${widget.overrideTimeText ?? '---'}'
                                       : 'Time Taken: ---',
                                   style: TextStyle(
                                     fontFamily: 'Baloo2',
@@ -891,7 +989,7 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                                 ],
                               ),
                               child: Text(
-                                'Start Game!',
+                                widget.startLabel ?? 'Start Game!',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontFamily: 'Baloo2',
@@ -1193,3 +1291,4 @@ class _AnimatedChickenState extends State<_AnimatedChicken>
     );
   }
 }
+
