@@ -345,11 +345,25 @@ class _BasePetRoomState extends State<BasePetRoom>
                     ),
                     const SizedBox(width: 8),
 
-                    _buildPetCareIcon('assets/food icon.png', _getHungerLevel()),
+                    _buildPetCareIcon('assets/food.png', _getHungerLevel()),
                     const SizedBox(width: 8),
-                    _buildPetCareIcon('assets/sleep icon.png', _getEnergyLevel()),
+                    _buildPetCareIcon('assets/sleep.png', _getEnergyLevel()),
                     const SizedBox(width: 8),
-                    _buildPetCareIcon('assets/toilet icon.png', _getCleanlinessLevel()),
+                    _buildPetCareIcon(
+                      'assets/shower.png',
+                      _getCleanlinessLevel(),
+                      onTap: widget.roomType == RoomType.bathroom
+                          ? () async {
+                              // Set cleanliness to 100 in Firebase and locally
+                              await UserService.instance.updatePetStats(cleanliness: 100);
+                              if (mounted && widget.userData != null) {
+                                setState(() {
+                                  widget.userData!['cleanliness'] = 100;
+                                });
+                              }
+                            }
+                          : null,
+                    ),
 
                     const SizedBox(width: 8),
                     _buildStreakIcon(3),
@@ -606,7 +620,7 @@ class _BasePetRoomState extends State<BasePetRoom>
     );
   }
 
-  Widget _buildPetCareIcon(String assetPath, double fillLevel) {
+  Widget _buildPetCareIcon(String assetPath, double fillLevel, {VoidCallback? onTap}) {
     // Determine color based on level
     Color progressColor;
     if (fillLevel <= 0.3) {
@@ -618,7 +632,7 @@ class _BasePetRoomState extends State<BasePetRoom>
       progressColor = Colors.green.shade600; // Bright green for high levels (61-100%)
     }
 
-    return Container(
+    final content = Container(
       width: 70,
       height: 70,
       decoration: BoxDecoration(
@@ -629,40 +643,47 @@ class _BasePetRoomState extends State<BasePetRoom>
         ),
       ),
       child: Stack(
+        alignment: Alignment.center,
         children: [
-          // Background circle (always grey)
-          Container(
+          // Ring progress painted between outer and inner borders
+          SizedBox(
             width: 70,
             height: 70,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.grey.withOpacity(0.3),
-            ),
-          ),
-          // Progress circle (color based on level)
-          if (fillLevel > 0)
-            Container(
-              width: 70,
-              height: 70,
-              child: CustomPaint(
-                painter: CircleProgressPainter(
-                  progress: fillLevel,
-                  color: progressColor,
-                ),
+            child: CustomPaint(
+              painter: CircleProgressPainter(
+                progress: fillLevel.clamp(0.0, 1.0),
+                color: progressColor,
+                strokeWidth: 10, // thickness of the progress ring
+                backgroundColor: Colors.white.withOpacity(0.15),
+                inset: 3, // match outer border width
               ),
             ),
-          // Icon
+          ),
+          // Inner circle border to create the inner edge of the ring
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white, // solid white background behind the icon
+              border: Border.all(color: Colors.white, width: 3),
+            ),
+          ),
+          // Icon inside the inner circle
           Center(
             child: Image.asset(
               assetPath,
-              width: 45,
-              height: 45,
+              width: 36,
+              height: 36,
               fit: BoxFit.contain,
             ),
           ),
         ],
       ),
     );
+
+    if (onTap == null) return content;
+    return GestureDetector(onTap: onTap, child: content);
   }
 
   Widget _buildStreakIcon(int streak) {
@@ -783,40 +804,52 @@ class _BasePetRoomState extends State<BasePetRoom>
 }
 
 class CircleProgressPainter extends CustomPainter {
-  final double progress;
+  final double progress; // 0.0 - 1.0
   final Color color;
+  final double strokeWidth; // ring thickness
+  final Color? backgroundColor; // optional background ring color
+  final double inset; // inset from outer bounds to align with outer border
 
   CircleProgressPainter({
     required this.progress,
     required this.color,
+    this.strokeWidth = 8,
+    this.backgroundColor,
+    this.inset = 0,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-    
-    // Create a circular progress indicator with vibrant colors
-    final paint = Paint()
-      ..color = color.withOpacity(0.9) // Increased opacity for better visibility
-      ..style = PaintingStyle.fill;
-    
-    // Calculate the angle for the progress (0 to 2π)
+    final rect = Rect.fromLTWH(inset, inset, size.width - inset * 2, size.height - inset * 2);
+    final startAngle = -3.14159 / 2; // start at top
     final sweepAngle = 2 * 3.14159 * progress;
-    
-    // Draw the progress arc
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -3.14159 / 2, // Start from top (-π/2)
-      sweepAngle,
-      true, // Use center to create a filled arc
-      paint, // Add the paint parameter
-    );
+
+    // Background ring (optional)
+    if (backgroundColor != null) {
+      final bgPaint = Paint()
+        ..color = backgroundColor!
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round;
+      canvas.drawArc(rect, 0, 2 * 3.14159, false, bgPaint);
+    }
+
+    // Progress ring
+    final fgPaint = Paint()
+      ..color = color.withOpacity(0.95)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(rect, startAngle, sweepAngle, false, fgPaint);
   }
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) {
-    return oldDelegate is CircleProgressPainter && 
-           (oldDelegate.progress != progress || oldDelegate.color != color);
+    return oldDelegate is CircleProgressPainter &&
+        (oldDelegate.progress != progress ||
+         oldDelegate.color != color ||
+         oldDelegate.strokeWidth != strokeWidth ||
+         oldDelegate.inset != inset ||
+         oldDelegate.backgroundColor != backgroundColor);
   }
 }
