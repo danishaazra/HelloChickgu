@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hellochickgu/shared/theme/theme.dart';
 import 'widgets/base_pet_room.dart';
 import 'models/room_type.dart';
 import 'package:hellochickgu/map.dart';
@@ -37,7 +36,6 @@ class _PetHomePageState extends State<PetHomePage> {
   }
 
   void _onMapsPressed() {
-
     if (_currentRoom == RoomType.home) {
       Navigator.push(
         context,
@@ -45,7 +43,7 @@ class _PetHomePageState extends State<PetHomePage> {
       );
       return;
     }
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Maps pressed from ${_currentRoom.displayName}')),
     );
@@ -59,7 +57,6 @@ class _PetHomePageState extends State<PetHomePage> {
   }
 
   void _onLeaderboardPressed() {
-
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
@@ -81,7 +78,8 @@ class _PetHomePageState extends State<PetHomePage> {
       onNextRoom: _goToNextRoom,
       onMapsPressed: _onMapsPressed,
       onShopPressed: _onShopPressed,
+      onLeaderboardPressed: _onLeaderboardPressed,
+      onProfilePressed: _onProfilePressed,
     );
   }
-
 }

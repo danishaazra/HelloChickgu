@@ -12,7 +12,6 @@ class BasePetRoom extends StatefulWidget {
 
   final VoidCallback? onProfilePressed;
 
-
   const BasePetRoom({
     super.key,
     required this.roomType,
@@ -33,11 +32,14 @@ class _BasePetRoomState extends State<BasePetRoom>
   late AnimationController _idleController;
   late AnimationController _happyController;
   late AnimationController _hungryController;
+  late AnimationController _showerController;
   late Animation<double> _idleAnimation;
   late Animation<double> _happyAnimation;
   late Animation<double> _hungryAnimation;
+  late Animation<double> _showerAnimation;
 
-  String petState = 'idle'; // idle, happy, hungry, sleepy, dirty
+  String petState =
+      'idle'; // idle, happy, hungry, sleepy, dirty, clean, showering
 
   @override
   void initState() {
@@ -70,6 +72,15 @@ class _BasePetRoomState extends State<BasePetRoom>
       CurvedAnimation(parent: _hungryController, curve: Curves.easeInOut),
     );
 
+    // Shower animation (bubbling effect)
+    _showerController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    );
+    _showerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _showerController, curve: Curves.easeInOut),
+    );
+
     // Start idle animation - DISABLED FOR TESTING
     // _startIdleAnimation();
 
@@ -91,12 +102,24 @@ class _BasePetRoomState extends State<BasePetRoom>
     });
   }
 
+  void _playShowerAnimation() {
+    setState(() => petState = 'showering');
+    _showerController.forward().then((_) {
+      setState(() => petState = 'idle');
+      _showerController.reset();
+    });
+  }
+
+  void _makeChickenDirty() {
+    setState(() => petState = 'dirty');
+  }
 
   @override
   void dispose() {
     _idleController.dispose();
     _happyController.dispose();
     _hungryController.dispose();
+    _showerController.dispose();
     super.dispose();
   }
 
@@ -108,12 +131,10 @@ class _BasePetRoomState extends State<BasePetRoom>
         children: [
           // Room Background
           Positioned.fill(
-
             child: Image.asset(
               widget.roomType.backgroundAsset,
               fit: BoxFit.cover,
             ),
-
           ),
 
           // Top Bar - Centered
@@ -323,7 +344,12 @@ class _BasePetRoomState extends State<BasePetRoom>
             child: Column(
               children: [
                 IconButton(
-                  icon: Icon(Icons.leaderboard, color: Colors.white, size: 60),
+                  icon: Image.asset(
+                    'assets/leaderboard icon.png',
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.contain,
+                  ),
                   onPressed: widget.onLeaderboardPressed,
                 ),
                 const SizedBox(height: 1),
@@ -359,7 +385,14 @@ class _BasePetRoomState extends State<BasePetRoom>
                   child: Transform.scale(
                     scale: _getPetScale(),
                     child: GestureDetector(
-                      onTap: _playHappyAnimation,
+                      onTap: () {
+                        // For testing: make chicken dirty when tapped
+                        if (petState == 'idle') {
+                          _makeChickenDirty();
+                        } else if (petState == 'clean') {
+                          _playHappyAnimation();
+                        }
+                      },
                       child: Container(
                         height: 350, // Much bigger size (was 300)
                         child: Image.asset(_getPetImage(), fit: BoxFit.contain),
@@ -379,16 +412,23 @@ class _BasePetRoomState extends State<BasePetRoom>
               children: [
                 IconButton(
                   icon: Image.asset(
-                    widget.roomType.mapIconAsset,
+                    widget.roomType == RoomType.bathroom
+                        ? 'assets/soap.png'
+                        : widget.roomType.mapIconAsset,
                     width: 75,
                     height: 75,
                     fit: BoxFit.contain,
                   ),
-                  onPressed: widget.onMapsPressed,
+                  onPressed:
+                      widget.roomType == RoomType.bathroom
+                          ? _playShowerAnimation
+                          : widget.onMapsPressed,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  widget.roomType.mapButtonText,
+                  widget.roomType == RoomType.bathroom
+                      ? "Shower"
+                      : widget.roomType.mapButtonText,
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -450,7 +490,8 @@ class _BasePetRoomState extends State<BasePetRoom>
         assetPath.contains('shower') ||
         assetPath.contains('toilet') ||
         assetPath.contains('soap');
-    return Container(
+
+    Widget iconWidget = Container(
       width: 60,
       height: 60,
       decoration: BoxDecoration(
@@ -461,13 +502,16 @@ class _BasePetRoomState extends State<BasePetRoom>
       child: Center(
         child: Image.asset(
           assetPath,
-
           width: isCoin ? 45 : (isFoodSleepShower ? 34 : 38),
           height: isCoin ? 45 : (isFoodSleepShower ? 34 : 38),
           fit: BoxFit.contain,
         ),
       ),
     );
+
+    // Status icons are not clickable
+
+    return iconWidget;
   }
 
   Widget _buildStreakIcon(int streak) {
@@ -519,6 +563,8 @@ class _BasePetRoomState extends State<BasePetRoom>
         return _happyAnimation;
       case 'hungry':
         return _hungryAnimation;
+      case 'showering':
+        return _showerAnimation;
       default:
         return _idleAnimation;
     }
@@ -528,6 +574,8 @@ class _BasePetRoomState extends State<BasePetRoom>
     switch (petState) {
       case 'hungry':
         return Offset(_hungryAnimation.value * 20, 0);
+      case 'showering':
+        return Offset(0, _showerAnimation.value * 10);
       default:
         return Offset.zero;
     }
@@ -539,6 +587,8 @@ class _BasePetRoomState extends State<BasePetRoom>
         return 1.0 + (_happyAnimation.value * 0.2);
       case 'idle':
         return 1.0 + (_idleAnimation.value * 0.05);
+      case 'showering':
+        return 1.0 + (_showerAnimation.value * 0.1);
       default:
         return 1.0;
     }
@@ -552,6 +602,12 @@ class _BasePetRoomState extends State<BasePetRoom>
         return 'assets/chicken_payment.png';
       case 'sleepy':
         return 'assets/chickenLevel.png';
+      case 'dirty':
+        return 'assets/dirty chick.png';
+      case 'clean':
+        return 'assets/chickenHappy.png';
+      case 'showering':
+        return 'assets/shower chick.png';
       default:
         return 'assets/pett.png';
     }
