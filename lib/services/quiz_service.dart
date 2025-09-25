@@ -32,6 +32,17 @@ class QuizService {
         .doc(user.uid)
         .collection('quiz_results')
         .add(data);
+
+    // Increment user's total points so homepage reflects all quiz points
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set({
+        'points': FieldValue.increment(pointsCollected),
+        'lastUpdated': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (_) {}
   }
 
   Future<Map<String, dynamic>?> getLatestQuizResult({required int quizNumber}) async {
