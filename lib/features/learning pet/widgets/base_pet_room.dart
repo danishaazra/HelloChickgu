@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:hellochickgu/shared/theme/theme.dart';
+import 'package:hellochickgu/services/user_service.dart';
 import '../models/room_type.dart';
 
 class BasePetRoom extends StatefulWidget {
   final RoomType roomType;
+  final Map<String, dynamic>? userData;
   final VoidCallback? onPreviousRoom;
   final VoidCallback? onNextRoom;
   final VoidCallback? onMapsPressed;
@@ -13,6 +17,7 @@ class BasePetRoom extends StatefulWidget {
   const BasePetRoom({
     super.key,
     required this.roomType,
+    this.userData,
     this.onPreviousRoom,
     this.onNextRoom,
     this.onMapsPressed,
@@ -34,6 +39,9 @@ class _BasePetRoomState extends State<BasePetRoom>
   late Animation<double> _hungryAnimation;
 
   String petState = 'idle'; // idle, happy, hungry, sleepy, dirty
+  Timer? _levelReductionTimer;
+  Set<String> _pendingNotifications = {};
+  Map<String, double> _lastNotificationLevels = {};
 
   @override
   void initState() {
@@ -66,6 +74,8 @@ class _BasePetRoomState extends State<BasePetRoom>
       CurvedAnimation(parent: _hungryController, curve: Curves.easeInOut),
     );
 
+    // Start level reduction timer
+    _startLevelReductionTimer();
 
     // Start idle animation - DISABLED FOR TESTING
     // _startIdleAnimation();
@@ -91,10 +101,132 @@ class _BasePetRoomState extends State<BasePetRoom>
 
   @override
   void dispose() {
+    _levelReductionTimer?.cancel();
     _idleController.dispose();
     _happyController.dispose();
     _hungryController.dispose();
     super.dispose();
+  }
+
+  void _startLevelReductionTimer() {
+    // Reduce levels every 1 minute for testing
+    _levelReductionTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      _reducePetLevels();
+    });
+  }
+
+  void _reducePetLevels() async {
+    if (widget.userData == null) return;
+
+    final currentHunger = widget.userData!['hunger'] ?? 100;
+    final currentEnergy = widget.userData!['energy'] ?? 100;
+    final currentCleanliness = widget.userData!['cleanliness'] ?? 100;
+
+    // Reduce each level by 3 points (minimum 0) for testing
+    final newHunger = (currentHunger - 3).clamp(0, 100);
+    final newEnergy = (currentEnergy - 3).clamp(0, 100);
+    final newCleanliness = (currentCleanliness - 3).clamp(0, 100);
+
+    // Update in Firebase
+    await UserService.instance.updatePetStats(
+      hunger: newHunger,
+      energy: newEnergy,
+      cleanliness: newCleanliness,
+    );
+
+    // Update local userData to reflect changes
+    if (mounted) {
+      setState(() {
+        widget.userData!['hunger'] = newHunger;
+        widget.userData!['energy'] = newEnergy;
+        widget.userData!['cleanliness'] = newCleanliness;
+      });
+    }
+
+    // Reset notification tracking if levels are restored above 30%
+    if (newHunger > 30) _lastNotificationLevels.remove('food');
+    if (newEnergy > 30) _lastNotificationLevels.remove('sleep');
+    if (newCleanliness > 30) _lastNotificationLevels.remove('toilet');
+
+    print('Pet levels updated - Hunger: $newHunger, Energy: $newEnergy, Cleanliness: $newCleanliness');
+  }
+
+  void _scheduleLowLevelNotification(String assetPath) {
+    // Only show notification if level is exactly 30% or below
+    double currentLevel = 0.0;
+    if (assetPath.contains('food')) {
+      currentLevel = _getHungerLevel();
+    } else if (assetPath.contains('sleep')) {
+      currentLevel = _getEnergyLevel();
+    } else if (assetPath.contains('toilet')) {
+      currentLevel = _getCleanlinessLevel();
+    }
+    
+    // Get the last level we notified about for this asset
+    double lastNotifiedLevel = _lastNotificationLevels[assetPath] ?? 1.0;
+    
+    // Only notify if:
+    // 1. Current level is 30% or below
+    // 2. We haven't already notified for this level
+    // 3. The level has actually dropped (not just a rebuild)
+    if (currentLevel <= 0.3 && 
+        !_pendingNotifications.contains(assetPath) &&
+        lastNotifiedLevel > 0.3) {
+      
+      _pendingNotifications.add(assetPath);
+      _lastNotificationLevels[assetPath] = currentLevel;
+      
+      // Schedule the notification to show after the current frame
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        _showLowLevelNotification(assetPath);
+      });
+    }
+  }
+
+  void _showLowLevelNotification(String assetPath) {
+    // Remove from pending notifications
+    _pendingNotifications.remove(assetPath);
+    
+    String message = '';
+    String action = '';
+
+    if (assetPath.contains('food')) {
+      message = 'Your pet is hungry!';
+      action = 'Feed your pet some food';
+    } else if (assetPath.contains('sleep')) {
+      message = 'Your pet is tired!';
+      action = 'Let your pet rest';
+    } else if (assetPath.contains('toilet')) {
+      message = 'Your pet needs cleaning!';
+      action = 'Clean your pet';
+    }
+
+    if (message.isNotEmpty && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                message,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(action),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -122,7 +254,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Text(
-                        "Nurin Sunoo",
+                        _getUsername(),
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -168,7 +300,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                         Positioned(
                           bottom: -8,
                           child: Text(
-                            "3455",
+                            _getPointsText(),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -197,11 +329,11 @@ class _BasePetRoomState extends State<BasePetRoom>
                       ],
                     ),
                     const SizedBox(width: 8),
-                    _buildAssetStatusIcon('assets/food icon.png', 0.7),
+                    _buildPetCareIcon('assets/food icon.png', _getHungerLevel()),
                     const SizedBox(width: 8),
-                    _buildAssetStatusIcon('assets/sleep icon.png', 0.5),
+                    _buildPetCareIcon('assets/sleep icon.png', _getEnergyLevel()),
                     const SizedBox(width: 8),
-                    _buildAssetStatusIcon('assets/toilet icon.png', 0.8),
+                    _buildPetCareIcon('assets/toilet icon.png', _getCleanlinessLevel()),
                     const SizedBox(width: 8),
                     _buildStreakIcon(3),
                   ],
@@ -448,6 +580,65 @@ class _BasePetRoomState extends State<BasePetRoom>
     );
   }
 
+  Widget _buildPetCareIcon(String assetPath, double fillLevel) {
+    // Determine color based on level
+    Color progressColor;
+    if (fillLevel <= 0.3) {
+      progressColor = Colors.red.shade600; // Bright red for low levels (≤30%)
+      _scheduleLowLevelNotification(assetPath);
+    } else if (fillLevel <= 0.6) {
+      progressColor = Colors.yellow.shade600; // Bright yellow for medium levels (31-60%)
+    } else {
+      progressColor = Colors.green.shade600; // Bright green for high levels (61-100%)
+    }
+
+    return Container(
+      width: 70,
+      height: 70,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white,
+          width: 3,
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Background circle (always grey)
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.grey.withOpacity(0.3),
+            ),
+          ),
+          // Progress circle (color based on level)
+          if (fillLevel > 0)
+            Container(
+              width: 70,
+              height: 70,
+              child: CustomPaint(
+                painter: CircleProgressPainter(
+                  progress: fillLevel,
+                  color: progressColor,
+                ),
+              ),
+            ),
+          // Icon
+          Center(
+            child: Image.asset(
+              assetPath,
+              width: 45,
+              height: 45,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStreakIcon(int streak) {
     return Container(
       width: 70,
@@ -534,5 +725,73 @@ class _BasePetRoomState extends State<BasePetRoom>
       default:
         return 'assets/pett.png';
     }
+  }
+
+  // Helper methods to get data from userData
+  String _getPointsText() {
+    if (widget.userData == null) return "0";
+    return (widget.userData!['points'] ?? 0).toString();
+  }
+
+  double _getHungerLevel() {
+    if (widget.userData == null) return 0.0;
+    final hunger = widget.userData!['hunger'] ?? 0;
+    return hunger / 100.0; // Convert to 0.0-1.0 range
+  }
+
+  double _getEnergyLevel() {
+    if (widget.userData == null) return 0.0;
+    final energy = widget.userData!['energy'] ?? 0;
+    return energy / 100.0; // Convert to 0.0-1.0 range
+  }
+
+  double _getCleanlinessLevel() {
+    if (widget.userData == null) return 0.0;
+    final cleanliness = widget.userData!['cleanliness'] ?? 0;
+    return cleanliness / 100.0; // Convert to 0.0-1.0 range
+  }
+
+  String _getUsername() {
+    if (widget.userData == null) return "Guest";
+    return widget.userData!['username'] ?? "Guest";
+  }
+}
+
+class CircleProgressPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+
+  CircleProgressPainter({
+    required this.progress,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+    
+    // Create a circular progress indicator with vibrant colors
+    final paint = Paint()
+      ..color = color.withOpacity(0.9) // Increased opacity for better visibility
+      ..style = PaintingStyle.fill;
+    
+    // Calculate the angle for the progress (0 to 2π)
+    final sweepAngle = 2 * 3.14159 * progress;
+    
+    // Draw the progress arc
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -3.14159 / 2, // Start from top (-π/2)
+      sweepAngle,
+      true, // Use center to create a filled arc
+      paint, // Add the paint parameter
+    );
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return oldDelegate is CircleProgressPainter && 
+           (oldDelegate.progress != progress || oldDelegate.color != color);
   }
 }
