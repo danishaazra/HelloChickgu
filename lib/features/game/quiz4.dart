@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
 import 'package:hellochickgu/features/game/quiz4end.dart';
 import 'package:hellochickgu/features/game/level_page.dart';
+import 'package:hellochickgu/services/quiz_service.dart';
 
 class quiz4 extends StatefulWidget {
   const quiz4({super.key});
@@ -181,6 +182,21 @@ class _Quiz4State extends State<quiz4> {
       });
     } else {
       _stopTimer();
+      // Save result
+      final points = correct * 10;
+      QuizService.instance.saveQuizResult(
+        quizNumber: 4,
+        correct: correct,
+        incorrect: wrong,
+        pointsCollected: points,
+        answers: List<String?>.from(questions.map((q) => (q['correctTileIndex']).toString())),
+        timeTakenSeconds: _secondsElapsed,
+      );
+      QuizService.instance.saveLevelSummary(
+        level: 4,
+        pointsCollected: points,
+        timeTakenSeconds: _secondsElapsed,
+      );
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
