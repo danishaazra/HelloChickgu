@@ -10,6 +10,9 @@ class BasePetRoom extends StatefulWidget {
   final VoidCallback? onShopPressed;
   final VoidCallback? onLeaderboardPressed;
 
+  final VoidCallback? onProfilePressed;
+
+
   const BasePetRoom({
     super.key,
     required this.roomType,
@@ -18,6 +21,7 @@ class BasePetRoom extends StatefulWidget {
     this.onMapsPressed,
     this.onShopPressed,
     this.onLeaderboardPressed,
+    this.onProfilePressed,
   });
 
   @override
@@ -66,7 +70,6 @@ class _BasePetRoomState extends State<BasePetRoom>
       CurvedAnimation(parent: _hungryController, curve: Curves.easeInOut),
     );
 
-
     // Start idle animation - DISABLED FOR TESTING
     // _startIdleAnimation();
 
@@ -105,7 +108,12 @@ class _BasePetRoomState extends State<BasePetRoom>
         children: [
           // Room Background
           Positioned.fill(
-            child: Image.asset(widget.roomType.backgroundAsset, fit: BoxFit.cover),
+
+            child: Image.asset(
+              widget.roomType.backgroundAsset,
+              fit: BoxFit.cover,
+            ),
+
           ),
 
           // Top Bar - Centered
@@ -136,20 +144,24 @@ class _BasePetRoomState extends State<BasePetRoom>
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryBlue,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black, width: 2),
-                        ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/user1.png',
-                            width: 36,
-                            height: 36,
-                            fit: BoxFit.cover,
+
+                      GestureDetector(
+                        onTap: widget.onProfilePressed,
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryBlue,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black, width: 2),
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/user1.png',
+                              width: 36,
+                              height: 36,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),
@@ -197,11 +209,12 @@ class _BasePetRoomState extends State<BasePetRoom>
                       ],
                     ),
                     const SizedBox(width: 8),
-                    _buildAssetStatusIcon('assets/food icon.png', 0.7),
+
+                    _buildAssetStatusIcon('assets/food.png', 0.7),
                     const SizedBox(width: 8),
-                    _buildAssetStatusIcon('assets/sleep icon.png', 0.5),
+                    _buildAssetStatusIcon('assets/sleep.png', 0.5),
                     const SizedBox(width: 8),
-                    _buildAssetStatusIcon('assets/toilet icon.png', 0.8),
+                    _buildAssetStatusIcon('assets/shower.png', 0.8),
                     const SizedBox(width: 8),
                     _buildStreakIcon(3),
                   ],
@@ -430,18 +443,27 @@ class _BasePetRoomState extends State<BasePetRoom>
   }
 
   Widget _buildAssetStatusIcon(String assetPath, double fillLevel) {
+    final bool isCoin = assetPath.endsWith('coin.png');
+    final bool isFoodSleepShower =
+        assetPath.contains('food') ||
+        assetPath.contains('sleep') ||
+        assetPath.contains('shower') ||
+        assetPath.contains('toilet') ||
+        assetPath.contains('soap');
     return Container(
-      width: 70,
-      height: 70,
+      width: 60,
+      height: 60,
       decoration: BoxDecoration(
-        color: Colors.transparent,
+        color: isCoin ? Colors.transparent : Colors.white,
         shape: BoxShape.circle,
+        border: isCoin ? null : Border.all(color: Colors.black, width: 3),
       ),
       child: Center(
         child: Image.asset(
           assetPath,
-          width: 45,
-          height: 45,
+
+          width: isCoin ? 45 : (isFoodSleepShower ? 34 : 38),
+          height: isCoin ? 45 : (isFoodSleepShower ? 34 : 38),
           fit: BoxFit.contain,
         ),
       ),
@@ -489,7 +511,6 @@ class _BasePetRoomState extends State<BasePetRoom>
       ),
     );
   }
-
 
   // Animation helper methods
   Animation _getCurrentAnimation() {
