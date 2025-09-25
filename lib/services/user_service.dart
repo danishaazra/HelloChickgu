@@ -11,10 +11,13 @@ class UserService {
     if (user == null) return null;
 
     try {
-      return await FirebaseFirestore.instance
+      final snap = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
+      // Apply offline decay based on time since lastUpdated
+      await _applyDecayIfNeeded(user.uid, snap);
+      return await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
     } catch (e) {
       print('Error fetching user data: $e');
       return null;
@@ -74,6 +77,38 @@ class UserService {
           .update(updates);
     } catch (e) {
       print('Error updating pet stats: $e');
+    }
+  }
+
+  /// Apply time-based decay of 5 points per minute since lastUpdated
+  Future<void> _applyDecayIfNeeded(String uid, DocumentSnapshot snap) async {
+    try {
+      final data = snap.data() as Map<String, dynamic>?;
+      if (data == null) return;
+      final Timestamp? ts = data['lastUpdated'] as Timestamp?;
+      final int hunger = (data['hunger'] as int?) ?? 100;
+      final int energy = (data['energy'] as int?) ?? 100;
+      final int cleanliness = (data['cleanliness'] as int?) ?? 100;
+
+      DateTime last = ts?.toDate() ?? DateTime.now();
+      final int minutes = DateTime.now().difference(last).inMinutes;
+      if (minutes <= 0) return;
+
+      int delta = (minutes * 5);
+      final int newHunger = (hunger - delta).clamp(0, 100);
+      final int newEnergy = (energy - delta).clamp(0, 100);
+      final int newClean = (cleanliness - delta).clamp(0, 100);
+
+      if (newHunger != hunger || newEnergy != energy || newClean != cleanliness) {
+        await FirebaseFirestore.instance.collection('users').doc(uid).update({
+          'hunger': newHunger,
+          'energy': newEnergy,
+          'cleanliness': newClean,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print('Error applying decay: $e');
     }
   }
 }

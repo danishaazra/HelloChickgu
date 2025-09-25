@@ -5,6 +5,7 @@ import 'package:hellochickgu/shared/theme/theme.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
 import 'package:hellochickgu/features/game/quiz3end.dart';
 import 'package:hellochickgu/features/game/level_page.dart';
+import 'package:hellochickgu/services/quiz_service.dart';
 
 class quiz3 extends StatefulWidget {
   const quiz3({super.key});
@@ -221,6 +222,21 @@ class _Quiz3State extends State<quiz3> {
     if (currentQuestionIndex == questions.length - 1) {
       _gradeCurrentIfNeeded();
       _stopTimer();
+      // Save result
+      final points = correctCount * 10;
+      QuizService.instance.saveQuizResult(
+        quizNumber: 3,
+        correct: correctCount,
+        incorrect: wrongCount,
+        pointsCollected: points,
+        answers: guesses,
+        timeTakenSeconds: _secondsElapsed,
+      );
+      QuizService.instance.saveLevelSummary(
+        level: 3,
+        pointsCollected: points,
+        timeTakenSeconds: _secondsElapsed,
+      );
       Navigator.push(
         context,
         MaterialPageRoute(

@@ -61,6 +61,8 @@ extension RoomTypeExtension on RoomType {
         return 'Food';
       case RoomType.bathroom:
         return 'Shower';
+      case RoomType.bedroom:
+        return 'Lamp';
       default:
         return 'Maps';
     }

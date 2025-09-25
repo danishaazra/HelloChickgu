@@ -99,6 +99,8 @@ class _PetHomePageState extends State<PetHomePage> {
       onNextRoom: _goToNextRoom,
       onMapsPressed: _onMapsPressed,
       onShopPressed: _onShopPressed,
+      onLeaderboardPressed: _onLeaderboardPressed,
+      onProfilePressed: _onProfilePressed,
     );
   }
 
