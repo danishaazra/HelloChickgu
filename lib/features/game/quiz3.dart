@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hellochickgu/shared/theme/theme.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
 import 'package:hellochickgu/features/game/quiz3end.dart';
+import 'package:hellochickgu/features/game/level_page.dart';
 
 class quiz3 extends StatefulWidget {
   const quiz3({super.key});
@@ -127,6 +128,7 @@ class _Quiz3State extends State<quiz3> {
 
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
       if (!_isQuizCompleted) {
         setState(() => _secondsElapsed++);
       }
@@ -135,7 +137,15 @@ class _Quiz3State extends State<quiz3> {
 
   void _stopTimer() {
     _timer?.cancel();
-    setState(() => _isQuizCompleted = true);
+    if (mounted) {
+      setState(() => _isQuizCompleted = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   String _formatTime(int seconds) {
@@ -332,7 +342,19 @@ class _Quiz3State extends State<quiz3> {
                                 ),
                                 const SizedBox(width: 8),
                                 GestureDetector(
-                                  onTap: () => Navigator.pop(context),
+                                  onTap: () {
+                                    _timer?.cancel();
+                                    Navigator.of(context).pushAndRemoveUntil(
+                                      MaterialPageRoute(
+                                        builder: (_) => const LevelPage(
+                                          // Ensure the Level tab is selected on return
+                                          initialHighestUnlockedLevel: 3,
+                                          completedLevel: null,
+                                        ),
+                                      ),
+                                      (route) => false,
+                                    );
+                                  },
                                   child: Container(
                                     width: 36,
                                     height: 36,

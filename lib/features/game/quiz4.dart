@@ -116,12 +116,19 @@ class _Quiz4State extends State<quiz4> {
 
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
       setState(() => _secondsElapsed++);
     });
   }
 
   void _stopTimer() {
     _timer?.cancel();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   String _formatTime(int seconds) {
@@ -272,6 +279,7 @@ class _Quiz4State extends State<quiz4> {
                                 const SizedBox(width: 8),
                                 GestureDetector(
                                   onTap: () {
+                                    _timer?.cancel();
                                     Navigator.of(context).pushAndRemoveUntil(
                                       MaterialPageRoute(
                                         builder: (_) => LevelPage(
