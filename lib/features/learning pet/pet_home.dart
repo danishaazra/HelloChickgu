@@ -3,6 +3,9 @@ import 'package:hellochickgu/shared/theme/theme.dart';
 import 'package:hellochickgu/services/user_service.dart';
 import 'widgets/base_pet_room.dart';
 import 'models/room_type.dart';
+import 'package:hellochickgu/map.dart';
+import 'package:hellochickgu/features/profile/profile.dart';
+import 'package:hellochickgu/features/leaderboard/leaderboard.dart';
 
 class PetHomePage extends StatefulWidget {
   const PetHomePage({super.key});
@@ -51,7 +54,15 @@ class _PetHomePageState extends State<PetHomePage> {
   }
 
   void _onMapsPressed() {
-    // TODO: Navigate to maps page
+
+    if (_currentRoom == RoomType.home) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const MapChickgu()),
+      );
+      return;
+    }
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Maps pressed from ${_currentRoom.displayName}')),
     );
@@ -65,9 +76,17 @@ class _PetHomePageState extends State<PetHomePage> {
   }
 
   void _onLeaderboardPressed() {
-    // TODO: Navigate to leaderboard page
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Leaderboard pressed from ${_currentRoom.displayName}')),
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
+    );
+  }
+
+  void _onProfilePressed() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ProfilePage()),
     );
   }
 
@@ -80,7 +99,6 @@ class _PetHomePageState extends State<PetHomePage> {
       onNextRoom: _goToNextRoom,
       onMapsPressed: _onMapsPressed,
       onShopPressed: _onShopPressed,
-      onLeaderboardPressed: _onLeaderboardPressed,
     );
   }
 
