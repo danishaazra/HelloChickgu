@@ -639,7 +639,7 @@
   </div>
 
   <script>
-    // Sample video data
+    // Sample video data (placeholder)
     const videos = [
       {
         id: 1,
@@ -725,7 +725,6 @@
 
     let currentVideoId = null;
 
-    // Render videos
     function renderVideos() {
       const grid = document.getElementById('videosGrid');
       const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -737,7 +736,7 @@
                              video.tutor.toLowerCase().includes(searchTerm);
         const matchesStatus = statusFilter === 'all' || video.status === statusFilter;
         const matchesSubject = subjectFilter === 'all' || 
-                              video.subject.toLowerCase().includes(subjectFilter.replace('-', ' '));
+                             video.subject.toLowerCase().includes(subjectFilter.replace('-', ' '));
         return matchesSearch && matchesStatus && matchesSubject;
       });
 
@@ -891,9 +890,7 @@
       const vidId = videoId || currentVideoId;
       const video = videos.find(v => v.id === vidId);
       if (!video) return;
-
       const confirmMsg = `Are you sure you want to approve "${video.title}"?`;
-      
       if (confirm(confirmMsg)) {
         video.status = 'approved';
         renderVideos();
@@ -907,9 +904,7 @@
       const vidId = videoId || currentVideoId;
       const video = videos.find(v => v.id === vidId);
       if (!video) return;
-
       const confirmMsg = `Are you sure you want to reject "${video.title}"?`;
-      
       if (confirm(confirmMsg)) {
         video.status = 'rejected';
         renderVideos();
@@ -923,10 +918,8 @@
       const vidId = videoId || currentVideoId;
       const video = videos.find(v => v.id === vidId);
       if (!video) return;
-
       const action = video.status === 'approved' ? 'take down' : 'delete';
       const confirmMsg = `Are you sure you want to ${action} "${video.title}"?`;
-      
       if (confirm(confirmMsg)) {
         const index = videos.findIndex(v => v.id === vidId);
         if (index > -1) {

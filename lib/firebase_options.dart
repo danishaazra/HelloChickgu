@@ -24,7 +24,8 @@ class DefaultFirebaseOptions {
         return android;
       case TargetPlatform.iOS:
         return ios;
-
+      case TargetPlatform.macOS:
+        return macos;
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
@@ -43,31 +44,38 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyC3tIyDmc97ssmUr_eEnDRQn0PpvZZREb4',
-    appId: '1:655104687890:android:98aa275de55cadf5debdcb',
-    messagingSenderId: '655104687890',
-    projectId: 'hellochickgu-15c69',
-    authDomain: 'hellochickgu-15c69.firebaseapp.com',
-    storageBucket: 'hellochickgu-15c69.firebasestorage.app',
-    //measurementId: 'G-52RMQVE2SQ',
+    apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+    appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+    messagingSenderId: '864651268854',
+    projectId: 'hellochickgu',
+    authDomain: 'hellochickgu.firebaseapp.com',
+    storageBucket: 'hellochickgu.firebasestorage.app',
+    measurementId: 'G-52RMQVE2SQ',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyC3tIyDmc97ssmUr_eEnDRQn0PpvZZREb4',
-    appId: '1:655104687890:android:98aa275de55cadf5debdcb',
-    messagingSenderId: '655104687890',
-    projectId: 'hellochickgu-15c69',
-    storageBucket: 'hellochickgu-15c69.firebasestorage.app',
+    apiKey: 'AIzaSyDNjptoLfeMUBnD2OzaGzigFuq3M5hfKLo',
+    appId: '1:864651268854:android:a20b384092f4b73a6b92d7',
+    messagingSenderId: '864651268854',
+    projectId: 'hellochickgu',
+    storageBucket: 'hellochickgu.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyC3tIyDmc97ssmUr_eEnDRQn0PpvZZREb4',
-    appId: '1:655104687890:android:98aa275de55cadf5debdcb',
-    messagingSenderId: '655104687890',
-    projectId: 'hellochickgu-15c69',
-    storageBucket: 'hellochickgu-15c69.firebasestorage.app',
+    apiKey: 'AIzaSyCObKj3adDCVT14ETZuANWfakXknlgSb1I',
+    appId: '1:864651268854:ios:5243364a1dfbc68b6b92d7',
+    messagingSenderId: '864651268854',
+    projectId: 'hellochickgu',
+    storageBucket: 'hellochickgu.firebasestorage.app',
+    iosBundleId: 'com.example.hellochickgu',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyCObKj3adDCVT14ETZuANWfakXknlgSb1I',
+    appId: '1:864651268854:ios:5243364a1dfbc68b6b92d7',
+    messagingSenderId: '864651268854',
+    projectId: 'hellochickgu',
+    storageBucket: 'hellochickgu.firebasestorage.app',
     iosBundleId: 'com.example.hellochickgu',
   );
 }
-
-// firebase config

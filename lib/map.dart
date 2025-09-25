@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'features/home/home.dart';
+import 'features/learning pet/pet_home.dart';
 import 'features/game/level_page.dart';
 import 'features/library/library_main.dart';
 import 'features/tutor/main_tutor.dart';
@@ -93,7 +93,7 @@ class _MapChickguState extends State<MapChickgu> with TickerProviderStateMixin {
 
     switch (place) {
       case "Home":
-        targetPage = const HomePage();
+        targetPage = const PetHomePage();
         break;
       case "Library":
         targetPage = const LibraryPage();
