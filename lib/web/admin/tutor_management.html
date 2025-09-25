@@ -532,6 +532,9 @@
         <a href="tutor_management.html" class="nav-item active">
           <i>👥</i> Tutor Management
         </a>
+        <a href="courses.html" class="nav-item">
+          <i>📚</i> Courses
+        </a>
         <a href="application.html" class="nav-item">
           <i>📝</i> Applications
         </a>
@@ -579,23 +582,23 @@
       <div class="stats-grid">
         <div class="stat-card">
           <h3>Total Tutors</h3>
-          <div class="number">127</div>
-          <div class="change">+8 this month</div>
+          <div class="number" id="totalTutorsNum">0</div>
+          <div class="change" id="totalTutorsNote"></div>
         </div>
         <div class="stat-card">
           <h3>Active</h3>
-          <div class="number">98</div>
-          <div class="change">77% of total</div>
+          <div class="number" id="activeTutorsNum">0</div>
+          <div class="change" id="activeTutorsNote"></div>
         </div>
         <div class="stat-card">
           <h3>Suspended</h3>
-          <div class="number">12</div>
-          <div class="change">9% of total</div>
+          <div class="number" id="suspendedTutorsNum">0</div>
+          <div class="change" id="suspendedTutorsNote"></div>
         </div>
         <div class="stat-card">
           <h3>Pending</h3>
-          <div class="number">17</div>
-          <div class="change">13% of total</div>
+          <div class="number" id="pendingTutorsNum">0</div>
+          <div class="change" id="pendingTutorsNote"></div>
         </div>
       </div>
 
@@ -623,97 +626,65 @@
     </div>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
   <script>
-    // Sample tutor data
-    const tutors = [
-      {
-        id: 1,
-        name: "Danisha Azra",
-        email: "danishaazra34@gmail.com",
-        subjects: ["Mathematics", "Physics", "Computer Science"],
-        qualification: "Bachelor of Mathematics in Education",
-        videos: 47,
-        status: "active",
-        joinDate: "2023-11-15",
-        lastActive: "2024-01-15",
-        qualifications: [
-          "Bachelor of Science in Mathematics",
-          "Master of Education in Curriculum and Instruction",
-          "PhD in Applied Mathematics",
-          "Certified Mathematics Teacher (CMT)",
-          "Advanced Certificate in Educational Technology"
-        ]
-      },
-      {
-        id: 2,
-        name: "Nurin Sunoo",
-        email: "nurinsunoo13@gmail.com",
-        subjects: ["Physics", "Chemistry"],
-        qualification: "Master of Science",
-        videos: 23,
-        status: "active",
-        joinDate: "2023-12-01",
-        lastActive: "2024-01-14",
-        qualifications: [
-          "Master of Science in Physics",
-          "Bachelor of Science in Chemistry",
-          "Certified Physics Teacher"
-        ]
-      },
-      {
-        id: 3,
-        name: "Nayeon Badri",
-        email: "nayeonbadri14@gmail.com",
-        subjects: ["Computer Science", "Programming"],
-        qualification: "Bachelor of Computer Science",
-        videos: 31,
-        status: "suspended",
-        joinDate: "2023-10-20",
-        lastActive: "2024-01-10",
-        qualifications: [
-          "Bachelor of Computer Science",
-          "Master of Software Engineering",
-          "Certified Java Developer",
-          "AWS Certified Developer"
-        ]
-      },
-      {
-        id: 4,
-        name: "Ahmed Hassan",
-        email: "ahmed.hassan@gmail.com",
-        subjects: ["Mathematics", "Statistics"],
-        qualification: "PhD in Mathematics",
-        videos: 56,
-        status: "active",
-        joinDate: "2023-09-15",
-        lastActive: "2024-01-14",
-        qualifications: [
-          "PhD in Applied Mathematics",
-          "Master of Science in Statistics",
-          "Bachelor of Mathematics"
-        ]
-      },
-      {
-        id: 5,
-        name: "Sarah Johnson",
-        email: "sarah.johnson@gmail.com",
-        subjects: ["Computer Science"],
-        qualification: "PhD in Computer Science",
-        videos: 28,
-        status: "pending",
-        joinDate: "2024-01-01",
-        lastActive: "2024-01-12",
-        qualifications: [
-          "PhD in Computer Science",
-          "Master of Science in Software Engineering",
-          "Bachelor of Computer Science"
-        ]
-      }
-    ];
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+      appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+      messagingSenderId: '864651268854',
+      projectId: 'hellochickgu',
+      authDomain: 'hellochickgu.firebaseapp.com',
+      storageBucket: 'hellochickgu.appspot.com',
+      measurementId: 'G-52RMQVE2SQ',
+    };
+    if (firebase.apps && firebase.apps.length) { firebase.app(); } else { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.firestore();
 
-    let currentTutorId = null;
+    let tutors = [];
+    let currentTutorId = null; // equals tutors doc id (uid)
 
-    // Render tutors
+    async function loadData() {
+      const [tutorsSnap, pendingSnap] = await Promise.all([
+        db.collection('tutors').get(),
+        db.collection('tutor_applicants').where('status', '==', 'pending').get(),
+      ]);
+
+      tutors = tutorsSnap.docs.map(d => ({
+        id: d.id,
+        name: d.data().name || d.data().email || 'Tutor',
+        email: d.data().email || '',
+        subjects: Array.isArray(d.data().subjects) ? d.data().subjects : [],
+        qualification: d.data().qualification || '',
+        status: (d.data().status || 'active'),
+        joinDate: (d.data().createdAt && d.data().createdAt.toDate) ? d.data().createdAt.toDate().toISOString() : new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        videos: d.data().videosCount || 0,
+        qualifications: [],
+      }));
+
+      // Stats
+      const total = tutors.length;
+      const active = tutors.filter(t => t.status === 'active').length;
+      const suspended = tutors.filter(t => t.status === 'suspended' || t.status === 'disabled').length;
+      const pending = pendingSnap.size;
+
+      document.getElementById('totalTutorsNum').textContent = total;
+      document.getElementById('activeTutorsNum').textContent = active;
+      document.getElementById('suspendedTutorsNum').textContent = suspended;
+      document.getElementById('pendingTutorsNum').textContent = pending;
+
+      const pct = (n) => total ? Math.round((n/total)*100) : 0;
+      document.getElementById('totalTutorsNote').textContent = total ? '' : '';
+      document.getElementById('activeTutorsNote').textContent = `${pct(active)}% of total`;
+      document.getElementById('suspendedTutorsNote').textContent = `${pct(suspended)}% of total`;
+      document.getElementById('pendingTutorsNote').textContent = `${pending} awaiting approval`;
+
+      renderTutors();
+    }
+
+    // Render tutors (uses global tutors array)
     function renderTutors() {
       const grid = document.getElementById('tutorsGrid');
       const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -734,7 +705,7 @@
       grid.innerHTML = filteredTutors.map(tutor => `
         <div class="tutor-card">
           <div class="tutor-header">
-            <div class="tutor-avatar">${tutor.name.split(' ').map(n => n[0]).join('')}</div>
+            <div class="tutor-avatar">${(tutor.name||'T').split(' ').map(n => n[0]).join('')}</div>
             <div class="tutor-info">
               <h3>${tutor.name}</h3>
               <p>${tutor.email}</p>
@@ -746,26 +717,18 @@
               <span class="status-badge status-${tutor.status}">${tutor.status}</span>
             </div>
             <div class="detail-item">
-              <span class="detail-label">Videos:</span>
-              <span class="detail-value">${tutor.videos}</span>
-            </div>
-            <div class="detail-item">
               <span class="detail-label">Join Date:</span>
               <span class="detail-value">${new Date(tutor.joinDate).toLocaleDateString()}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Last Active:</span>
-              <span class="detail-value">${new Date(tutor.lastActive).toLocaleDateString()}</span>
             </div>
           </div>
           <div class="subjects-list">
             ${tutor.subjects.map(subject => `<span class="subject-tag">${subject}</span>`).join('')}
           </div>
           <div class="tutor-actions">
-            <button class="btn btn-primary" onclick="viewProfile(${tutor.id})">View Profile</button>
+            <button class="btn btn-primary" onclick="viewProfile('${tutor.id}')">View Profile</button>
             ${tutor.status === 'active' ? 
-              `<button class="btn btn-danger" onclick="suspendTutor(${tutor.id})">Suspend</button>` :
-              `<button class="btn btn-success" onclick="activateTutor(${tutor.id})">Activate</button>`
+              `<button class="btn btn-danger" onclick="suspendTutor('${tutor.id}')">Suspend</button>` :
+              `<button class="btn btn-success" onclick="activateTutor('${tutor.id}')">Activate</button>`
             }
           </div>
         </div>
@@ -798,18 +761,6 @@
               <label>Status</label>
               <span class="status-badge status-${tutor.status}">${tutor.status}</span>
             </div>
-            <div class="profile-item">
-              <label>Join Date</label>
-              <span>${new Date(tutor.joinDate).toLocaleDateString()}</span>
-            </div>
-            <div class="profile-item">
-              <label>Last Active</label>
-              <span>${new Date(tutor.lastActive).toLocaleDateString()}</span>
-            </div>
-            <div class="profile-item">
-              <label>Total Videos</label>
-              <span>${tutor.videos}</span>
-            </div>
           </div>
         </div>
         <div class="profile-section">
@@ -817,12 +768,6 @@
           <div class="subjects-list">
             ${tutor.subjects.map(subject => `<span class="subject-tag">${subject}</span>`).join('')}
           </div>
-        </div>
-        <div class="profile-section">
-          <h4>Qualifications</h4>
-          <ul class="qualifications-list">
-            ${tutor.qualifications.map(qual => `<li>${qual}</li>`).join('')}
-          </ul>
         </div>
       `;
 
@@ -832,52 +777,27 @@
       modal.style.display = 'flex';
     }
 
-    // Close modal
     function closeModal() {
       document.getElementById('profileModal').style.display = 'none';
       currentTutorId = null;
     }
 
-    // Toggle suspend/activate
-    function toggleSuspend() {
-      if (!currentTutorId) return;
-      
-      const tutor = tutors.find(t => t.id === currentTutorId);
-      if (!tutor) return;
-
-      const action = tutor.status === 'active' ? 'suspend' : 'activate';
-      const confirmMsg = `Are you sure you want to ${action} ${tutor.name}?`;
-      
-      if (confirm(confirmMsg)) {
-        tutor.status = tutor.status === 'active' ? 'suspended' : 'active';
-        renderTutors();
-        closeModal();
-        alert(`${tutor.name} has been ${action}ed successfully.`);
-      }
-    }
-
-    // Suspend tutor
-    function suspendTutor(tutorId) {
+    async function suspendTutor(tutorId) {
       const tutor = tutors.find(t => t.id === tutorId);
       if (!tutor) return;
-
-      if (confirm(`Are you sure you want to suspend ${tutor.name}?`)) {
-        tutor.status = 'suspended';
-        renderTutors();
-        alert(`${tutor.name} has been suspended.`);
-      }
+      if (!confirm(`Suspend ${tutor.name}?`)) return;
+      await db.collection('tutors').doc(tutorId).update({ status: 'suspended' });
+      await loadData();
+      alert(`${tutor.name} has been suspended.`);
     }
 
-    // Activate tutor
-    function activateTutor(tutorId) {
+    async function activateTutor(tutorId) {
       const tutor = tutors.find(t => t.id === tutorId);
       if (!tutor) return;
-
-      if (confirm(`Are you sure you want to activate ${tutor.name}?`)) {
-        tutor.status = 'active';
-        renderTutors();
-        alert(`${tutor.name} has been activated.`);
-      }
+      if (!confirm(`Activate ${tutor.name}?`)) return;
+      await db.collection('tutors').doc(tutorId).update({ status: 'active' });
+      await loadData();
+      alert(`${tutor.name} has been activated.`);
     }
 
     // Navigation highlighting
@@ -901,7 +821,7 @@
     });
 
     // Initialize
-    renderTutors();
+    loadData();
   </script>
 </body>
 </html>
