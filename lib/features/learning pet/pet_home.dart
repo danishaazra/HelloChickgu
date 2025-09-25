@@ -54,6 +54,7 @@ class _PetHomePageState extends State<PetHomePage> {
   }
 
   void _onMapsPressed() {
+
     if (_currentRoom == RoomType.home) {
       Navigator.push(
         context,
@@ -61,7 +62,7 @@ class _PetHomePageState extends State<PetHomePage> {
       );
       return;
     }
-
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Maps pressed from ${_currentRoom.displayName}')),
     );
@@ -75,6 +76,7 @@ class _PetHomePageState extends State<PetHomePage> {
   }
 
   void _onLeaderboardPressed() {
+
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
@@ -97,8 +99,7 @@ class _PetHomePageState extends State<PetHomePage> {
       onNextRoom: _goToNextRoom,
       onMapsPressed: _onMapsPressed,
       onShopPressed: _onShopPressed,
-      onLeaderboardPressed: _onLeaderboardPressed,
-      onProfilePressed: _onProfilePressed,
     );
   }
+
 }
