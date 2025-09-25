@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hellochickgu/shared/theme/theme.dart';
+import 'package:hellochickgu/services/user_service.dart';
 import 'widgets/base_pet_room.dart';
 import 'models/room_type.dart';
 import 'package:hellochickgu/map.dart';
@@ -14,6 +16,22 @@ class PetHomePage extends StatefulWidget {
 
 class _PetHomePageState extends State<PetHomePage> {
   RoomType _currentRoom = RoomType.home;
+  Map<String, dynamic>? _userData;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  void _loadUserData() async {
+    final userData = await UserService.instance.getCurrentUserData();
+    if (mounted) {
+      setState(() {
+        _userData = userData?.data() as Map<String, dynamic>?;
+      });
+    }
+  }
 
   void _navigateToRoom(RoomType roomType) {
     setState(() {
@@ -74,6 +92,7 @@ class _PetHomePageState extends State<PetHomePage> {
   Widget build(BuildContext context) {
     return BasePetRoom(
       roomType: _currentRoom,
+      userData: _userData,
       onPreviousRoom: _goToPreviousRoom,
       onNextRoom: _goToNextRoom,
       onMapsPressed: _onMapsPressed,
