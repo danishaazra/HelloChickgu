@@ -16,7 +16,8 @@ class UserService {
           .doc(user.uid)
           .get();
       // Apply offline decay based on time since lastUpdated
-      await _applyDecayIfNeeded(user.uid, snap);
+      // Disabled - using real-time decay in base_pet_room.dart instead
+      // await _applyDecayIfNeeded(user.uid, snap);
       return await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
     } catch (e) {
       print('Error fetching user data: $e');
@@ -80,7 +81,7 @@ class UserService {
     }
   }
 
-  /// Apply time-based decay of 5 points per minute since lastUpdated
+  /// Apply time-based decay of 0.1 points per minute since lastUpdated
   Future<void> _applyDecayIfNeeded(String uid, DocumentSnapshot snap) async {
     try {
       final data = snap.data() as Map<String, dynamic>?;
@@ -94,7 +95,7 @@ class UserService {
       final int minutes = DateTime.now().difference(last).inMinutes;
       if (minutes <= 0) return;
 
-      double delta = (minutes * 5.0);
+      double delta = (minutes * 0.1);
       final double newHunger = (hunger - delta).clamp(0.0, 100.0);
       final double newEnergy = (energy - delta).clamp(0.0, 100.0);
       final double newClean = (cleanliness - delta).clamp(0.0, 100.0);

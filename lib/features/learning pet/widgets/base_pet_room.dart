@@ -143,28 +143,56 @@ class _BasePetRoomState extends State<BasePetRoom>
     super.dispose();
   }
 
-  void _startSleepMode() {
+  void _startSleepMode() async {
     if (_isSleeping) return;
     
     setState(() {
       _isSleeping = true;
     });
     
+    // Check if energy is 50% or below to give points
+    double currentEnergy = _getEnergyLevel();
+    bool shouldGivePoints = currentEnergy <= 0.5;
+    
     // Set energy to 100 when sleeping
-    UserService.instance.updatePetStats(energy: 100.0);
+    await UserService.instance.updatePetStats(energy: 100.0);
+    
+    // Give points and coins if energy was low (50% or below)
+    if (shouldGivePoints) {
+      await UserService.instance.updatePoints(
+        (widget.userData!['points'] ?? 0) + 10
+      );
+      
+      // Also add coins (1 coin per 10 points earned)
+      await CoinService.instance.addCoins(10);
+      
+      // Update local points
+      if (mounted) {
+        setState(() {
+          widget.userData!['points'] = (widget.userData!['points'] ?? 0) + 10;
+        });
+      }
+    }
     
     // Wake up after 2 minutes
     _sleepTimer = Timer(const Duration(hours:8 ), () {
       _wakeUp();
     });
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Chicken is sleeping for 8 hours! Zzz...'),
-        backgroundColor: Colors.blue,
-        duration: Duration(seconds: 3),
-      ),
-    );
+    // Show appropriate message
+    String message = shouldGivePoints 
+        ? 'Chicken is sleeping for 8 hours! +10 points & +10 coin earned! Zzz...'
+        : 'Chicken is sleeping for 8 hours! Zzz...';
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: shouldGivePoints ? Colors.green : Colors.blue,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _wakeUp() {
@@ -221,10 +249,10 @@ class _BasePetRoomState extends State<BasePetRoom>
     final currentEnergy = (widget.userData!['energy'] ?? 100).toDouble();
     final currentCleanliness = (widget.userData!['cleanliness'] ?? 100).toDouble();
 
-    // Reduce each level by 0.167 points (minimum 0) for testing
-    final newHunger = (currentHunger - 0.167).clamp(0.0, 100.0);
-    final newEnergy = (currentEnergy - 0.167).clamp(0.0, 100.0);
-    final newCleanliness = (currentCleanliness - 0.167).clamp(0.0, 100.0);
+    // Reduce each level by 0.1 points (minimum 0) for testing
+    final newHunger = (currentHunger - 0.1).clamp(0.0, 100.0);
+    final newEnergy = (currentEnergy - 0.1).clamp(0.0, 100.0);
+    final newCleanliness = (currentCleanliness - 0.1).clamp(0.0, 100.0);
 
     // Update in Firebase
     await UserService.instance.updatePetStats(
@@ -245,7 +273,10 @@ class _BasePetRoomState extends State<BasePetRoom>
     // Reset notification tracking if levels are restored above 30%
     if (newHunger > 30) _lastNotificationLevels.remove('food');
     if (newEnergy > 30) _lastNotificationLevels.remove('sleep');
-    if (newCleanliness > 30) _lastNotificationLevels.remove('toilet');
+    if (newCleanliness > 30) {
+      _lastNotificationLevels.remove('toilet');
+      _lastNotificationLevels.remove('shower');
+    }
 
     print(
       'Pet levels updated - Hunger: $newHunger, Energy: $newEnergy, Cleanliness: $newCleanliness',
@@ -258,7 +289,7 @@ class _BasePetRoomState extends State<BasePetRoom>
       currentLevel = _getHungerLevel();
     } else if (assetPath.contains('sleep')) {
       currentLevel = _getEnergyLevel();
-    } else if (assetPath.contains('toilet')) {
+    } else if (assetPath.contains('toilet') || assetPath.contains('shower')) {
       currentLevel = _getCleanlinessLevel();
     }
 
@@ -273,9 +304,14 @@ class _BasePetRoomState extends State<BasePetRoom>
     double crossedThreshold = 0.0;
     
     for (double threshold in thresholds) {
+      // Check if we've crossed the threshold (current <= threshold AND last was > threshold)
+      // This handles the double precision issue where we might skip exact values
       if (currentLevel <= threshold && lastNotifiedLevel > threshold) {
         shouldNotify = true;
         crossedThreshold = threshold;
+        
+        // Debug print to see threshold crossings
+        print('🔔 NOTIFICATION: ${assetPath} crossed ${(threshold * 100).toInt()}% threshold - Current: ${(currentLevel * 100).toStringAsFixed(1)}%, Last: ${(lastNotifiedLevel * 100).toStringAsFixed(1)}%');
         break;
       }
     }
@@ -321,7 +357,7 @@ class _BasePetRoomState extends State<BasePetRoom>
     } else if (assetPath.contains('sleep')) {
       message = 'Your pet is tired! ($urgency)';
       action = 'Let your pet rest.';
-    } else if (assetPath.contains('toilet')) {
+    } else if (assetPath.contains('toilet') || assetPath.contains('shower')) {
       message = 'Your pet needs cleaning! ($urgency)';
       action = 'Give your pet a shower.';
     }
@@ -331,6 +367,72 @@ class _BasePetRoomState extends State<BasePetRoom>
         title: message,
         body: action,
       );
+    }
+  }
+
+  // Helper method to handle pet care with point rewards
+  Future<void> _handlePetCare(String statType, double currentLevel, String statName) async {
+    try {
+      // Check if current level is 50% or below to give points
+      bool shouldGivePoints = currentLevel <= 0.5;
+      
+      // Update the pet stat to 100
+      if (statType == 'hunger') {
+        await UserService.instance.updatePetStats(hunger: 100.0);
+      } else if (statType == 'energy') {
+        await UserService.instance.updatePetStats(energy: 100.0);
+      } else if (statType == 'cleanliness') {
+        await UserService.instance.updatePetStats(cleanliness: 100.0);
+      }
+
+      if (!mounted) return;
+
+      // Update local state
+      setState(() {
+        widget.userData![statType] = 100.0;
+        _lastNotificationLevels.remove(statType == 'hunger' ? 'food' : 
+                                      statType == 'energy' ? 'sleep' : 'toilet');
+        if (statType == 'cleanliness') {
+          _lastNotificationLevels.remove('shower');
+        }
+      });
+
+      // Give points and coins if stat was low (50% or below)
+      if (shouldGivePoints) {
+        await UserService.instance.updatePoints(
+          (widget.userData!['points'] ?? 0) + 10
+        );
+        
+        // Also add coins (1 coin per 10 points earned)
+        await CoinService.instance.addCoins(10);
+        
+        // Update local points
+        if (mounted) {
+          setState(() {
+            widget.userData!['points'] = (widget.userData!['points'] ?? 0) + 10;
+          });
+        }
+      }
+
+      // Show appropriate message
+      String message = shouldGivePoints 
+          ? '$statName restored to 100! +10 points & +10 coin earned!'
+          : '$statName restored to 100';
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: shouldGivePoints ? Colors.green : Colors.blue,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Action failed: $e')),
+        );
+      }
     }
   }
 
@@ -454,15 +556,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                       onTap:
                           widget.roomType == RoomType.kitchen
                               ? () async {
-                                // Set cleanliness to 100 in Firebase and locally
-                                await UserService.instance.updatePetStats(
-                                  hunger: 100.0,
-                                );
-                                if (mounted && widget.userData != null) {
-                                  setState(() {
-                                    widget.userData!['hunger'] = 100.0;
-                                  });
-                                }
+                                await _handlePetCare('hunger', _getHungerLevel(), 'Hunger');
                               }
                               : null,
                     ),
@@ -473,15 +567,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                       onTap:
                           widget.roomType == RoomType.bedroom
                               ? () async {
-                                // Set energy to 100 in Firebase and locally
-                                await UserService.instance.updatePetStats(
-                                  energy: 100.0,
-                                );
-                                if (mounted && widget.userData != null) {
-                                  setState(() {
-                                    widget.userData!['energy'] = 100.0;
-                                  });
-                                }
+                                await _handlePetCare('energy', _getEnergyLevel(), 'Energy');
                               }
                               : null,
                     ),
@@ -492,15 +578,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                       onTap:
                           widget.roomType == RoomType.bathroom
                               ? () async {
-                                // Set cleanliness to 100 in Firebase and locally
-                                await UserService.instance.updatePetStats(
-                                  cleanliness: 100.0,
-                                );
-                                if (mounted && widget.userData != null) {
-                                  setState(() {
-                                    widget.userData!['cleanliness'] = 100.0;
-                                  });
-                                }
+                                await _handlePetCare('cleanliness', _getCleanlinessLevel(), 'Cleanliness');
                               }
                               : null,
                     ),
@@ -689,34 +767,12 @@ class _BasePetRoomState extends State<BasePetRoom>
                   onPressed: () async {
                     try {
                       if (widget.roomType == RoomType.bathroom) {
-                        await UserService.instance.updatePetStats(
-                          cleanliness: 100.0,
-                        );
-                        if (!mounted) return;
-                        setState(() {
-                          widget.userData!['cleanliness'] = 100.0;
-                          _lastNotificationLevels.remove('toilet');
-                        });
+                        await _handlePetCare('cleanliness', _getCleanlinessLevel(), 'Cleanliness');
                         _playShowerAnimation();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Cleanliness restored to 100'),
-                          ),
-                        );
                       } else if (widget.roomType == RoomType.kitchen) {
-                        await UserService.instance.updatePetStats(hunger: 100.0);
-                        if (!mounted) return;
-                        setState(() {
-                          widget.userData!['hunger'] = 100.0;
-                          _lastNotificationLevels.remove('food');
-                        });
+                        await _handlePetCare('hunger', _getHungerLevel(), 'Hunger');
                         // Start corn animation
                         _startCornAnimation();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Hunger restored to 100'),
-                          ),
-                        );
                       } else if (widget.roomType == RoomType.bedroom) {
                         if (_isSleeping) {
                           // If already sleeping, wake up (turn on light)
