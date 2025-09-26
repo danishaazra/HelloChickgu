@@ -62,22 +62,23 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
 
   Future<void> _loadUsersFromFirestore() async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .orderBy('points', descending: true)
-          .limit(50) // Limit to top 50 users
-          .get();
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .orderBy('points', descending: true)
+              .limit(50) // Limit to top 50 users
+              .get();
 
       final users = <Map<String, dynamic>>[];
       final random = Random();
-      
+
       for (int i = 0; i < snapshot.docs.length; i++) {
         final doc = snapshot.docs[i];
         final data = doc.data();
-        
+
         // Skip users without username or points
         if (data['username'] == null || data['points'] == null) continue;
-        
+
         users.add({
           'name': data['username'] as String,
           'points': data['points'] as int,
@@ -236,7 +237,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                       Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                            icon: const Icon(Icons.arrow_back),
                             onPressed: () => Navigator.pop(context),
                           ),
                           const SizedBox(width: 8),
@@ -253,9 +254,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                       ),
                       const SizedBox(height: 24),
                       Center(
-                        child: _isLoading 
-                          ? const CircularProgressIndicator()
-                          : _buildPodium()
+                        child:
+                            _isLoading
+                                ? const CircularProgressIndicator()
+                                : _buildPodium(),
                       ),
                     ],
                   ),
@@ -291,11 +293,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                       Expanded(
                         child: FadeTransition(
                           opacity: _fadeInAnimation,
-                          child: _isLoading
-                              ? const Center(
-                                  child: CircularProgressIndicator(),
-                                )
-                              : otherUsers.isEmpty
+                          child:
+                              _isLoading
+                                  ? const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
+                                  : otherUsers.isEmpty
                                   ? Center(
                                     child: Text(
                                       'No other users yet',
