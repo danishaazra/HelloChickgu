@@ -2,6 +2,36 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+// Deterministic avatar color from a string (e.g., userId)
+Color _colorFromString(String input) {
+  int hash = 0;
+  for (int i = 0; i < input.length; i++) {
+    hash = input.codeUnitAt(i) + ((hash << 5) - hash);
+  }
+  final int r = (hash & 0xFF0000) >> 16;
+  final int g = (hash & 0x00FF00) >> 8;
+  final int b = (hash & 0x0000FF);
+  return Color.fromARGB(255, 150 + (r % 105), 120 + (g % 120), 120 + (b % 120));
+}
+
+// Simple time-ago formatter
+String _formatTimeAgo(DateTime? date) {
+  if (date == null) return 'just now';
+  final Duration diff = DateTime.now().difference(date);
+  if (diff.inSeconds < 60) return 'just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+  if (diff.inHours < 24) return '${diff.inHours}h ago';
+  if (diff.inDays < 7) return '${diff.inDays}d ago';
+  final weeks = (diff.inDays / 7).floor();
+  if (weeks < 5) return '${weeks}w ago';
+  final months = (diff.inDays / 30).floor();
+  if (months < 12) return '${months}mo ago';
+  final years = (diff.inDays / 365).floor();
+  return '${years}y ago';
+}
 
 class CommunityPage extends StatefulWidget {
   const CommunityPage({super.key});
@@ -22,7 +52,7 @@ class _CommunityPageState extends State<CommunityPage> {
   @override
   Widget build(BuildContext context) {
     final isSmallScreen = Responsive.isSmallScreen(context);
-    
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
@@ -40,10 +70,51 @@ class _CommunityPageState extends State<CommunityPage> {
           ),
         ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: dummyPosts.length,
-        itemBuilder: (context, index) => PostCard(post: dummyPosts[index]),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream:
+            FirebaseFirestore.instance
+                .collection('posts')
+                .orderBy('created_at', descending: true)
+                .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Failed to load posts'));
+          }
+          final docs = snapshot.data?.docs ?? [];
+          if (docs.isEmpty) {
+            return const Center(child: Text('No posts yet. Be the first!'));
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final data = docs[index].data();
+              final post = Post(
+                id: docs[index].id,
+                userId: data['user_id'] as String? ?? '',
+                username: data['username'] as String? ?? 'User',
+                avatarColor: _colorFromString(data['user_id'] as String? ?? ''),
+                timeAgo: _formatTimeAgo(
+                  (data['created_at'] as Timestamp?)?.toDate(),
+                ),
+                content: data['content'] as String? ?? '',
+                image: data['image'] as String?,
+                likes: (data['likes'] as num?)?.toInt() ?? 0,
+                isLiked: ((data['liked_by'] as List?)?.cast<String>() ??
+                        const <String>[])
+                    .contains(FirebaseAuth.instance.currentUser?.uid),
+                comments: <Comment>[],
+                timestamp:
+                    (data['created_at'] as Timestamp?)?.toDate() ??
+                    DateTime.now(),
+              );
+              return PostCard(post: post);
+            },
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreatePostScreen,
@@ -107,9 +178,30 @@ class _PostCardState extends State<PostCard> {
   }
 
   void _toggleLike() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || post.id == null) return;
     setState(() {
       post.isLiked = !post.isLiked;
       post.likes += post.isLiked ? 1 : -1;
+    });
+    final ref = FirebaseFirestore.instance.collection('posts').doc(post.id);
+    FirebaseFirestore.instance.runTransaction((txn) async {
+      final snap = await txn.get(ref);
+      final data = snap.data() as Map<String, dynamic>? ?? {};
+      final likedBy = (data['liked_by'] as List?)?.cast<String>() ?? <String>[];
+      if (likedBy.contains(user.uid)) {
+        likedBy.remove(user.uid);
+        txn.update(ref, {
+          'liked_by': likedBy,
+          'likes': FieldValue.increment(-1),
+        });
+      } else {
+        likedBy.add(user.uid);
+        txn.update(ref, {
+          'liked_by': likedBy,
+          'likes': FieldValue.increment(1),
+        });
+      }
     });
   }
 
@@ -193,6 +285,16 @@ class _PostCardState extends State<PostCard> {
                 color: Theme.of(context).hintColor,
               ),
             ),
+            trailing: _PostMenu(
+              postId: post.id,
+              ownerUserId: post.userId,
+              onDeleted: () {
+                if (!mounted) return;
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Post deleted')));
+              },
+            ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -208,11 +310,12 @@ class _PostCardState extends State<PostCard> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),
                 image: DecorationImage(
-                  image: post.image!.startsWith('data:image')
-                      ? MemoryImage(base64Decode(post.image!.split(',')[1]))
-                      : post.image!.startsWith('http')
-                      ? NetworkImage(post.image!) as ImageProvider
-                      : AssetImage(post.image!) as ImageProvider,
+                  image:
+                      post.image!.startsWith('data:image')
+                          ? MemoryImage(base64Decode(post.image!.split(',')[1]))
+                          : post.image!.startsWith('http')
+                          ? NetworkImage(post.image!) as ImageProvider
+                          : AssetImage(post.image!) as ImageProvider,
                   fit: BoxFit.cover,
                 ),
               ),
@@ -225,9 +328,8 @@ class _PostCardState extends State<PostCard> {
                   icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
                   label: '${post.likes}',
                   onTap: _toggleLike,
-                  iconColor: post.isLiked
-                      ? Colors.red
-                      : Theme.of(context).hintColor,
+                  iconColor:
+                      post.isLiked ? Colors.red : Theme.of(context).hintColor,
                 ),
                 const SizedBox(width: 24),
                 _ActionButton(
@@ -357,7 +459,72 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
+class _PostMenu extends StatelessWidget {
+  const _PostMenu({
+    required this.postId,
+    required this.ownerUserId,
+    required this.onDeleted,
+  });
+
+  final String? postId;
+  final String ownerUserId;
+  final VoidCallback onDeleted;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = FirebaseAuth.instance.currentUser;
+    final canDelete = current != null && current.uid == ownerUserId;
+    if (!canDelete) return const SizedBox.shrink();
+
+    return PopupMenuButton<String>(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      onSelected: (value) async {
+        if (value == 'delete' && postId != null) {
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder:
+                (context) => AlertDialog(
+                  title: const Text('Delete post?'),
+                  content: const Text('This action cannot be undone.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+          );
+          if (confirm == true) {
+            try {
+              await FirebaseFirestore.instance
+                  .collection('posts')
+                  .doc(postId)
+                  .delete();
+              onDeleted();
+            } catch (e) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('Delete failed: $e')));
+            }
+          }
+        }
+      },
+      itemBuilder:
+          (context) => [
+            const PopupMenuItem<String>(value: 'delete', child: Text('Delete')),
+          ],
+      icon: const Icon(Icons.more_vert),
+    );
+  }
+}
+
 class Post {
+  String? id;
+  String userId;
   String username;
   Color avatarColor;
   String timeAgo;
@@ -369,6 +536,8 @@ class Post {
   DateTime timestamp;
 
   Post({
+    this.id,
+    required this.userId,
     required this.username,
     required this.avatarColor,
     required this.timeAgo,
@@ -407,28 +576,65 @@ class CreatePostScreen extends StatefulWidget {
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _postController = TextEditingController();
+  String? _attachedImageBase64;
+  String? _currentUsername;
 
-  void _createPost() {
-    if (_postController.text.isEmpty) return;
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUsername();
+  }
 
-    setState(() {
-      dummyPosts.insert(
-        0,
-        Post(
-          username: 'Hafiz',
-          avatarColor: Colors.blue,
-          timeAgo: 'Just now',
-          content: _postController.text,
-          image: null,
-          likes: 0,
-          isLiked: false,
-          comments: [],
-          timestamp: DateTime.now(),
-        ),
-      );
-    });
+  Future<void> _loadCurrentUsername() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    String username = user.displayName ?? 'User';
+    try {
+      final snap =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+      final data = snap.data() as Map<String, dynamic>?;
+      if ((data?['username'] as String?)?.trim().isNotEmpty == true) {
+        username = (data!['username'] as String).trim();
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _currentUsername = username);
+  }
 
-    Navigator.pop(context);
+  Future<void> _createPost() async {
+    if (_postController.text.trim().isEmpty) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Fetch username from users collection
+    String username = user.displayName ?? 'User';
+    try {
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+      final data = doc.data() as Map<String, dynamic>?;
+      username =
+          (data?['username'] as String?)?.trim().isNotEmpty == true
+              ? data!['username'] as String
+              : (user.displayName ?? 'User');
+    } catch (_) {}
+
+    final payload = <String, dynamic>{
+      'user_id': user.uid,
+      'username': username,
+      'content': _postController.text.trim(),
+      'image': _attachedImageBase64, // store small base64 or remote URL later
+      'likes': 0,
+      'liked_by': <String>[],
+      'created_at': FieldValue.serverTimestamp(),
+    };
+
+    await FirebaseFirestore.instance.collection('posts').add(payload);
+    if (mounted) Navigator.pop(context);
   }
 
   @override
@@ -448,9 +654,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilledButton(
-              onPressed: _postController.text.trim().isEmpty
-                  ? null
-                  : _createPost,
+              onPressed:
+                  _postController.text.trim().isEmpty ? null : _createPost,
               style: FilledButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 disabledBackgroundColor: Theme.of(context).disabledColor,
@@ -475,11 +680,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: Colors.blue[300],
+                  backgroundColor: _colorFromString(
+                    FirebaseAuth.instance.currentUser?.uid ?? 'user',
+                  ),
                   radius: 20,
-                  child: const Text(
-                    'H',
-                    style: TextStyle(
+                  child: Text(
+                    (_currentUsername ?? 'User').isNotEmpty
+                        ? (_currentUsername ?? 'U').characters.first
+                            .toUpperCase()
+                        : 'U',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -490,7 +700,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Hafiz',
+                      _currentUsername ?? 'User',
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -514,14 +724,26 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ),
             const SizedBox(height: 8),
             Row(
-              children: const [
-                _IconAction(icon: Icons.image_outlined),
-                SizedBox(width: 12),
-                _IconAction(icon: Icons.videocam_outlined),
-                SizedBox(width: 12),
-                _IconAction(icon: Icons.insert_drive_file_outlined),
-                SizedBox(width: 12),
-                _IconAction(icon: Icons.link_outlined),
+              children: [
+                IconButton(
+                  tooltip: 'Attach image',
+                  icon: const Icon(Icons.image_outlined),
+                  onPressed: () async {
+                    try {
+                      final picker = ImagePicker();
+                      final xfile = await picker.pickImage(
+                        source: ImageSource.gallery,
+                        imageQuality: 80,
+                      );
+                      if (xfile == null) return;
+                      final bytes = await xfile.readAsBytes();
+                      setState(() {
+                        _attachedImageBase64 =
+                            'data:image/jpeg;base64,' + base64Encode(bytes);
+                      });
+                    } catch (_) {}
+                  },
+                ),
               ],
             ),
           ],
