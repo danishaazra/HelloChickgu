@@ -392,7 +392,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                   child: Row(
                     children: [
                       Text(
-                        'Nurin Sunoo',
+                        _username ?? 'Loading...',
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
