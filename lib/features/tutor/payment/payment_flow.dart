@@ -6,12 +6,14 @@ class PaymentFlow extends StatefulWidget {
   final String courseTitle;
   final String totalPriceText;
   final List<String> skills;
+  final String? videoId; // when provided, act as per-video checkout
 
   const PaymentFlow({
     super.key,
     required this.courseTitle,
     required this.totalPriceText,
     required this.skills,
+    this.videoId,
   });
 
   @override
@@ -113,6 +115,11 @@ class _PaymentFlowState extends State<PaymentFlow> {
     if (_stepIndex < 3) {
       setState(() => _stepIndex += 1);
     } else {
+      // Finalize purchase: per-video or full course
+      if (widget.videoId != null && widget.videoId!.isNotEmpty) {
+        Navigator.of(context).maybePop(true);
+        return;
+      }
       PurchaseService.instance.markPurchased(widget.courseTitle);
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
