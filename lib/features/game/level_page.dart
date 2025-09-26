@@ -48,9 +48,14 @@ class _LevelPageState extends State<LevelPage> {
   }
 
   void _onTapLevel(int level) {
-    // Only allow access to unlocked levels
+    // For levels 5+, always open the unified popup (Coming Soon layout inside)
+    if (level >= 5) {
+      _showLevelPopup(context, level);
+      return;
+    }
+
+    // For levels 1-4, only allow access to unlocked levels
     if (level <= highestUnlockedLevel) {
-      // Show level completion popup
       _showLevelPopup(context, level);
     }
   }
@@ -61,8 +66,17 @@ class _LevelPageState extends State<LevelPage> {
       completedLevels.add(level);
     });
 
-    // Only unlock next level if current level was completed
-    if (level == highestUnlockedLevel && level < 11) {
+    // Stop progression at level 4. Show Coming Soon after finishing level 4.
+    if (level >= 4) {
+      setState(() {
+        highestUnlockedLevel = highestUnlockedLevel.clamp(1, 4);
+      });
+      _showComingSoonDialog();
+      return;
+    }
+
+    // Only unlock next level if current level was completed and below cap
+    if (level == highestUnlockedLevel && level < 4) {
       setState(() {
         highestUnlockedLevel += 1;
       });
@@ -74,6 +88,26 @@ class _LevelPageState extends State<LevelPage> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
+        // For level 5+, show Coming Soon with same popup layout
+        if (level >= 5) {
+            return LevelCompletionPopup(
+            level: level,
+            isCompleted: true,
+            onStartGame: () {
+              Navigator.of(context).pop();
+            },
+            overridePointsText: '---',
+            overrideTimeText: '---',
+            startLabel: 'Coming Soon',
+            isComingSoon: true,
+            imageAssetOverride: 'assets/comingsoon.png',
+            disableStart: false,
+              onClose: () {
+                Navigator.of(context).pop();
+              },
+          );
+        }
+
         return FutureBuilder<Map<String, dynamic>?>(
           future: QuizService.instance.getLevelSummaryOrResult(level: level),
           builder: (context, snapshot) {
@@ -88,6 +122,19 @@ class _LevelPageState extends State<LevelPage> {
               overridePointsText: pointsText,
               overrideTimeText: timeText,
               startLabel: hasResult ? 'Review Questions' : 'Start Game!',
+              onClose: () {
+                Navigator.of(context).pop();
+                // After closing, go to next level if this level is completed
+                if (hasResult) {
+                  final int nextLevel = level + 1;
+                  // If next is <= 4 open its popup, otherwise show Coming Soon popup
+                  if (nextLevel <= 4) {
+                    _onTapLevel(nextLevel);
+                  } else {
+                    _showLevelPopup(context, 5);
+                  }
+                }
+              },
             );
           },
         );
@@ -102,6 +149,13 @@ class _LevelPageState extends State<LevelPage> {
   }
 
   void _navigateToQuiz(int level) {
+    // Block navigation for levels beyond 4
+    if (level >= 5) {
+      Navigator.of(context).maybePop();
+      _showComingSoonDialog();
+      return;
+    }
+
     Navigator.of(context).pop(); // Close popup
     Widget destination;
     if (level == 2) {
@@ -121,10 +175,30 @@ class _LevelPageState extends State<LevelPage> {
       QuizService.instance.getHighestUnlockedLevel().then((lvl) {
         if (!mounted) return;
         setState(() {
-          highestUnlockedLevel = lvl.clamp(1, 11);
+          // Cap at level 4 for now
+          highestUnlockedLevel = lvl.clamp(1, 4);
         });
       });
     });
+  }
+
+  void _showComingSoonDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Coming Soon'),
+          content: const Text('You\'ve reached the current end of the journey. More levels are coming soon!'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _openReview(int level, Map<String, dynamic> result) {
@@ -694,6 +768,11 @@ class LevelCompletionPopup extends StatefulWidget {
   final String? overridePointsText;
   final String? overrideTimeText;
   final String? startLabel;
+  final bool isComingSoon;
+  final String? imageAssetOverride;
+  final String? titleOverride;
+  final bool disableStart;
+  final VoidCallback? onClose;
 
   const LevelCompletionPopup({
     super.key,
@@ -703,6 +782,11 @@ class LevelCompletionPopup extends StatefulWidget {
     this.overridePointsText,
     this.overrideTimeText,
     this.startLabel,
+    this.isComingSoon = false,
+    this.imageAssetOverride,
+    this.titleOverride,
+    this.disableStart = false,
+    this.onClose,
   });
 
   @override
@@ -802,13 +886,16 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Chicken image without background
+                          // Top image (supports coming soon override)
                           Container(
-                            width: Responsive.scaleWidth(context, 130),
-                            height: Responsive.scaleHeight(context, 130),
+                            width: Responsive.scaleWidth(context, widget.isComingSoon ? 170 : 130),
+                            height: Responsive.scaleHeight(context, widget.isComingSoon ? 170 : 130),
                             child: ClipOval(
                               child: Image.asset(
-                                'assets/chickenHappy.png',
+                                widget.imageAssetOverride ??
+                                    (widget.isComingSoon
+                                        ? 'assets/comingsoon.png'
+                                        : 'assets/chickenHappy.png'),
                                 fit: BoxFit.cover,
                               ),
                             ),
@@ -816,7 +903,7 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
 
                           SizedBox(height: isSmallScreen ? 15 : 25),
 
-                          // Level title with cute styling
+                          // Title with cute styling (supports coming soon override)
                           Container(
                             padding: Responsive.scalePaddingSymmetric(
                               context,
@@ -840,7 +927,7 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                               ],
                             ),
                             child: Text(
-                              'Level ${widget.level}',
+                              widget.titleOverride ?? 'Level ${widget.level}',
                               style: TextStyle(
                                 fontFamily: 'Baloo2',
                                 fontSize: Responsive.scaleFont(context, 26),
@@ -859,8 +946,8 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
 
                           SizedBox(height: isSmallScreen ? 15 : 25),
 
-                          // Points section with cute icon
-                          Container(
+                          // Points removed for Coming Soon
+                          if (!widget.isComingSoon) Container(
                             padding: Responsive.scalePaddingSymmetric(
                               context,
                               horizontal: 20,
@@ -910,8 +997,8 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
 
                           SizedBox(height: isSmallScreen ? 10 : 15),
 
-                          // Time taken section with cute icon
-                          Container(
+                          // Time removed for Coming Soon
+                          if (!widget.isComingSoon) Container(
                             padding: Responsive.scalePaddingSymmetric(
                               context,
                               horizontal: 20,
@@ -961,9 +1048,9 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
 
                           SizedBox(height: isSmallScreen ? 20 : 30),
 
-                          // Start game button with yellow styling like computer science
+                          // Start game button (disabled for coming soon)
                           GestureDetector(
-                            onTap: widget.onStartGame,
+                            onTap: widget.disableStart ? null : widget.onStartGame,
                             child: Container(
                               width: double.infinity,
                               padding: Responsive.scalePaddingSymmetric(
@@ -971,7 +1058,9 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                                 vertical: 16,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF4B942),
+                                color: widget.disableStart
+                                    ? Colors.grey.shade400
+                                    : const Color(0xFFF4B942),
                                 borderRadius: Responsive.scaleBorderRadiusAll(
                                   context,
                                   16,
@@ -989,7 +1078,7 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                                 ],
                               ),
                               child: Text(
-                                widget.startLabel ?? 'Start Game!',
+                                widget.startLabel ?? (widget.isComingSoon ? 'Coming Soon' : 'Start Game!'),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontFamily: 'Baloo2',
@@ -1102,8 +1191,11 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () {
-                          print("X button tapped!"); // Debug print
-                          Navigator.of(context).pop();
+                          if (widget.onClose != null) {
+                            widget.onClose!();
+                          } else {
+                            Navigator.of(context).pop();
+                          }
                         },
                         borderRadius: Responsive.scaleBorderRadiusAll(
                           context,

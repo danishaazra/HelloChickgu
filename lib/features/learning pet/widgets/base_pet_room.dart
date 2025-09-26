@@ -610,7 +610,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                               : null,
                     ),
 
-                    const SizedBox(width: 50),
+                    const SizedBox(width: 20),
                   ],
                 ),
               ],
