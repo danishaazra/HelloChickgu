@@ -510,7 +510,9 @@ class _BasePetRoomState extends State<BasePetRoom>
                     Stack(
                       alignment: Alignment.bottomCenter,
                       children: [
+
                         _buildAssetStatusIcon('assets/coin.png', 1.0), // Always full for coins
+
                         Positioned(
                           bottom: -8,
                           child: StreamBuilder<int>(
