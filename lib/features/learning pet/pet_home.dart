@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:hellochickgu/shared/theme/theme.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hellochickgu/services/user_service.dart';
 import 'widgets/base_pet_room.dart';
 import 'models/room_type.dart';
 import 'package:hellochickgu/map.dart';
 import 'package:hellochickgu/features/profile/profile.dart';
 import 'package:hellochickgu/features/leaderboard/leaderboard.dart';
+import 'shop/shop_pages.dart';
 
 class PetHomePage extends StatefulWidget {
   const PetHomePage({super.key});
@@ -16,22 +17,6 @@ class PetHomePage extends StatefulWidget {
 
 class _PetHomePageState extends State<PetHomePage> {
   RoomType _currentRoom = RoomType.home;
-  Map<String, dynamic>? _userData;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
-
-  void _loadUserData() async {
-    final userData = await UserService.instance.getCurrentUserData();
-    if (mounted) {
-      setState(() {
-        _userData = userData?.data() as Map<String, dynamic>?;
-      });
-    }
-  }
 
   void _navigateToRoom(RoomType roomType) {
     setState(() {
@@ -54,7 +39,6 @@ class _PetHomePageState extends State<PetHomePage> {
   }
 
   void _onMapsPressed() {
-
     if (_currentRoom == RoomType.home) {
       Navigator.push(
         context,
@@ -62,21 +46,20 @@ class _PetHomePageState extends State<PetHomePage> {
       );
       return;
     }
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Maps pressed from ${_currentRoom.displayName}')),
     );
   }
 
   void _onShopPressed() {
-    // TODO: Navigate to shop page
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Shop pressed from ${_currentRoom.displayName}')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ShopPage()),
     );
   }
 
   void _onLeaderboardPressed() {
-
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
@@ -92,16 +75,22 @@ class _PetHomePageState extends State<PetHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return BasePetRoom(
-      roomType: _currentRoom,
-      userData: _userData,
-      onPreviousRoom: _goToPreviousRoom,
-      onNextRoom: _goToNextRoom,
-      onMapsPressed: _onMapsPressed,
-      onShopPressed: _onShopPressed,
-      onLeaderboardPressed: _onLeaderboardPressed,
-      onProfilePressed: _onProfilePressed,
+    return StreamBuilder<DocumentSnapshot?>(
+      stream: UserService.instance.getCurrentUserDataStream(),
+      builder: (context, snapshot) {
+        final userData = snapshot.data?.data() as Map<String, dynamic>?;
+
+        return BasePetRoom(
+          roomType: _currentRoom,
+          userData: userData,
+          onPreviousRoom: _goToPreviousRoom,
+          onNextRoom: _goToNextRoom,
+          onMapsPressed: _onMapsPressed,
+          onShopPressed: _onShopPressed,
+          onLeaderboardPressed: _onLeaderboardPressed,
+          onProfilePressed: _onProfilePressed,
+        );
+      },
     );
   }
-
 }
