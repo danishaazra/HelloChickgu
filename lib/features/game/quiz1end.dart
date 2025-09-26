@@ -232,7 +232,7 @@ class _Quiz1EndState extends State<quiz1end>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  
                   // Points & Time badges styled like level popup (stacked vertically)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,

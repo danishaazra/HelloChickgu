@@ -946,6 +946,25 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
 
                           SizedBox(height: isSmallScreen ? 15 : 25),
 
+                          // Cute coming soon message under the level title
+                          if (widget.isComingSoon)
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: Responsive.scaleWidth(context, 8),
+                              ),
+                              child: Text(
+                                'Peep peep! New adventures are hatching soon.\nCome back for extra fun and shiny rewards! 🐣✨',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: 'Baloo2',
+                                  fontSize: Responsive.scaleFont(context, 16),
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+
                           // Points removed for Coming Soon
                           if (!widget.isComingSoon) Container(
                             padding: Responsive.scalePaddingSymmetric(

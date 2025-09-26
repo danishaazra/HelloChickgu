@@ -412,7 +412,7 @@ class _Quiz3State extends State<quiz3> {
                   // Question box styled like quiz2
                   Container(
                     width: Responsive.scaleWidth(context, 360),
-                    height: isVerySmallScreen ? 300 : (isSmallScreen ? 350 : Responsive.scaleHeight(context, 370)),
+                    height: isVerySmallScreen ? 300 : (isSmallScreen ? 270 : Responsive.scaleHeight(context, 300)),
                     decoration: BoxDecoration(
                       color: cs.surface,
                       borderRadius: BorderRadius.circular(30),
@@ -517,8 +517,8 @@ class _Quiz3State extends State<quiz3> {
                     children: List.generate(answerLen, (i) {
                       final c = filledLetters.length > i ? filledLetters[i] : null;
                       return Container(
-                        width: 40,
-                        height: 40,
+                        width: 30,
+                        height: 30,
                         margin: const EdgeInsets.symmetric(horizontal: 6),
                         decoration: BoxDecoration(
                           color: Colors.white,

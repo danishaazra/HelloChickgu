@@ -36,7 +36,7 @@ class BasePetRoom extends StatefulWidget {
 }
 
 class _BasePetRoomState extends State<BasePetRoom>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _idleController;
   late AnimationController _happyController;
   late AnimationController _hungryController;
@@ -64,6 +64,7 @@ class _BasePetRoomState extends State<BasePetRoom>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     // Idle animation (gentle bounce)
     _idleController = AnimationController(
@@ -123,13 +124,18 @@ class _BasePetRoomState extends State<BasePetRoom>
   void _playShowerAnimation() {
     setState(() => petState = 'showering');
     _showerController.forward().then((_) {
+      if (!mounted) return;
       setState(() => petState = 'idle');
-      _showerController.reset();
+      // Guard against calling controller methods after dispose
+      try {
+        _showerController.reset();
+      } catch (_) {}
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _levelReductionTimer?.cancel();
     _sleepTimer?.cancel();
     _cornAnimationTimer?.cancel();
@@ -139,6 +145,14 @@ class _BasePetRoomState extends State<BasePetRoom>
     _showerController.dispose();
     _cornController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Apply any missed decay while the app was away
+      UserService.instance.applyDecayNow();
+    }
   }
 
   void _startSleepMode() async {
@@ -229,7 +243,9 @@ class _BasePetRoomState extends State<BasePetRoom>
         setState(() {
           _showCornAnimation = false;
         });
-        _cornController.reset();
+        try {
+          _cornController.reset();
+        } catch (_) {}
       }
     });
   }
