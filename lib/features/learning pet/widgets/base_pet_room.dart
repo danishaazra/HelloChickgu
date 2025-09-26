@@ -6,6 +6,7 @@ import 'package:hellochickgu/services/user_service.dart';
 import 'package:hellochickgu/services/notification_service.dart';
 import 'package:hellochickgu/services/coin_service.dart';
 import '../models/room_type.dart';
+import '../outfit_assets.dart';
 
 class BasePetRoom extends StatefulWidget {
   final RoomType roomType;
@@ -51,11 +52,11 @@ class _BasePetRoomState extends State<BasePetRoom>
   Timer? _levelReductionTimer;
   Set<String> _pendingNotifications = {};
   Map<String, double> _lastNotificationLevels = {};
-  
+
   // Sleep mode state
   bool _isSleeping = false;
   Timer? _sleepTimer;
-  
+
   // Corn animation state
   bool _showCornAnimation = false;
   Timer? _cornAnimationTimer;
@@ -119,8 +120,6 @@ class _BasePetRoomState extends State<BasePetRoom>
     // _startStreakAnimation();
   }
 
-
-
   void _playShowerAnimation() {
     setState(() => petState = 'showering');
     _showerController.forward().then((_) {
@@ -128,7 +127,6 @@ class _BasePetRoomState extends State<BasePetRoom>
       _showerController.reset();
     });
   }
-
 
   @override
   void dispose() {
@@ -145,27 +143,27 @@ class _BasePetRoomState extends State<BasePetRoom>
 
   void _startSleepMode() async {
     if (_isSleeping) return;
-    
+
     setState(() {
       _isSleeping = true;
     });
-    
+
     // Check if energy is 50% or below to give points
     double currentEnergy = _getEnergyLevel();
     bool shouldGivePoints = currentEnergy <= 0.5;
-    
+
     // Set energy to 100 when sleeping
     await UserService.instance.updatePetStats(energy: 100.0);
-    
+
     // Give points and coins if energy was low (50% or below)
     if (shouldGivePoints) {
       await UserService.instance.updatePoints(
-        (widget.userData!['points'] ?? 0) + 10
+        (widget.userData!['points'] ?? 0) + 10,
       );
-      
+
       // Also add coins (1 coin per 10 points earned)
       await CoinService.instance.addCoins(10);
-      
+
       // Update local points
       if (mounted) {
         setState(() {
@@ -173,17 +171,18 @@ class _BasePetRoomState extends State<BasePetRoom>
         });
       }
     }
-    
+
     // Wake up after 2 minutes
-    _sleepTimer = Timer(const Duration(hours:8 ), () {
+    _sleepTimer = Timer(const Duration(hours: 8), () {
       _wakeUp();
     });
-    
+
     // Show appropriate message
-    String message = shouldGivePoints 
-        ? 'Chicken is sleeping for 8 hours! +10 points & +10 coin earned! Zzz...'
-        : 'Chicken is sleeping for 8 hours! Zzz...';
-    
+    String message =
+        shouldGivePoints
+            ? 'Chicken is sleeping for 8 hours! +10 points & +10 coin earned! Zzz...'
+            : 'Chicken is sleeping for 8 hours! Zzz...';
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -197,14 +196,14 @@ class _BasePetRoomState extends State<BasePetRoom>
 
   void _wakeUp() {
     if (!_isSleeping) return;
-    
+
     setState(() {
       _isSleeping = false;
     });
-    
+
     _sleepTimer?.cancel();
     _sleepTimer = null;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Chicken woke up! Good morning!'),
@@ -216,14 +215,14 @@ class _BasePetRoomState extends State<BasePetRoom>
 
   void _startCornAnimation() {
     if (_showCornAnimation) return;
-    
+
     setState(() {
       _showCornAnimation = true;
     });
-    
+
     // Start the corn animation
     _cornController.forward();
-    
+
     // Hide animation after 3 seconds
     _cornAnimationTimer = Timer(const Duration(seconds: 5), () {
       if (mounted) {
@@ -247,7 +246,8 @@ class _BasePetRoomState extends State<BasePetRoom>
 
     final currentHunger = (widget.userData!['hunger'] ?? 100).toDouble();
     final currentEnergy = (widget.userData!['energy'] ?? 100).toDouble();
-    final currentCleanliness = (widget.userData!['cleanliness'] ?? 100).toDouble();
+    final currentCleanliness =
+        (widget.userData!['cleanliness'] ?? 100).toDouble();
 
     // Reduce each level by 0.1 points (minimum 0) for testing
     final newHunger = (currentHunger - 0.1).clamp(0.0, 100.0);
@@ -298,20 +298,22 @@ class _BasePetRoomState extends State<BasePetRoom>
 
     // Define notification thresholds (30%, 20%, 10%, 0%)
     List<double> thresholds = [0.3, 0.2, 0.1, 0.0];
-    
+
     // Check if current level has crossed any threshold
     bool shouldNotify = false;
     double crossedThreshold = 0.0;
-    
+
     for (double threshold in thresholds) {
       // Check if we've crossed the threshold (current <= threshold AND last was > threshold)
       // This handles the double precision issue where we might skip exact values
       if (currentLevel <= threshold && lastNotifiedLevel > threshold) {
         shouldNotify = true;
         crossedThreshold = threshold;
-        
+
         // Debug print to see threshold crossings
-        print('🔔 NOTIFICATION: ${assetPath} crossed ${(threshold * 100).toInt()}% threshold - Current: ${(currentLevel * 100).toStringAsFixed(1)}%, Last: ${(lastNotifiedLevel * 100).toStringAsFixed(1)}%');
+        print(
+          '🔔 NOTIFICATION: ${assetPath} crossed ${(threshold * 100).toInt()}% threshold - Current: ${(currentLevel * 100).toStringAsFixed(1)}%, Last: ${(lastNotifiedLevel * 100).toStringAsFixed(1)}%',
+        );
         break;
       }
     }
@@ -320,8 +322,7 @@ class _BasePetRoomState extends State<BasePetRoom>
     // 1. We crossed a threshold
     // 2. We haven't already notified for this level
     // 3. We're not already processing a notification for this asset
-    if (shouldNotify &&
-        !_pendingNotifications.contains(assetPath)) {
+    if (shouldNotify && !_pendingNotifications.contains(assetPath)) {
       _pendingNotifications.add(assetPath);
       _lastNotificationLevels[assetPath] = currentLevel;
 
@@ -371,11 +372,15 @@ class _BasePetRoomState extends State<BasePetRoom>
   }
 
   // Helper method to handle pet care with point rewards
-  Future<void> _handlePetCare(String statType, double currentLevel, String statName) async {
+  Future<void> _handlePetCare(
+    String statType,
+    double currentLevel,
+    String statName,
+  ) async {
     try {
       // Check if current level is 50% or below to give points
       bool shouldGivePoints = currentLevel <= 0.5;
-      
+
       // Update the pet stat to 100
       if (statType == 'hunger') {
         await UserService.instance.updatePetStats(hunger: 100.0);
@@ -390,8 +395,13 @@ class _BasePetRoomState extends State<BasePetRoom>
       // Update local state
       setState(() {
         widget.userData![statType] = 100.0;
-        _lastNotificationLevels.remove(statType == 'hunger' ? 'food' : 
-                                      statType == 'energy' ? 'sleep' : 'toilet');
+        _lastNotificationLevels.remove(
+          statType == 'hunger'
+              ? 'food'
+              : statType == 'energy'
+              ? 'sleep'
+              : 'toilet',
+        );
         if (statType == 'cleanliness') {
           _lastNotificationLevels.remove('shower');
         }
@@ -400,12 +410,12 @@ class _BasePetRoomState extends State<BasePetRoom>
       // Give points and coins if stat was low (50% or below)
       if (shouldGivePoints) {
         await UserService.instance.updatePoints(
-          (widget.userData!['points'] ?? 0) + 10
+          (widget.userData!['points'] ?? 0) + 10,
         );
-        
+
         // Also add coins (1 coin per 10 points earned)
         await CoinService.instance.addCoins(10);
-        
+
         // Update local points
         if (mounted) {
           setState(() {
@@ -415,10 +425,11 @@ class _BasePetRoomState extends State<BasePetRoom>
       }
 
       // Show appropriate message
-      String message = shouldGivePoints 
-          ? '$statName restored to 100! +10 points & +10 coin earned!'
-          : '$statName restored to 100';
-      
+      String message =
+          shouldGivePoints
+              ? '$statName restored to 100! +10 points & +10 coin earned!'
+              : '$statName restored to 100';
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -429,9 +440,9 @@ class _BasePetRoomState extends State<BasePetRoom>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Action failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Action failed: $e')));
       }
     }
   }
@@ -510,7 +521,11 @@ class _BasePetRoomState extends State<BasePetRoom>
                     Stack(
                       alignment: Alignment.bottomCenter,
                       children: [
-                        _buildAssetStatusIcon('assets/coin.png', 1.0), // Always full for coins
+                        _buildAssetStatusIcon(
+                          'assets/coin.png',
+                          1.0,
+                        ), // Always full for coins
+
                         Positioned(
                           bottom: -8,
                           child: StreamBuilder<int>(
@@ -556,7 +571,11 @@ class _BasePetRoomState extends State<BasePetRoom>
                       onTap:
                           widget.roomType == RoomType.kitchen
                               ? () async {
-                                await _handlePetCare('hunger', _getHungerLevel(), 'Hunger');
+                                await _handlePetCare(
+                                  'hunger',
+                                  _getHungerLevel(),
+                                  'Hunger',
+                                );
                               }
                               : null,
                     ),
@@ -567,7 +586,11 @@ class _BasePetRoomState extends State<BasePetRoom>
                       onTap:
                           widget.roomType == RoomType.bedroom
                               ? () async {
-                                await _handlePetCare('energy', _getEnergyLevel(), 'Energy');
+                                await _handlePetCare(
+                                  'energy',
+                                  _getEnergyLevel(),
+                                  'Energy',
+                                );
                               }
                               : null,
                     ),
@@ -578,13 +601,16 @@ class _BasePetRoomState extends State<BasePetRoom>
                       onTap:
                           widget.roomType == RoomType.bathroom
                               ? () async {
-                                await _handlePetCare('cleanliness', _getCleanlinessLevel(), 'Cleanliness');
+                                await _handlePetCare(
+                                  'cleanliness',
+                                  _getCleanlinessLevel(),
+                                  'Cleanliness',
+                                );
                               }
                               : null,
                     ),
 
                     const SizedBox(width: 50),
-                  
                   ],
                 ),
               ],
@@ -735,7 +761,13 @@ class _BasePetRoomState extends State<BasePetRoom>
                       scale: _getPetScale(),
                       child: Container(
                         height: 350, // Much bigger size (was 300)
-                        child: Image.asset(_getPetImage(), fit: BoxFit.contain),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Image.asset(_getPetImage(), fit: BoxFit.contain),
+                            _buildHatOverlay(),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -767,10 +799,18 @@ class _BasePetRoomState extends State<BasePetRoom>
                   onPressed: () async {
                     try {
                       if (widget.roomType == RoomType.bathroom) {
-                        await _handlePetCare('cleanliness', _getCleanlinessLevel(), 'Cleanliness');
+                        await _handlePetCare(
+                          'cleanliness',
+                          _getCleanlinessLevel(),
+                          'Cleanliness',
+                        );
                         _playShowerAnimation();
                       } else if (widget.roomType == RoomType.kitchen) {
-                        await _handlePetCare('hunger', _getHungerLevel(), 'Hunger');
+                        await _handlePetCare(
+                          'hunger',
+                          _getHungerLevel(),
+                          'Hunger',
+                        );
                         // Start corn animation
                         _startCornAnimation();
                       } else if (widget.roomType == RoomType.bedroom) {
@@ -912,12 +952,17 @@ class _BasePetRoomState extends State<BasePetRoom>
                       builder: (context, child) {
                         // Create a more complex animation with multiple effects
                         final scale = 0.3 + (0.7 * _cornAnimation.value);
-                        final rotation = _cornAnimation.value * 2 * 3.14159; // Full rotation
-                        final bounce = (1.0 + 0.3 * (1.0 - _cornAnimation.value)) * 
-                                     (1.0 + 0.2 * (1.0 - _cornAnimation.value));
-                        
+                        final rotation =
+                            _cornAnimation.value * 2 * 3.14159; // Full rotation
+                        final bounce =
+                            (1.0 + 0.3 * (1.0 - _cornAnimation.value)) *
+                            (1.0 + 0.2 * (1.0 - _cornAnimation.value));
+
                         return Transform.translate(
-                          offset: Offset(0, -20 * (1.0 - _cornAnimation.value)), // Move up slightly
+                          offset: Offset(
+                            0,
+                            -20 * (1.0 - _cornAnimation.value),
+                          ), // Move up slightly
                           child: Transform.scale(
                             scale: scale * bounce,
                             child: Transform.rotate(
@@ -1191,6 +1236,56 @@ class _BasePetRoomState extends State<BasePetRoom>
   String _getUsername() {
     if (widget.userData == null) return "Guest";
     return widget.userData!['username'] ?? "Guest";
+  }
+
+  String? _getEquippedHatAsset() {
+    final data = widget.userData;
+    if (data == null) return null;
+    final outfit = (data['currentOutfit'] as Map?) ?? const {};
+    final String? hatId = outfit['hat'] as String?;
+    if (hatId == null || hatId.isEmpty) return null;
+    return OutfitAssets.hatIdToAsset[hatId];
+  }
+
+  Widget _buildHatOverlay() {
+    // Optionally hide hat during shower animation
+    if (petState == 'showering') return const SizedBox.shrink();
+
+    final hatAsset = _getEquippedHatAsset();
+    if (hatAsset == null) return const SizedBox.shrink();
+
+    // Default transform
+    double offsetX = 0.0;
+    double offsetY = -90.0;
+    double extraScale = 1.0;
+
+    // Per-hat transform overrides
+    final data = widget.userData;
+    final String? hatId = (data?['currentOutfit'] as Map?)?['hat'] as String?;
+    if (hatId != null) {
+      final t = OutfitAssets.hatIdToTransform[hatId];
+      if (t != null && t.length == 3) {
+        offsetX = t[0];
+        offsetY = t[1];
+        extraScale = t[2];
+      }
+    }
+
+    // Global fine-tune: push hat slightly higher on the head
+    offsetY -= 10.0;
+
+    return Transform.translate(
+      offset: Offset(offsetX, offsetY),
+      child: Transform.scale(
+        scale: _getPetScale() * extraScale,
+        child: Image.asset(
+          hatAsset,
+          width: 120,
+          height: 120,
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
   }
 }
 

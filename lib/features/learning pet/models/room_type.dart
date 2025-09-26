@@ -43,6 +43,7 @@ extension RoomTypeExtension on RoomType {
         return 'assets/soap.png'; // Using soap icon for bathroom
       case RoomType.livingRoom:
         return 'assets/phone.png'; // Using phone icon for living room
+
     }
   }
 
@@ -55,7 +56,7 @@ extension RoomTypeExtension on RoomType {
       case RoomType.bathroom:
         return 'Shower';
       case RoomType.livingRoom:
-        return 'Phone';
+        return 'Community';
       default:
         return 'Maps';
     }
