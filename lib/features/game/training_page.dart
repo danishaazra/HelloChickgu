@@ -15,15 +15,13 @@ class TrainingPage extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF4E342E)),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF4E342E)),
           onPressed: () {
             if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop();
             } else {
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (context) => const LevelPage(),
-                ),
+                MaterialPageRoute(builder: (context) => const LevelPage()),
               );
             }
           },

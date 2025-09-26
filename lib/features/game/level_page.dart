@@ -30,21 +30,15 @@ class _LevelPageState extends State<LevelPage> {
   Set<int> completedLevels = {}; // Track completed levels
 
   void _openTraining() {
-    Navigator.of(
-      context,
-    )
-        .push(
-          MaterialPageRoute(
-            builder: (context) => const TrainingPage(),
-          ),
-        )
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => const TrainingPage()))
         .then((_) {
-      if (mounted) {
-        setState(() {
-          _trainingSelected = false;
+          if (mounted) {
+            setState(() {
+              _trainingSelected = false;
+            });
+          }
         });
-      }
-    });
   }
 
   void _onTapLevel(int level) {
@@ -79,12 +73,23 @@ class _LevelPageState extends State<LevelPage> {
           builder: (context, snapshot) {
             final hasResult = snapshot.hasData && snapshot.data != null;
             final data = snapshot.data;
-            final pointsText = hasResult ? (data!['points_collected'] ?? '-') .toString() : '---';
-            final timeText = hasResult ? _formatSeconds(((data!['time_taken_seconds'] ?? 0) as num).toInt()) : '---';
+            final pointsText =
+                hasResult
+                    ? (data!['points_collected'] ?? '-').toString()
+                    : '---';
+            final timeText =
+                hasResult
+                    ? _formatSeconds(
+                      ((data!['time_taken_seconds'] ?? 0) as num).toInt(),
+                    )
+                    : '---';
             return LevelCompletionPopup(
               level: level,
               isCompleted: hasResult,
-              onStartGame: hasResult ? () => _openReview(level, data!) : () => _navigateToQuiz(level),
+              onStartGame:
+                  hasResult
+                      ? () => _openReview(level, data!)
+                      : () => _navigateToQuiz(level),
               overridePointsText: pointsText,
               overrideTimeText: timeText,
               startLabel: hasResult ? 'Review Questions' : 'Start Game!',
@@ -144,40 +149,44 @@ class _LevelPageState extends State<LevelPage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => QuizReviewPage(
-              questions: quiz1Questions(),
-              selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
-            ),
+            builder:
+                (_) => QuizReviewPage(
+                  questions: quiz1Questions(),
+                  selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
+                ),
           ),
         );
       } else if (level == 2) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => QuizReviewPage(
-              questions: quiz2Questions(),
-              selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
-            ),
+            builder:
+                (_) => QuizReviewPage(
+                  questions: quiz2Questions(),
+                  selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
+                ),
           ),
         );
       } else if (level == 3) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => QuizReviewPage(
-              questions: quiz3Questions(),
-              selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
-            ),
+            builder:
+                (_) => QuizReviewPage(
+                  questions: quiz3Questions(),
+                  selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
+                ),
           ),
         );
       } else if (level == 4) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => QuizReviewPage(
-              questions: quiz4Questions(),
-              selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
-            ),
+            builder:
+                (_) => QuizReviewPage(
+                  questions: quiz4Questions(),
+                  selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
+                ),
           ),
         );
       }
@@ -276,7 +285,7 @@ class _LevelPageState extends State<LevelPage> {
                           border: Border.all(color: Colors.white, width: 2),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.home_outlined, size: 20),
+                          icon: const Icon(Icons.map_outlined, size: 20),
                           color: Colors.black,
                           onPressed: () {
                             Navigator.of(context).push(
@@ -1291,4 +1300,3 @@ class _AnimatedChickenState extends State<_AnimatedChicken>
     );
   }
 }
-
