@@ -255,10 +255,7 @@ class _UploadQuizPageState extends State<UploadQuizPage> {
             backgroundColor: Colors.transparent,
             appBar: AppBar(
               leading: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_ios,
-                  color: Color(0xFF4E342E),
-                ),
+                icon: const Icon(Icons.arrow_back, color: Color(0xFF4E342E)),
                 onPressed: () => Navigator.pop(context),
               ),
               title: const Text(
