@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutor Sign Up - Hello Chickgu</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: #ffffff;
+    }
+
+    .page {
+      display: flex;
+      height: 100%;
+      width: 100%;
+    }
+
+    .left {
+      flex: 0 0 40%;
+      background: #F4B942;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .right {
+      flex: 1;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .left-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 40px;
+    }
+
+    .welcome-images {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .welcome-images img { height: auto; }
+    .hello-img { max-width: 280px; }
+    .chickgu-img { max-width: 320px; }
+
+    .hero-wrap { position: relative; width: min(300px, 60%); aspect-ratio: 1 / 1; }
+    .tutor-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+    .msg-icon { position: absolute; top: 4%; right: 4%; width: 15%; height: auto; object-fit: contain; }
+    .book-icon { position: absolute; left: -8%; bottom: 6%; width: 22%; height: auto; object-fit: contain; transform: rotate(-8deg); }
+
+    .card {
+      width: min(520px, 95%);
+      border: 1px solid #eef2f6;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(20, 40, 80, 0.06);
+    }
+
+    .card h1 { margin: 0 0 8px; font-size: 28px; }
+    .card p { margin: 0 0 20px; color: #667085; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    label { font-weight: 600; color: #344054; }
+    input[type="text"], input[type="email"], input[type="password"] {
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #d0d5dd;
+      font-size: 14px;
+    }
+
+    .btn {
+      background: #F4B942;
+      color: #111827;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 16px;
+      width: 100%;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .btn:hover { filter: brightness(0.95); }
+
+    .below-link { margin-top: 12px; text-align: center; }
+    .below-link a { color: #111827; text-decoration: none; font-weight: 600; }
+    .below-link a:hover { text-decoration: underline; }
+
+    .hint { font-size: 12px; color: #6b7280; }
+
+    @media (max-width: 900px) { .left { flex-basis: 45%; } .book-icon { left: -10%; width: 34%; } }
+    @media (max-width: 720px) { .left { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="left">
+      <div class="left-content">
+        <div class="welcome-images">
+          <img src="../../../assets/hello.png" alt="Hello" class="hello-img">
+          <img src="../../../assets/chickgu.png" alt="Chickgu" class="chickgu-img">
+        </div>
+        <div class="hero-wrap">
+          <img class="tutor-img" src="../../../assets/tutor_chickgu.png" alt="Tutor Chickgu">
+          <img class="msg-icon" src="../../../assets/message_icon.png" alt="Message Icon">
+          <img class="book-icon" src="../../../assets/book.png" alt="Book">
+        </div>
+      </div>
+    </div>
+    <div class="right">
+      <form class="card" id="signupForm">
+        <h1>Create Tutor Account</h1>
+        <p>Only applicants approved by admin can sign up.</p>
+
+        <div class="field">
+          <label for="name">Full Name</label>
+          <input id="name" type="text" placeholder="Your name" required>
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="you@gmail.com" required>
+          <div class="hint">Must match your approved application email.</div>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="********" required>
+        </div>
+
+        <div class="field">
+          <label for="confirm">Confirm Password</label>
+          <input id="confirm" type="password" placeholder="********" required>
+        </div>
+
+        <button class="btn" type="submit">Sign up</button>
+        <div class="below-link">
+          <a href="login_tutor.html">Already have an account? Log in</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+      appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+      messagingSenderId: '864651268854',
+      projectId: 'hellochickgu',
+      authDomain: 'hellochickgu.firebaseapp.com',
+      storageBucket: 'hellochickgu.appspot.com',
+      measurementId: 'G-52RMQVE2SQ',
+    };
+
+    let auth = null;
+    let db = null;
+    try {
+      if (firebase.apps && firebase.apps.length) {
+        firebase.app();
+      } else {
+        firebase.initializeApp(firebaseConfig);
+      }
+      auth = firebase.auth();
+      db = firebase.firestore();
+    } catch (err) {
+      console.warn('Firebase init failed:', err);
+    }
+
+    const form = document.getElementById('signupForm');
+    const nameEl = document.getElementById('name');
+    const emailEl = document.getElementById('email');
+    const passEl = document.getElementById('password');
+    const confirmEl = document.getElementById('confirm');
+
+    async function findApprovedApplicantByEmail(email) {
+      const snap = await db.collection('tutor_applicants')
+        .where('applicantEmail', '==', email)
+        .limit(10)
+        .get();
+      let approvedDoc = null;
+      snap.forEach(doc => {
+        const d = doc.data() || {};
+        const status = (d.status || '').toLowerCase();
+        if (status === 'approved' || status === 'accepted' || status === 'active') {
+          if (!approvedDoc) approvedDoc = { id: doc.id, ...d };
+        }
+      });
+      return approvedDoc;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!auth || !db) { alert('Firebase is not configured.'); return; }
+      const name = nameEl.value.trim();
+      const email = emailEl.value.trim().toLowerCase();
+      const password = passEl.value;
+      const confirm = confirmEl.value;
+      if (!name || !email || !password || !confirm) { alert('Please fill all fields.'); return; }
+      if (password !== confirm) { alert('Passwords do not match.'); return; }
+
+      try {
+        // 1) Verify applicant exists and is approved/accepted by admin
+        const applicant = await findApprovedApplicantByEmail(email);
+        if (!applicant) {
+          alert('No approved application found for this email. Please wait for admin approval.');
+          return;
+        }
+
+        // 2) Create Auth user
+        const cred = await auth.createUserWithEmailAndPassword(email, password);
+        const uid = cred.user.uid;
+
+        // 3) Create tutor profile (status active)
+        const subjects = Array.isArray(applicant.subjects) ? applicant.subjects : (applicant.subject ? [applicant.subject] : []);
+        const qualifications = Array.isArray(applicant.qualifications) ? applicant.qualifications : (applicant.qualification ? [applicant.qualification] : []);
+
+        await db.collection('tutors').doc(uid).set({
+          name: name || applicant.applicantName || cred.user.displayName || '',
+          email: email,
+          subjects: subjects,
+          qualifications: qualifications,
+          status: 'active',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+
+        // 4) Link back to application (optional)
+        try {
+          await db.collection('tutor_applicants').doc(applicant.id).set({
+            tutorUid: uid,
+            status: 'approved',
+          }, { merge: true });
+        } catch (_) {}
+
+        alert('Account created! You can now log in.');
+        window.location.href = 'login_tutor.html';
+      } catch (err) {
+        alert(err && err.message ? err.message : 'Sign up failed');
+      }
+    });
+  </script>
+</body>
+</html>
+
+
