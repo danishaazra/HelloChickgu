@@ -39,7 +39,11 @@ Future<void> main() async {
   try {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
       final data = doc.data() as Map<String, dynamic>?;
       final points = (data?['points'] as int?) ?? 0;
       final coins = (data?['coins'] as int?) ?? 0;
@@ -60,7 +64,7 @@ class MyApp extends StatelessWidget {
       title: 'Hello Chickgu!',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const PetHomePage(),
+      home: const OnboardingPage(),
     );
   }
 }
