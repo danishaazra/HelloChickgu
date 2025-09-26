@@ -4,6 +4,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:hellochickgu/shared/theme/theme.dart';
 import 'package:hellochickgu/services/user_service.dart';
 import 'package:hellochickgu/services/notification_service.dart';
+import 'package:hellochickgu/services/coin_service.dart';
 import '../models/room_type.dart';
 
 class BasePetRoom extends StatefulWidget {
@@ -311,34 +312,40 @@ class _BasePetRoomState extends State<BasePetRoom>
                     Stack(
                       alignment: Alignment.bottomCenter,
                       children: [
-                        _buildPetCareIcon('assets/coin.png', _getPointsLevel()),
+                        _buildAssetStatusIcon('assets/coin.png', 1.0), // Always full for coins
                         Positioned(
                           bottom: -8,
-                          child: Text(
-                            _getPointsText(),
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                  offset: Offset(-1, -1),
-                                  color: AppTheme.primaryYellow,
+                          child: StreamBuilder<int>(
+                            stream: CoinService.instance.getCoinsStream(),
+                            builder: (context, snapshot) {
+                              final coins = snapshot.data ?? 0;
+                              return Text(
+                                '$coins',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      offset: Offset(-1, -1),
+                                      color: AppTheme.primaryYellow,
+                                    ),
+                                    Shadow(
+                                      offset: Offset(1, -1),
+                                      color: AppTheme.primaryYellow,
+                                    ),
+                                    Shadow(
+                                      offset: Offset(1, 1),
+                                      color: AppTheme.primaryYellow,
+                                    ),
+                                    Shadow(
+                                      offset: Offset(-1, 1),
+                                      color: AppTheme.primaryYellow,
+                                    ),
+                                  ],
                                 ),
-                                Shadow(
-                                  offset: Offset(1, -1),
-                                  color: AppTheme.primaryYellow,
-                                ),
-                                Shadow(
-                                  offset: Offset(1, 1),
-                                  color: AppTheme.primaryYellow,
-                                ),
-                                Shadow(
-                                  offset: Offset(-1, 1),
-                                  color: AppTheme.primaryYellow,
-                                ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -582,36 +589,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                     height: 75,
                     fit: BoxFit.contain,
                   ),
-                  onPressed:
-                      widget.roomType == RoomType.bathroom
-                          ? () async {
-                            try {
-                              await UserService.instance.updatePetStats(
-                                cleanliness: 100,
-                              );
-                              if (!mounted) return;
-                              setState(() {
-                                widget.userData!['cleanliness'] = 100;
-                                _lastNotificationLevels.remove('toilet');
-                              });
-                              _playShowerAnimation();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Cleanliness restored to 100'),
-                                ),
-                              );
-                            } catch (e) {
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Failed to update cleanliness: $e',
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                          : widget.onMapsPressed,
+                  
                   onPressed: () async {
                     try {
                       if (widget.roomType == RoomType.bathroom) {
