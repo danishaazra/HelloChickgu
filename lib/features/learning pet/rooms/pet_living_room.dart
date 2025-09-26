@@ -5,7 +5,7 @@ import '../models/room_type.dart';
 class PetLivingRoomPage extends StatelessWidget {
   final VoidCallback? onPreviousRoom;
   final VoidCallback? onNextRoom;
-  final VoidCallback? onMapsPressed;
+  final VoidCallback? onPhonePressed;
   final VoidCallback? onShopPressed;
   final VoidCallback? onLeaderboardPressed;
 
@@ -13,7 +13,7 @@ class PetLivingRoomPage extends StatelessWidget {
     super.key,
     this.onPreviousRoom,
     this.onNextRoom,
-    this.onMapsPressed,
+    this.onPhonePressed,
     this.onShopPressed,
     this.onLeaderboardPressed,
   });
@@ -24,10 +24,9 @@ class PetLivingRoomPage extends StatelessWidget {
       roomType: RoomType.livingRoom,
       onPreviousRoom: onPreviousRoom,
       onNextRoom: onNextRoom,
-      onMapsPressed: onMapsPressed,
+      onMapsPressed: onPhonePressed,
       onShopPressed: onShopPressed,
       onLeaderboardPressed: onLeaderboardPressed,
     );
   }
 }
-

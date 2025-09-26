@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../shared/theme/theme.dart';
 
 class LeaderboardScreen extends StatefulWidget {
@@ -17,26 +18,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   late Animation<double> _animation;
   late Animation<double> _fadeInAnimation;
   bool _showConfetti = false;
-  List<Map<String, dynamic>> allUsers = [
-    {
-      'name': 'Aisyah',
-      'points': 1200,
-      'avatar': 'assets/user2.png',
-      'color': Colors.blueAccent[100],
-    },
-    {
-      'name': 'Hafiz',
-      'points': 1450,
-      'avatar': 'assets/user6.png',
-      'color': const Color(0xFFFFE066),
-    },
-    {
-      'name': 'Haiqal',
-      'points': 980,
-      'avatar': 'assets/user10.png',
-      'color': Colors.purple[200],
-    },
-  ];
+  List<Map<String, dynamic>> allUsers = [];
+  bool _isLoading = true;
 
   // List of available profile pictures
   final List<String> profilePictures = [
@@ -55,7 +38,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   @override
   void initState() {
     super.initState();
-    _loadDummyUsers();
+    _loadUsersFromFirestore();
 
     _controller = AnimationController(
       vsync: this,
@@ -77,74 +60,63 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     });
   }
 
-  void _loadDummyUsers() {
-    // Create dummy leaderboard data
-    final dummyUsers = [
-      {
-        'name': 'Mohd Hafiz',
-        'points': 850,
-        'avatar': 'assets/user6.png',
-        'color': const Color(0xFFFFE066),
-      },
-      {
-        'name': 'Aisyah ',
-        'points': 720,
-        'avatar': 'assets/user2.png',
-        'color': Colors.blue[200],
-      },
-      {
-        'name': 'Haiqal',
-        'points': 680,
-        'avatar': 'assets/user10.png',
-        'color': Colors.purple[200],
-      },
-      {
-        'name': 'Amylia Sari',
-        'points': 620,
-        'avatar': 'assets/user3.png',
-        'color': Colors.teal[200],
-      },
-      {
-        'name': 'Siti Athirah',
-        'points': 580,
-        'avatar': 'assets/user4.png',
-        'color': Colors.red[200],
-      },
-      {
-        'name': 'Nurin Adni',
-        'points': 540,
-        'avatar': 'assets/user5.png',
-        'color': const Color.fromARGB(255, 225, 187, 248),
-      },
-      {
-        'name': 'Danisha Azra',
-        'points': 500,
-        'avatar': 'assets/user6.png',
-        'color': const Color.fromARGB(255, 203, 248, 187),
-      },
-      {
-        'name': 'Akmal Deni',
-        'points': 460,
-        'avatar': 'assets/user11.png',
-        'color': const Color.fromARGB(255, 248, 202, 187),
-      },
-      {
-        'name': 'Adiba Alya',
-        'points': 420,
-        'avatar': 'assets/user7.png',
-        'color': const Color.fromARGB(255, 248, 187, 216),
-      },
-      {
-        'name': 'Shafitri Jeffery',
-        'points': 380,
-        'avatar': 'assets/user8.png',
-        'color': const Color.fromARGB(255, 227, 248, 187),
-      },
-    ];
+  Future<void> _loadUsersFromFirestore() async {
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance
+              .collection('users')
+              .orderBy('points', descending: true)
+              .limit(50) // Limit to top 50 users
+              .get();
 
-    setState(() {
-      allUsers = dummyUsers;
-    });
+      final users = <Map<String, dynamic>>[];
+      final random = Random();
+
+      for (int i = 0; i < snapshot.docs.length; i++) {
+        final doc = snapshot.docs[i];
+        final data = doc.data();
+
+        // Skip users without username or points
+        if (data['username'] == null || data['points'] == null) continue;
+
+        users.add({
+          'name': data['username'] as String,
+          'points': data['points'] as int,
+          'avatar': profilePictures[i % profilePictures.length],
+          'color': _getRandomColor(random),
+        });
+      }
+
+      setState(() {
+        allUsers = users;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading users: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Color _getRandomColor(Random random) {
+    final colors = [
+      Colors.blue[200],
+      Colors.purple[200],
+      Colors.teal[200],
+      Colors.red[200],
+      Colors.orange[200],
+      Colors.green[200],
+      Colors.pink[200],
+      Colors.amber[200],
+      const Color(0xFFFFE066),
+      const Color.fromARGB(255, 225, 187, 248),
+      const Color.fromARGB(255, 203, 248, 187),
+      const Color.fromARGB(255, 248, 202, 187),
+      const Color.fromARGB(255, 248, 187, 216),
+      const Color.fromARGB(255, 227, 248, 187),
+    ];
+    return colors[random.nextInt(colors.length)]!;
   }
 
   List<Map<String, dynamic>> get topUsers {
@@ -265,7 +237,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                       Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                            icon: const Icon(Icons.arrow_back),
                             onPressed: () => Navigator.pop(context),
                           ),
                           const SizedBox(width: 8),
@@ -281,7 +253,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                         ],
                       ),
                       const SizedBox(height: 24),
-                      Center(child: _buildPodium()),
+                      Center(
+                        child:
+                            _isLoading
+                                ? const CircularProgressIndicator()
+                                : _buildPodium(),
+                      ),
                     ],
                   ),
                 ),
@@ -317,7 +294,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                         child: FadeTransition(
                           opacity: _fadeInAnimation,
                           child:
-                              otherUsers.isEmpty
+                              _isLoading
+                                  ? const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
+                                  : otherUsers.isEmpty
                                   ? Center(
                                     child: Text(
                                       'No other users yet',
