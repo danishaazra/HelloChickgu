@@ -94,7 +94,12 @@ class _MapChickguState extends State<MapChickgu> with TickerProviderStateMixin {
     switch (place) {
       case "Home":
         targetPage = const PetHomePage();
-        break;
+        // Replace the map with PetHomePage so back doesn't return to the map
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => targetPage),
+        );
+        return;
       case "Library":
         targetPage = const LibraryPage();
         break;
@@ -145,7 +150,7 @@ class _MapChickguState extends State<MapChickgu> with TickerProviderStateMixin {
                     ),
                     alignment: Alignment.center,
                     child: const Icon(
-                      CupertinoIcons.back,
+                      Icons.arrow_back,
                       color: Colors.white,
                       size: 22,
                     ),
