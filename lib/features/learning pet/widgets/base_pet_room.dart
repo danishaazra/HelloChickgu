@@ -54,7 +54,6 @@ class _BasePetRoomState extends State<BasePetRoom>
   
   // Sleep mode state
   bool _isSleeping = false;
-  DateTime? _sleepStartTime;
   Timer? _sleepTimer;
   
   // Corn animation state
@@ -120,19 +119,7 @@ class _BasePetRoomState extends State<BasePetRoom>
     // _startStreakAnimation();
   }
 
-  void _startIdleAnimation() {
-    _idleController.repeat(reverse: true);
-  }
 
-  void _playHappyAnimation() {
-    setState(() => petState = 'happy');
-    _happyController.forward().then((_) {
-      _happyController.reverse().then((_) {
-        setState(() => petState = 'idle');
-        _startIdleAnimation();
-      });
-    });
-  }
 
   void _playShowerAnimation() {
     setState(() => petState = 'showering');
@@ -142,9 +129,6 @@ class _BasePetRoomState extends State<BasePetRoom>
     });
   }
 
-  void _makeChickenDirty() {
-    setState(() => petState = 'dirty');
-  }
 
   @override
   void dispose() {
@@ -164,7 +148,6 @@ class _BasePetRoomState extends State<BasePetRoom>
     
     setState(() {
       _isSleeping = true;
-      _sleepStartTime = DateTime.now();
     });
     
     // Set energy to 100 when sleeping
@@ -189,7 +172,6 @@ class _BasePetRoomState extends State<BasePetRoom>
     
     setState(() {
       _isSleeping = false;
-      _sleepStartTime = null;
     });
     
     _sleepTimer?.cancel();
@@ -271,7 +253,6 @@ class _BasePetRoomState extends State<BasePetRoom>
   }
 
   void _scheduleLowLevelNotification(String assetPath) {
-    // Only show system notification if level is <= 50%
     double currentLevel = 0.0;
     if (assetPath.contains('food')) {
       currentLevel = _getHungerLevel();
@@ -284,38 +265,64 @@ class _BasePetRoomState extends State<BasePetRoom>
     // Get the last level we notified about for this asset
     double lastNotifiedLevel = _lastNotificationLevels[assetPath] ?? 1.0;
 
+    // Define notification thresholds (30%, 20%, 10%, 0%)
+    List<double> thresholds = [0.3, 0.2, 0.1, 0.0];
+    
+    // Check if current level has crossed any threshold
+    bool shouldNotify = false;
+    double crossedThreshold = 0.0;
+    
+    for (double threshold in thresholds) {
+      if (currentLevel <= threshold && lastNotifiedLevel > threshold) {
+        shouldNotify = true;
+        crossedThreshold = threshold;
+        break;
+      }
+    }
+
     // Only notify if:
-    // 1. Current level is 50% or below
+    // 1. We crossed a threshold
     // 2. We haven't already notified for this level
-    // 3. The level has actually dropped (not just a rebuild)
-    if (currentLevel <= 0.5 &&
-        !_pendingNotifications.contains(assetPath) &&
-        lastNotifiedLevel > 0.3) {
+    // 3. We're not already processing a notification for this asset
+    if (shouldNotify &&
+        !_pendingNotifications.contains(assetPath)) {
       _pendingNotifications.add(assetPath);
       _lastNotificationLevels[assetPath] = currentLevel;
 
       // Schedule the notification to show after the current frame
       SchedulerBinding.instance.addPostFrameCallback((_) {
-        _showLowLevelNotification(assetPath);
+        _showLowLevelNotification(assetPath, crossedThreshold);
       });
     }
   }
 
-  void _showLowLevelNotification(String assetPath) {
+  void _showLowLevelNotification(String assetPath, double threshold) {
     // Remove from pending notifications
     _pendingNotifications.remove(assetPath);
 
     String message = '';
     String action = '';
+    String urgency = '';
+
+    // Determine urgency level based on threshold
+    if (threshold <= 0.0) {
+      urgency = 'CRITICAL';
+    } else if (threshold <= 0.1) {
+      urgency = 'URGENT';
+    } else if (threshold <= 0.2) {
+      urgency = 'WARNING';
+    } else if (threshold <= 0.3) {
+      urgency = 'LOW';
+    }
 
     if (assetPath.contains('food')) {
-      message = 'Your pet is hungry!';
+      message = 'Your pet is hungry! ($urgency)';
       action = 'Feed your pet some food.';
     } else if (assetPath.contains('sleep')) {
-      message = 'Your pet is tired!';
+      message = 'Your pet is tired! ($urgency)';
       action = 'Let your pet rest.';
     } else if (assetPath.contains('toilet')) {
-      message = 'Your pet needs cleaning!';
+      message = 'Your pet needs cleaning! ($urgency)';
       action = 'Give your pet a shower.';
     }
 
@@ -439,7 +446,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                         ),
                       ],
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 20),
 
                     _buildPetCareIcon(
                       'assets/food.png',
@@ -459,7 +466,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                               }
                               : null,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 20),
                     _buildPetCareIcon(
                       'assets/sleep.png',
                       _getEnergyLevel(),
@@ -478,7 +485,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                               }
                               : null,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 20),
                     _buildPetCareIcon(
                       'assets/shower.png',
                       _getCleanlinessLevel(),
@@ -498,8 +505,8 @@ class _BasePetRoomState extends State<BasePetRoom>
                               : null,
                     ),
 
-                    const SizedBox(width: 8),
-                    _buildStreakIcon(3),
+                    const SizedBox(width: 50),
+                  
                   ],
                 ),
               ],
@@ -711,30 +718,12 @@ class _BasePetRoomState extends State<BasePetRoom>
                           ),
                         );
                       } else if (widget.roomType == RoomType.bedroom) {
-
-                        await UserService.instance.updatePetStats(energy: 100);
-                        if (!mounted) return;
-                        setState(() {
-                          widget.userData!['energy'] = 100;
-                          _lastNotificationLevels.remove('sleep');
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Energy restored to 100'),
-                          ),
-                        );
-                      } else if (widget.roomType == RoomType.livingRoom) {
-                        // Phone action for living room
-                        if (widget.onMapsPressed != null) {
-                          widget.onMapsPressed!();
-
                         if (_isSleeping) {
                           // If already sleeping, wake up (turn on light)
                           _wakeUp();
                         } else {
                           // Start sleep mode (turn off light)
                           _startSleepMode();
-
                         }
                       } else {
                         // Default action (e.g., Maps)
@@ -1124,18 +1113,6 @@ class _BasePetRoomState extends State<BasePetRoom>
   }
 
   // Helper methods to get data from userData
-  String _getPointsText() {
-    if (widget.userData == null) return "0";
-    return (widget.userData!['points'] ?? 0).toString();
-  }
-
-  double _getPointsLevel() {
-    if (widget.userData == null) return 0.0;
-    final points = (widget.userData!['points'] ?? 0) as int;
-    // Map points to 0.0 - 1.0 range for ring fill. Assuming 0-100 baseline.
-    // If your economy allows more than 100 coins, cap at 1.0.
-    return (points / 100.0).clamp(0.0, 1.0);
-  }
 
   double _getHungerLevel() {
     if (widget.userData == null) return 0.0;
