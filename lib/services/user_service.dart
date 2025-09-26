@@ -55,9 +55,9 @@ class UserService {
 
   /// Update pet care stats
   Future<void> updatePetStats({
-    int? hunger,
-    int? cleanliness,
-    int? energy,
+    double? hunger,
+    double? cleanliness,
+    double? energy,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -86,18 +86,18 @@ class UserService {
       final data = snap.data() as Map<String, dynamic>?;
       if (data == null) return;
       final Timestamp? ts = data['lastUpdated'] as Timestamp?;
-      final int hunger = (data['hunger'] as int?) ?? 100;
-      final int energy = (data['energy'] as int?) ?? 100;
-      final int cleanliness = (data['cleanliness'] as int?) ?? 100;
+      final double hunger = (data['hunger'] as num?)?.toDouble() ?? 100.0;
+      final double energy = (data['energy'] as num?)?.toDouble() ?? 100.0;
+      final double cleanliness = (data['cleanliness'] as num?)?.toDouble() ?? 100.0;
 
       DateTime last = ts?.toDate() ?? DateTime.now();
       final int minutes = DateTime.now().difference(last).inMinutes;
       if (minutes <= 0) return;
 
-      int delta = (minutes * 5);
-      final int newHunger = (hunger - delta).clamp(0, 100);
-      final int newEnergy = (energy - delta).clamp(0, 100);
-      final int newClean = (cleanliness - delta).clamp(0, 100);
+      double delta = (minutes * 5.0);
+      final double newHunger = (hunger - delta).clamp(0.0, 100.0);
+      final double newEnergy = (energy - delta).clamp(0.0, 100.0);
+      final double newClean = (cleanliness - delta).clamp(0.0, 100.0);
 
       if (newHunger != hunger || newEnergy != energy || newClean != cleanliness) {
         await FirebaseFirestore.instance.collection('users').doc(uid).update({

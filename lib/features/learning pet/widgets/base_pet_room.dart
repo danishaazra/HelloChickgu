@@ -40,15 +40,26 @@ class _BasePetRoomState extends State<BasePetRoom>
   late AnimationController _happyController;
   late AnimationController _hungryController;
   late AnimationController _showerController;
+  late AnimationController _cornController;
   late Animation<double> _idleAnimation;
   late Animation<double> _happyAnimation;
   late Animation<double> _hungryAnimation;
   late Animation<double> _showerAnimation;
+  late Animation<double> _cornAnimation;
 
   String petState = 'idle'; // idle, happy, hungry, sleepy, dirty
   Timer? _levelReductionTimer;
   Set<String> _pendingNotifications = {};
   Map<String, double> _lastNotificationLevels = {};
+  
+  // Sleep mode state
+  bool _isSleeping = false;
+  DateTime? _sleepStartTime;
+  Timer? _sleepTimer;
+  
+  // Corn animation state
+  bool _showCornAnimation = false;
+  Timer? _cornAnimationTimer;
 
   @override
   void initState() {
@@ -93,6 +104,15 @@ class _BasePetRoomState extends State<BasePetRoom>
       CurvedAnimation(parent: _showerController, curve: Curves.easeInOut),
     );
 
+    // Corn animation (bounce, scale, and rotate)
+    _cornController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _cornAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _cornController, curve: Curves.elasticOut),
+    );
+
     // Start idle animation - DISABLED FOR TESTING
     // _startIdleAnimation();
 
@@ -129,11 +149,80 @@ class _BasePetRoomState extends State<BasePetRoom>
   @override
   void dispose() {
     _levelReductionTimer?.cancel();
+    _sleepTimer?.cancel();
+    _cornAnimationTimer?.cancel();
     _idleController.dispose();
     _happyController.dispose();
     _hungryController.dispose();
     _showerController.dispose();
+    _cornController.dispose();
     super.dispose();
+  }
+
+  void _startSleepMode() {
+    if (_isSleeping) return;
+    
+    setState(() {
+      _isSleeping = true;
+      _sleepStartTime = DateTime.now();
+    });
+    
+    // Set energy to 100 when sleeping
+    UserService.instance.updatePetStats(energy: 100.0);
+    
+    // Wake up after 2 minutes
+    _sleepTimer = Timer(const Duration(hours:8 ), () {
+      _wakeUp();
+    });
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Chicken is sleeping for 8 hours! Zzz...'),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _wakeUp() {
+    if (!_isSleeping) return;
+    
+    setState(() {
+      _isSleeping = false;
+      _sleepStartTime = null;
+    });
+    
+    _sleepTimer?.cancel();
+    _sleepTimer = null;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Chicken woke up! Good morning!'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _startCornAnimation() {
+    if (_showCornAnimation) return;
+    
+    setState(() {
+      _showCornAnimation = true;
+    });
+    
+    // Start the corn animation
+    _cornController.forward();
+    
+    // Hide animation after 3 seconds
+    _cornAnimationTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() {
+          _showCornAnimation = false;
+        });
+        _cornController.reset();
+      }
+    });
   }
 
   void _startLevelReductionTimer() {
@@ -146,14 +235,14 @@ class _BasePetRoomState extends State<BasePetRoom>
   void _reducePetLevels() async {
     if (widget.userData == null) return;
 
-    final currentHunger = widget.userData!['hunger'] ?? 100;
-    final currentEnergy = widget.userData!['energy'] ?? 100;
-    final currentCleanliness = widget.userData!['cleanliness'] ?? 100;
+    final currentHunger = (widget.userData!['hunger'] ?? 100).toDouble();
+    final currentEnergy = (widget.userData!['energy'] ?? 100).toDouble();
+    final currentCleanliness = (widget.userData!['cleanliness'] ?? 100).toDouble();
 
-    // Reduce each level by 3 points (minimum 0) for testing
-    final newHunger = (currentHunger - 3).clamp(0, 100);
-    final newEnergy = (currentEnergy - 3).clamp(0, 100);
-    final newCleanliness = (currentCleanliness - 3).clamp(0, 100);
+    // Reduce each level by 0.167 points (minimum 0) for testing
+    final newHunger = (currentHunger - 0.167).clamp(0.0, 100.0);
+    final newEnergy = (currentEnergy - 0.167).clamp(0.0, 100.0);
+    final newCleanliness = (currentCleanliness - 0.167).clamp(0.0, 100.0);
 
     // Update in Firebase
     await UserService.instance.updatePetStats(
@@ -360,11 +449,11 @@ class _BasePetRoomState extends State<BasePetRoom>
                               ? () async {
                                 // Set cleanliness to 100 in Firebase and locally
                                 await UserService.instance.updatePetStats(
-                                  hunger: 100,
+                                  hunger: 100.0,
                                 );
                                 if (mounted && widget.userData != null) {
                                   setState(() {
-                                    widget.userData!['hunger'] = 100;
+                                    widget.userData!['hunger'] = 100.0;
                                   });
                                 }
                               }
@@ -377,13 +466,13 @@ class _BasePetRoomState extends State<BasePetRoom>
                       onTap:
                           widget.roomType == RoomType.bedroom
                               ? () async {
-                                // Set cleanliness to 100 in Firebase and locally
+                                // Set energy to 100 in Firebase and locally
                                 await UserService.instance.updatePetStats(
-                                  energy: 100,
+                                  energy: 100.0,
                                 );
                                 if (mounted && widget.userData != null) {
                                   setState(() {
-                                    widget.userData!['energy'] = 100;
+                                    widget.userData!['energy'] = 100.0;
                                   });
                                 }
                               }
@@ -398,11 +487,11 @@ class _BasePetRoomState extends State<BasePetRoom>
                               ? () async {
                                 // Set cleanliness to 100 in Firebase and locally
                                 await UserService.instance.updatePetStats(
-                                  cleanliness: 100,
+                                  cleanliness: 100.0,
                                 );
                                 if (mounted && widget.userData != null) {
                                   setState(() {
-                                    widget.userData!['cleanliness'] = 100;
+                                    widget.userData!['cleanliness'] = 100.0;
                                   });
                                 }
                               }
@@ -594,11 +683,11 @@ class _BasePetRoomState extends State<BasePetRoom>
                     try {
                       if (widget.roomType == RoomType.bathroom) {
                         await UserService.instance.updatePetStats(
-                          cleanliness: 100,
+                          cleanliness: 100.0,
                         );
                         if (!mounted) return;
                         setState(() {
-                          widget.userData!['cleanliness'] = 100;
+                          widget.userData!['cleanliness'] = 100.0;
                           _lastNotificationLevels.remove('toilet');
                         });
                         _playShowerAnimation();
@@ -608,29 +697,27 @@ class _BasePetRoomState extends State<BasePetRoom>
                           ),
                         );
                       } else if (widget.roomType == RoomType.kitchen) {
-                        await UserService.instance.updatePetStats(hunger: 100);
+                        await UserService.instance.updatePetStats(hunger: 100.0);
                         if (!mounted) return;
                         setState(() {
-                          widget.userData!['hunger'] = 100;
+                          widget.userData!['hunger'] = 100.0;
                           _lastNotificationLevels.remove('food');
                         });
+                        // Start corn animation
+                        _startCornAnimation();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Hunger restored to 100'),
                           ),
                         );
                       } else if (widget.roomType == RoomType.bedroom) {
-                        await UserService.instance.updatePetStats(energy: 100);
-                        if (!mounted) return;
-                        setState(() {
-                          widget.userData!['energy'] = 100;
-                          _lastNotificationLevels.remove('sleep');
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Energy restored to 100'),
-                          ),
-                        );
+                        if (_isSleeping) {
+                          // If already sleeping, wake up (turn on light)
+                          _wakeUp();
+                        } else {
+                          // Start sleep mode (turn off light)
+                          _startSleepMode();
+                        }
                       } else {
                         // Default action (e.g., Maps)
                         if (widget.onMapsPressed != null)
@@ -701,6 +788,102 @@ class _BasePetRoomState extends State<BasePetRoom>
               ],
             ),
           ),
+
+          // Sleep mode dark overlay
+          if (_isSleeping)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  color: Colors.black.withOpacity(0.8),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.bedtime,
+                          size: 80,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Chicken is sleeping...',
+                          style: TextStyle(
+                            fontSize: 24,
+                            color: Colors.white.withOpacity(0.8),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Zzz... Zzz... Zzz...',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Tap the lamp to turn on the light',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // Corn animation overlay
+          if (_showCornAnimation)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  color: Colors.transparent,
+                  child: Center(
+                    child: AnimatedBuilder(
+                      animation: _cornAnimation,
+                      builder: (context, child) {
+                        // Create a more complex animation with multiple effects
+                        final scale = 0.3 + (0.7 * _cornAnimation.value);
+                        final rotation = _cornAnimation.value * 2 * 3.14159; // Full rotation
+                        final bounce = (1.0 + 0.3 * (1.0 - _cornAnimation.value)) * 
+                                     (1.0 + 0.2 * (1.0 - _cornAnimation.value));
+                        
+                        return Transform.translate(
+                          offset: Offset(0, -20 * (1.0 - _cornAnimation.value)), // Move up slightly
+                          child: Transform.scale(
+                            scale: scale * bounce,
+                            child: Transform.rotate(
+                              angle: rotation,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.orange.withOpacity(0.3),
+                                      blurRadius: 20,
+                                      spreadRadius: 5,
+                                    ),
+                                  ],
+                                ),
+                                child: Image.asset(
+                                  'assets/corncorn.png',
+                                  width: 300,
+                                  height: 300,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -937,19 +1120,19 @@ class _BasePetRoomState extends State<BasePetRoom>
 
   double _getHungerLevel() {
     if (widget.userData == null) return 0.0;
-    final hunger = widget.userData!['hunger'] ?? 0;
+    final hunger = (widget.userData!['hunger'] ?? 0).toDouble();
     return hunger / 100.0; // Convert to 0.0-1.0 range
   }
 
   double _getEnergyLevel() {
     if (widget.userData == null) return 0.0;
-    final energy = widget.userData!['energy'] ?? 0;
+    final energy = (widget.userData!['energy'] ?? 0).toDouble();
     return energy / 100.0; // Convert to 0.0-1.0 range
   }
 
   double _getCleanlinessLevel() {
     if (widget.userData == null) return 0.0;
-    final cleanliness = widget.userData!['cleanliness'] ?? 0;
+    final cleanliness = (widget.userData!['cleanliness'] ?? 0).toDouble();
     return cleanliness / 100.0; // Convert to 0.0-1.0 range
   }
 
