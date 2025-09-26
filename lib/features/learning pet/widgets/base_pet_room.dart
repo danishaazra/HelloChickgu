@@ -582,36 +582,6 @@ class _BasePetRoomState extends State<BasePetRoom>
                     height: 75,
                     fit: BoxFit.contain,
                   ),
-                  onPressed:
-                      widget.roomType == RoomType.bathroom
-                          ? () async {
-                            try {
-                              await UserService.instance.updatePetStats(
-                                cleanliness: 100,
-                              );
-                              if (!mounted) return;
-                              setState(() {
-                                widget.userData!['cleanliness'] = 100;
-                                _lastNotificationLevels.remove('toilet');
-                              });
-                              _playShowerAnimation();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Cleanliness restored to 100'),
-                                ),
-                              );
-                            } catch (e) {
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Failed to update cleanliness: $e',
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                          : widget.onMapsPressed,
                   onPressed: () async {
                     try {
                       if (widget.roomType == RoomType.bathroom) {
@@ -653,10 +623,16 @@ class _BasePetRoomState extends State<BasePetRoom>
                             content: Text('Energy restored to 100'),
                           ),
                         );
+                      } else if (widget.roomType == RoomType.livingRoom) {
+                        // Phone action for living room
+                        if (widget.onMapsPressed != null) {
+                          widget.onMapsPressed!();
+                        }
                       } else {
                         // Default action (e.g., Maps)
-                        if (widget.onMapsPressed != null)
+                        if (widget.onMapsPressed != null) {
                           widget.onMapsPressed!();
+                        }
                       }
                     } catch (e) {
                       if (!mounted) return;
