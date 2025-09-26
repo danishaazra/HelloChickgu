@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:hellochickgu/services/user_service.dart';
+import 'package:hellochickgu/services/coin_service.dart';
 
 class QuizService {
   QuizService._internal();
@@ -42,6 +43,12 @@ class QuizService {
         'points': FieldValue.increment(pointsCollected),
         'lastUpdated': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+      
+      // Also add coins (1 coin per 10 points earned)
+      final coinsToAdd = pointsCollected ~/ 10;
+      if (coinsToAdd > 0) {
+        await CoinService.instance.addCoins(coinsToAdd);
+      }
     } catch (_) {}
   }
 

@@ -4,7 +4,9 @@ import 'package:flutter/scheduler.dart';
 import 'package:hellochickgu/shared/theme/theme.dart';
 import 'package:hellochickgu/services/user_service.dart';
 import 'package:hellochickgu/services/notification_service.dart';
+import 'package:hellochickgu/services/coin_service.dart';
 import '../models/room_type.dart';
+import '../outfit_assets.dart';
 
 class BasePetRoom extends StatefulWidget {
   final RoomType roomType;
@@ -39,15 +41,25 @@ class _BasePetRoomState extends State<BasePetRoom>
   late AnimationController _happyController;
   late AnimationController _hungryController;
   late AnimationController _showerController;
+  late AnimationController _cornController;
   late Animation<double> _idleAnimation;
   late Animation<double> _happyAnimation;
   late Animation<double> _hungryAnimation;
   late Animation<double> _showerAnimation;
+  late Animation<double> _cornAnimation;
 
   String petState = 'idle'; // idle, happy, hungry, sleepy, dirty
   Timer? _levelReductionTimer;
   Set<String> _pendingNotifications = {};
   Map<String, double> _lastNotificationLevels = {};
+
+  // Sleep mode state
+  bool _isSleeping = false;
+  Timer? _sleepTimer;
+
+  // Corn animation state
+  bool _showCornAnimation = false;
+  Timer? _cornAnimationTimer;
 
   @override
   void initState() {
@@ -92,25 +104,20 @@ class _BasePetRoomState extends State<BasePetRoom>
       CurvedAnimation(parent: _showerController, curve: Curves.easeInOut),
     );
 
+    // Corn animation (bounce, scale, and rotate)
+    _cornController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _cornAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _cornController, curve: Curves.elasticOut),
+    );
+
     // Start idle animation - DISABLED FOR TESTING
     // _startIdleAnimation();
 
     // Start streak animation - DISABLED
     // _startStreakAnimation();
-  }
-
-  void _startIdleAnimation() {
-    _idleController.repeat(reverse: true);
-  }
-
-  void _playHappyAnimation() {
-    setState(() => petState = 'happy');
-    _happyController.forward().then((_) {
-      _happyController.reverse().then((_) {
-        setState(() => petState = 'idle');
-        _startIdleAnimation();
-      });
-    });
   }
 
   void _playShowerAnimation() {
@@ -121,18 +128,110 @@ class _BasePetRoomState extends State<BasePetRoom>
     });
   }
 
-  void _makeChickenDirty() {
-    setState(() => petState = 'dirty');
-  }
-
   @override
   void dispose() {
     _levelReductionTimer?.cancel();
+    _sleepTimer?.cancel();
+    _cornAnimationTimer?.cancel();
     _idleController.dispose();
     _happyController.dispose();
     _hungryController.dispose();
     _showerController.dispose();
+    _cornController.dispose();
     super.dispose();
+  }
+
+  void _startSleepMode() async {
+    if (_isSleeping) return;
+
+    setState(() {
+      _isSleeping = true;
+    });
+
+    // Check if energy is 50% or below to give points
+    double currentEnergy = _getEnergyLevel();
+    bool shouldGivePoints = currentEnergy <= 0.5;
+
+    // Set energy to 100 when sleeping
+    await UserService.instance.updatePetStats(energy: 100.0);
+
+    // Give points and coins if energy was low (50% or below)
+    if (shouldGivePoints) {
+      await UserService.instance.updatePoints(
+        (widget.userData!['points'] ?? 0) + 10,
+      );
+
+      // Also add coins (1 coin per 10 points earned)
+      await CoinService.instance.addCoins(10);
+
+      // Update local points
+      if (mounted) {
+        setState(() {
+          widget.userData!['points'] = (widget.userData!['points'] ?? 0) + 10;
+        });
+      }
+    }
+
+    // Wake up after 2 minutes
+    _sleepTimer = Timer(const Duration(hours: 8), () {
+      _wakeUp();
+    });
+
+    // Show appropriate message
+    String message =
+        shouldGivePoints
+            ? 'Chicken is sleeping for 8 hours! +10 points & +10 coin earned! Zzz...'
+            : 'Chicken is sleeping for 8 hours! Zzz...';
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: shouldGivePoints ? Colors.green : Colors.blue,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _wakeUp() {
+    if (!_isSleeping) return;
+
+    setState(() {
+      _isSleeping = false;
+    });
+
+    _sleepTimer?.cancel();
+    _sleepTimer = null;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Chicken woke up! Good morning!'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _startCornAnimation() {
+    if (_showCornAnimation) return;
+
+    setState(() {
+      _showCornAnimation = true;
+    });
+
+    // Start the corn animation
+    _cornController.forward();
+
+    // Hide animation after 3 seconds
+    _cornAnimationTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() {
+          _showCornAnimation = false;
+        });
+        _cornController.reset();
+      }
+    });
   }
 
   void _startLevelReductionTimer() {
@@ -145,14 +244,15 @@ class _BasePetRoomState extends State<BasePetRoom>
   void _reducePetLevels() async {
     if (widget.userData == null) return;
 
-    final currentHunger = widget.userData!['hunger'] ?? 100;
-    final currentEnergy = widget.userData!['energy'] ?? 100;
-    final currentCleanliness = widget.userData!['cleanliness'] ?? 100;
+    final currentHunger = (widget.userData!['hunger'] ?? 100).toDouble();
+    final currentEnergy = (widget.userData!['energy'] ?? 100).toDouble();
+    final currentCleanliness =
+        (widget.userData!['cleanliness'] ?? 100).toDouble();
 
-    // Reduce each level by 3 points (minimum 0) for testing
-    final newHunger = (currentHunger - 3).clamp(0, 100);
-    final newEnergy = (currentEnergy - 3).clamp(0, 100);
-    final newCleanliness = (currentCleanliness - 3).clamp(0, 100);
+    // Reduce each level by 0.1 points (minimum 0) for testing
+    final newHunger = (currentHunger - 0.1).clamp(0.0, 100.0);
+    final newEnergy = (currentEnergy - 0.1).clamp(0.0, 100.0);
+    final newCleanliness = (currentCleanliness - 0.1).clamp(0.0, 100.0);
 
     // Update in Firebase
     await UserService.instance.updatePetStats(
@@ -173,7 +273,10 @@ class _BasePetRoomState extends State<BasePetRoom>
     // Reset notification tracking if levels are restored above 30%
     if (newHunger > 30) _lastNotificationLevels.remove('food');
     if (newEnergy > 30) _lastNotificationLevels.remove('sleep');
-    if (newCleanliness > 30) _lastNotificationLevels.remove('toilet');
+    if (newCleanliness > 30) {
+      _lastNotificationLevels.remove('toilet');
+      _lastNotificationLevels.remove('shower');
+    }
 
     print(
       'Pet levels updated - Hunger: $newHunger, Energy: $newEnergy, Cleanliness: $newCleanliness',
@@ -181,51 +284,82 @@ class _BasePetRoomState extends State<BasePetRoom>
   }
 
   void _scheduleLowLevelNotification(String assetPath) {
-    // Only show system notification if level is <= 50%
     double currentLevel = 0.0;
     if (assetPath.contains('food')) {
       currentLevel = _getHungerLevel();
     } else if (assetPath.contains('sleep')) {
       currentLevel = _getEnergyLevel();
-    } else if (assetPath.contains('toilet')) {
+    } else if (assetPath.contains('toilet') || assetPath.contains('shower')) {
       currentLevel = _getCleanlinessLevel();
     }
 
     // Get the last level we notified about for this asset
     double lastNotifiedLevel = _lastNotificationLevels[assetPath] ?? 1.0;
 
+    // Define notification thresholds (30%, 20%, 10%, 0%)
+    List<double> thresholds = [0.3, 0.2, 0.1, 0.0];
+
+    // Check if current level has crossed any threshold
+    bool shouldNotify = false;
+    double crossedThreshold = 0.0;
+
+    for (double threshold in thresholds) {
+      // Check if we've crossed the threshold (current <= threshold AND last was > threshold)
+      // This handles the double precision issue where we might skip exact values
+      if (currentLevel <= threshold && lastNotifiedLevel > threshold) {
+        shouldNotify = true;
+        crossedThreshold = threshold;
+
+        // Debug print to see threshold crossings
+        print(
+          '🔔 NOTIFICATION: ${assetPath} crossed ${(threshold * 100).toInt()}% threshold - Current: ${(currentLevel * 100).toStringAsFixed(1)}%, Last: ${(lastNotifiedLevel * 100).toStringAsFixed(1)}%',
+        );
+        break;
+      }
+    }
+
     // Only notify if:
-    // 1. Current level is 50% or below
+    // 1. We crossed a threshold
     // 2. We haven't already notified for this level
-    // 3. The level has actually dropped (not just a rebuild)
-    if (currentLevel <= 0.5 &&
-        !_pendingNotifications.contains(assetPath) &&
-        lastNotifiedLevel > 0.3) {
+    // 3. We're not already processing a notification for this asset
+    if (shouldNotify && !_pendingNotifications.contains(assetPath)) {
       _pendingNotifications.add(assetPath);
       _lastNotificationLevels[assetPath] = currentLevel;
 
       // Schedule the notification to show after the current frame
       SchedulerBinding.instance.addPostFrameCallback((_) {
-        _showLowLevelNotification(assetPath);
+        _showLowLevelNotification(assetPath, crossedThreshold);
       });
     }
   }
 
-  void _showLowLevelNotification(String assetPath) {
+  void _showLowLevelNotification(String assetPath, double threshold) {
     // Remove from pending notifications
     _pendingNotifications.remove(assetPath);
 
     String message = '';
     String action = '';
+    String urgency = '';
+
+    // Determine urgency level based on threshold
+    if (threshold <= 0.0) {
+      urgency = 'CRITICAL';
+    } else if (threshold <= 0.1) {
+      urgency = 'URGENT';
+    } else if (threshold <= 0.2) {
+      urgency = 'WARNING';
+    } else if (threshold <= 0.3) {
+      urgency = 'LOW';
+    }
 
     if (assetPath.contains('food')) {
-      message = 'Your pet is hungry!';
+      message = 'Your pet is hungry! ($urgency)';
       action = 'Feed your pet some food.';
     } else if (assetPath.contains('sleep')) {
-      message = 'Your pet is tired!';
+      message = 'Your pet is tired! ($urgency)';
       action = 'Let your pet rest.';
-    } else if (assetPath.contains('toilet')) {
-      message = 'Your pet needs cleaning!';
+    } else if (assetPath.contains('toilet') || assetPath.contains('shower')) {
+      message = 'Your pet needs cleaning! ($urgency)';
       action = 'Give your pet a shower.';
     }
 
@@ -234,6 +368,82 @@ class _BasePetRoomState extends State<BasePetRoom>
         title: message,
         body: action,
       );
+    }
+  }
+
+  // Helper method to handle pet care with point rewards
+  Future<void> _handlePetCare(
+    String statType,
+    double currentLevel,
+    String statName,
+  ) async {
+    try {
+      // Check if current level is 50% or below to give points
+      bool shouldGivePoints = currentLevel <= 0.5;
+
+      // Update the pet stat to 100
+      if (statType == 'hunger') {
+        await UserService.instance.updatePetStats(hunger: 100.0);
+      } else if (statType == 'energy') {
+        await UserService.instance.updatePetStats(energy: 100.0);
+      } else if (statType == 'cleanliness') {
+        await UserService.instance.updatePetStats(cleanliness: 100.0);
+      }
+
+      if (!mounted) return;
+
+      // Update local state
+      setState(() {
+        widget.userData![statType] = 100.0;
+        _lastNotificationLevels.remove(
+          statType == 'hunger'
+              ? 'food'
+              : statType == 'energy'
+              ? 'sleep'
+              : 'toilet',
+        );
+        if (statType == 'cleanliness') {
+          _lastNotificationLevels.remove('shower');
+        }
+      });
+
+      // Give points and coins if stat was low (50% or below)
+      if (shouldGivePoints) {
+        await UserService.instance.updatePoints(
+          (widget.userData!['points'] ?? 0) + 10,
+        );
+
+        // Also add coins (1 coin per 10 points earned)
+        await CoinService.instance.addCoins(10);
+
+        // Update local points
+        if (mounted) {
+          setState(() {
+            widget.userData!['points'] = (widget.userData!['points'] ?? 0) + 10;
+          });
+        }
+      }
+
+      // Show appropriate message
+      String message =
+          shouldGivePoints
+              ? '$statName restored to 100! +10 points & +10 coin earned!'
+              : '$statName restored to 100';
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: shouldGivePoints ? Colors.green : Colors.blue,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Action failed: $e')));
+      }
     }
   }
 
@@ -311,39 +521,49 @@ class _BasePetRoomState extends State<BasePetRoom>
                     Stack(
                       alignment: Alignment.bottomCenter,
                       children: [
-                        _buildPetCareIcon('assets/coin.png', _getPointsLevel()),
+                        _buildAssetStatusIcon(
+                          'assets/coin.png',
+                          1.0,
+                        ), // Always full for coins
+
                         Positioned(
                           bottom: -8,
-                          child: Text(
-                            _getPointsText(),
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                  offset: Offset(-1, -1),
-                                  color: AppTheme.primaryYellow,
+                          child: StreamBuilder<int>(
+                            stream: CoinService.instance.getCoinsStream(),
+                            builder: (context, snapshot) {
+                              final coins = snapshot.data ?? 0;
+                              return Text(
+                                '$coins',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      offset: Offset(-1, -1),
+                                      color: AppTheme.primaryYellow,
+                                    ),
+                                    Shadow(
+                                      offset: Offset(1, -1),
+                                      color: AppTheme.primaryYellow,
+                                    ),
+                                    Shadow(
+                                      offset: Offset(1, 1),
+                                      color: AppTheme.primaryYellow,
+                                    ),
+                                    Shadow(
+                                      offset: Offset(-1, 1),
+                                      color: AppTheme.primaryYellow,
+                                    ),
+                                  ],
                                 ),
-                                Shadow(
-                                  offset: Offset(1, -1),
-                                  color: AppTheme.primaryYellow,
-                                ),
-                                Shadow(
-                                  offset: Offset(1, 1),
-                                  color: AppTheme.primaryYellow,
-                                ),
-                                Shadow(
-                                  offset: Offset(-1, 1),
-                                  color: AppTheme.primaryYellow,
-                                ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 20),
 
                     _buildPetCareIcon(
                       'assets/food.png',
@@ -351,59 +571,46 @@ class _BasePetRoomState extends State<BasePetRoom>
                       onTap:
                           widget.roomType == RoomType.kitchen
                               ? () async {
-                                // Set cleanliness to 100 in Firebase and locally
-                                await UserService.instance.updatePetStats(
-                                  hunger: 100,
+                                await _handlePetCare(
+                                  'hunger',
+                                  _getHungerLevel(),
+                                  'Hunger',
                                 );
-                                if (mounted && widget.userData != null) {
-                                  setState(() {
-                                    widget.userData!['hunger'] = 100;
-                                  });
-                                }
                               }
                               : null,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 20),
                     _buildPetCareIcon(
                       'assets/sleep.png',
                       _getEnergyLevel(),
                       onTap:
                           widget.roomType == RoomType.bedroom
                               ? () async {
-                                // Set cleanliness to 100 in Firebase and locally
-                                await UserService.instance.updatePetStats(
-                                  energy: 100,
+                                await _handlePetCare(
+                                  'energy',
+                                  _getEnergyLevel(),
+                                  'Energy',
                                 );
-                                if (mounted && widget.userData != null) {
-                                  setState(() {
-                                    widget.userData!['energy'] = 100;
-                                  });
-                                }
                               }
                               : null,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 20),
                     _buildPetCareIcon(
                       'assets/shower.png',
                       _getCleanlinessLevel(),
                       onTap:
                           widget.roomType == RoomType.bathroom
                               ? () async {
-                                // Set cleanliness to 100 in Firebase and locally
-                                await UserService.instance.updatePetStats(
-                                  cleanliness: 100,
+                                await _handlePetCare(
+                                  'cleanliness',
+                                  _getCleanlinessLevel(),
+                                  'Cleanliness',
                                 );
-                                if (mounted && widget.userData != null) {
-                                  setState(() {
-                                    widget.userData!['cleanliness'] = 100;
-                                  });
-                                }
                               }
                               : null,
                     ),
 
-                    const SizedBox(width: 8),
-                    _buildStreakIcon(3),
+                    const SizedBox(width: 50),
                   ],
                 ),
               ],
@@ -554,7 +761,13 @@ class _BasePetRoomState extends State<BasePetRoom>
                       scale: _getPetScale(),
                       child: Container(
                         height: 350, // Much bigger size (was 300)
-                        child: Image.asset(_getPetImage(), fit: BoxFit.contain),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Image.asset(_getPetImage(), fit: BoxFit.contain),
+                            _buildHatOverlay(),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -582,51 +795,31 @@ class _BasePetRoomState extends State<BasePetRoom>
                     height: 75,
                     fit: BoxFit.contain,
                   ),
+
                   onPressed: () async {
                     try {
                       if (widget.roomType == RoomType.bathroom) {
-                        await UserService.instance.updatePetStats(
-                          cleanliness: 100,
+                        await _handlePetCare(
+                          'cleanliness',
+                          _getCleanlinessLevel(),
+                          'Cleanliness',
                         );
-                        if (!mounted) return;
-                        setState(() {
-                          widget.userData!['cleanliness'] = 100;
-                          _lastNotificationLevels.remove('toilet');
-                        });
                         _playShowerAnimation();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Cleanliness restored to 100'),
-                          ),
-                        );
                       } else if (widget.roomType == RoomType.kitchen) {
-                        await UserService.instance.updatePetStats(hunger: 100);
-                        if (!mounted) return;
-                        setState(() {
-                          widget.userData!['hunger'] = 100;
-                          _lastNotificationLevels.remove('food');
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Hunger restored to 100'),
-                          ),
+                        await _handlePetCare(
+                          'hunger',
+                          _getHungerLevel(),
+                          'Hunger',
                         );
+                        // Start corn animation
+                        _startCornAnimation();
                       } else if (widget.roomType == RoomType.bedroom) {
-                        await UserService.instance.updatePetStats(energy: 100);
-                        if (!mounted) return;
-                        setState(() {
-                          widget.userData!['energy'] = 100;
-                          _lastNotificationLevels.remove('sleep');
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Energy restored to 100'),
-                          ),
-                        );
-                      } else if (widget.roomType == RoomType.livingRoom) {
-                        // Phone action for living room
-                        if (widget.onMapsPressed != null) {
-                          widget.onMapsPressed!();
+                        if (_isSleeping) {
+                          // If already sleeping, wake up (turn on light)
+                          _wakeUp();
+                        } else {
+                          // Start sleep mode (turn off light)
+                          _startSleepMode();
                         }
                       } else {
                         // Default action (e.g., Maps)
@@ -699,6 +892,107 @@ class _BasePetRoomState extends State<BasePetRoom>
               ],
             ),
           ),
+
+          // Sleep mode dark overlay
+          if (_isSleeping)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  color: Colors.black.withOpacity(0.8),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.bedtime,
+                          size: 80,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Chicken is sleeping...',
+                          style: TextStyle(
+                            fontSize: 24,
+                            color: Colors.white.withOpacity(0.8),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Zzz... Zzz... Zzz...',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Tap the lamp to turn on the light',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // Corn animation overlay
+          if (_showCornAnimation)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  color: Colors.transparent,
+                  child: Center(
+                    child: AnimatedBuilder(
+                      animation: _cornAnimation,
+                      builder: (context, child) {
+                        // Create a more complex animation with multiple effects
+                        final scale = 0.3 + (0.7 * _cornAnimation.value);
+                        final rotation =
+                            _cornAnimation.value * 2 * 3.14159; // Full rotation
+                        final bounce =
+                            (1.0 + 0.3 * (1.0 - _cornAnimation.value)) *
+                            (1.0 + 0.2 * (1.0 - _cornAnimation.value));
+
+                        return Transform.translate(
+                          offset: Offset(
+                            0,
+                            -20 * (1.0 - _cornAnimation.value),
+                          ), // Move up slightly
+                          child: Transform.scale(
+                            scale: scale * bounce,
+                            child: Transform.rotate(
+                              angle: rotation,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.orange.withOpacity(0.3),
+                                      blurRadius: 20,
+                                      spreadRadius: 5,
+                                    ),
+                                  ],
+                                ),
+                                child: Image.asset(
+                                  'assets/corncorn.png',
+                                  width: 300,
+                                  height: 300,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -920,40 +1214,78 @@ class _BasePetRoomState extends State<BasePetRoom>
   }
 
   // Helper methods to get data from userData
-  String _getPointsText() {
-    if (widget.userData == null) return "0";
-    return (widget.userData!['points'] ?? 0).toString();
-  }
-
-  double _getPointsLevel() {
-    if (widget.userData == null) return 0.0;
-    final points = (widget.userData!['points'] ?? 0) as int;
-    // Map points to 0.0 - 1.0 range for ring fill. Assuming 0-100 baseline.
-    // If your economy allows more than 100 coins, cap at 1.0.
-    return (points / 100.0).clamp(0.0, 1.0);
-  }
 
   double _getHungerLevel() {
     if (widget.userData == null) return 0.0;
-    final hunger = widget.userData!['hunger'] ?? 0;
+    final hunger = (widget.userData!['hunger'] ?? 0).toDouble();
     return hunger / 100.0; // Convert to 0.0-1.0 range
   }
 
   double _getEnergyLevel() {
     if (widget.userData == null) return 0.0;
-    final energy = widget.userData!['energy'] ?? 0;
+    final energy = (widget.userData!['energy'] ?? 0).toDouble();
     return energy / 100.0; // Convert to 0.0-1.0 range
   }
 
   double _getCleanlinessLevel() {
     if (widget.userData == null) return 0.0;
-    final cleanliness = widget.userData!['cleanliness'] ?? 0;
+    final cleanliness = (widget.userData!['cleanliness'] ?? 0).toDouble();
     return cleanliness / 100.0; // Convert to 0.0-1.0 range
   }
 
   String _getUsername() {
     if (widget.userData == null) return "Guest";
     return widget.userData!['username'] ?? "Guest";
+  }
+
+  String? _getEquippedHatAsset() {
+    final data = widget.userData;
+    if (data == null) return null;
+    final outfit = (data['currentOutfit'] as Map?) ?? const {};
+    final String? hatId = outfit['hat'] as String?;
+    if (hatId == null || hatId.isEmpty) return null;
+    return OutfitAssets.hatIdToAsset[hatId];
+  }
+
+  Widget _buildHatOverlay() {
+    // Optionally hide hat during shower animation
+    if (petState == 'showering') return const SizedBox.shrink();
+
+    final hatAsset = _getEquippedHatAsset();
+    if (hatAsset == null) return const SizedBox.shrink();
+
+    // Default transform
+    double offsetX = 0.0;
+    double offsetY = -90.0;
+    double extraScale = 1.0;
+
+    // Per-hat transform overrides
+    final data = widget.userData;
+    final String? hatId = (data?['currentOutfit'] as Map?)?['hat'] as String?;
+    if (hatId != null) {
+      final t = OutfitAssets.hatIdToTransform[hatId];
+      if (t != null && t.length == 3) {
+        offsetX = t[0];
+        offsetY = t[1];
+        extraScale = t[2];
+      }
+    }
+
+    // Global fine-tune: push hat slightly higher on the head
+    offsetY -= 10.0;
+
+    return Transform.translate(
+      offset: Offset(offsetX, offsetY),
+      child: Transform.scale(
+        scale: _getPetScale() * extraScale,
+        child: Image.asset(
+          hatAsset,
+          width: 120,
+          height: 120,
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
   }
 }
 

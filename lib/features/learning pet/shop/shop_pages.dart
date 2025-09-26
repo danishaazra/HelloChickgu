@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hellochickgu/services/coin_service.dart';
 
 class ShopPage extends StatelessWidget {
   const ShopPage({super.key});
@@ -231,7 +232,6 @@ class HatsShopPage extends StatelessWidget {
                         builder: (context, snapshot) {
                           final data =
                               snapshot.data?.data() as Map<String, dynamic>?;
-                          final points = (data?['points'] ?? 0) as int;
                           final owned =
                               (data?['ownedItems']?['hat'] as List?)
                                   ?.cast<String>() ??
@@ -239,9 +239,13 @@ class HatsShopPage extends StatelessWidget {
                           final equipped =
                               (data?['currentOutfit']?['hat']) as String?;
 
-                          return Column(
-                            children: [
-                              _pointsRow(points),
+                          return StreamBuilder<int>(
+                            stream: CoinService.instance.getCoinsStream(),
+                            builder: (context, coinSnapshot) {
+                              final coins = coinSnapshot.data ?? 0;
+                              return Column(
+                                children: [
+                                  _pointsRow(coins),
                               Expanded(
                                 child: LayoutBuilder(
                                   builder: (context, constraints) {
@@ -269,7 +273,7 @@ class HatsShopPage extends StatelessWidget {
                                           item: item,
                                           isOwned: isOwned,
                                           isEquipped: isEquipped,
-                                          canAfford: points >= item.price,
+                                          canAfford: coins >= item.price,
                                         );
                                       },
                                     );
@@ -277,6 +281,8 @@ class HatsShopPage extends StatelessWidget {
                                 ),
                               ),
                             ],
+                          );
+                            },
                           );
                         },
                       ),
@@ -358,60 +364,67 @@ class _HatCard extends StatelessWidget {
                     .collection('users')
                     .doc(user.uid);
 
-                await FirebaseFirestore.instance.runTransaction((txn) async {
-                  final snap = await txn.get(doc);
-                  final data = snap.data() as Map<String, dynamic>;
-                  final points = (data['points'] ?? 0) as int;
-                  final owned =
-                      (data['ownedItems']?['hat'] as List?)?.cast<String>() ??
-                      <String>[];
-                  final currentOutfit = Map<String, dynamic>.from(
-                    data['currentOutfit'] ?? {},
-                  );
-
-                  if (!isOwned) {
-                    if (points < item.price) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Insufficient funds!'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                      return; // insufficient funds
-                    }
+                if (!isOwned) {
+                  // Check if user has enough coins
+                  final hasEnoughCoins = await CoinService.instance.spendCoins(item.price);
+                  if (!hasEnoughCoins) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Insufficient coins!'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+                  
+                  // Add item to owned items
+                  await FirebaseFirestore.instance.runTransaction((txn) async {
+                    final snap = await txn.get(doc);
+                    final data = snap.data() as Map<String, dynamic>;
+                    final owned =
+                        (data['ownedItems']?['hat'] as List?)?.cast<String>() ??
+                        <String>[];
                     owned.add(item.id);
                     txn.update(doc, {
-                      'points': points - item.price,
                       'ownedItems.hat': owned,
                       'lastUpdated': FieldValue.serverTimestamp(),
                     });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '${item.title} purchased for ${item.price} coins!',
-                        ),
-                        backgroundColor: Colors.green,
+                  });
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${item.title} purchased for ${item.price} coins!',
                       ),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  // Toggle equip
+                  await FirebaseFirestore.instance.runTransaction((txn) async {
+                    final snap = await txn.get(doc);
+                    final data = snap.data() as Map<String, dynamic>;
+                    final currentOutfit = Map<String, dynamic>.from(
+                      data['currentOutfit'] ?? {},
                     );
-                  } else {
-                    // Toggle equip
                     currentOutfit['hat'] = isEquipped ? null : item.id;
                     txn.update(doc, {
                       'currentOutfit': currentOutfit,
                       'lastUpdated': FieldValue.serverTimestamp(),
                     });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isEquipped
-                              ? '${item.title} unequipped!'
-                              : '${item.title} equipped!',
-                        ),
-                        backgroundColor: Colors.blue,
+                  });
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        isEquipped
+                            ? '${item.title} unequipped!'
+                            : '${item.title} equipped!',
                       ),
-                    );
-                  }
-                });
+                      backgroundColor: Colors.blue,
+                    ),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
