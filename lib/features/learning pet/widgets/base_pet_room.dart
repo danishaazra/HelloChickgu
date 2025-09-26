@@ -678,7 +678,7 @@ class _BasePetRoomState extends State<BasePetRoom>
                     height: 75,
                     fit: BoxFit.contain,
                   ),
-                  
+
                   onPressed: () async {
                     try {
                       if (widget.roomType == RoomType.bathroom) {
@@ -711,17 +711,36 @@ class _BasePetRoomState extends State<BasePetRoom>
                           ),
                         );
                       } else if (widget.roomType == RoomType.bedroom) {
+
+                        await UserService.instance.updatePetStats(energy: 100);
+                        if (!mounted) return;
+                        setState(() {
+                          widget.userData!['energy'] = 100;
+                          _lastNotificationLevels.remove('sleep');
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Energy restored to 100'),
+                          ),
+                        );
+                      } else if (widget.roomType == RoomType.livingRoom) {
+                        // Phone action for living room
+                        if (widget.onMapsPressed != null) {
+                          widget.onMapsPressed!();
+
                         if (_isSleeping) {
                           // If already sleeping, wake up (turn on light)
                           _wakeUp();
                         } else {
                           // Start sleep mode (turn off light)
                           _startSleepMode();
+
                         }
                       } else {
                         // Default action (e.g., Maps)
-                        if (widget.onMapsPressed != null)
+                        if (widget.onMapsPressed != null) {
                           widget.onMapsPressed!();
+                        }
                       }
                     } catch (e) {
                       if (!mounted) return;

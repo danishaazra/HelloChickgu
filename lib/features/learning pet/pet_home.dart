@@ -6,6 +6,7 @@ import 'models/room_type.dart';
 import 'package:hellochickgu/map.dart';
 import 'package:hellochickgu/features/profile/profile.dart';
 import 'package:hellochickgu/features/leaderboard/leaderboard.dart';
+import 'package:hellochickgu/features/community/community.dart';
 import 'shop/shop_pages.dart';
 
 class PetHomePage extends StatefulWidget {
@@ -43,6 +44,14 @@ class _PetHomePageState extends State<PetHomePage> {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => const MapChickgu()),
+      );
+      return;
+    }
+
+    if (_currentRoom == RoomType.livingRoom) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CommunityPage()),
       );
       return;
     }
