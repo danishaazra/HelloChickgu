@@ -26,6 +26,7 @@ import 'package:hellochickgu/services/notification_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'services/coin_service.dart';
+import 'features/game/quiz_upload.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,7 +65,7 @@ class MyApp extends StatelessWidget {
       title: 'Hello Chickgu!',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const OnboardingPage(),
+      home: const UploadQuizPage(),
     );
   }
 }
