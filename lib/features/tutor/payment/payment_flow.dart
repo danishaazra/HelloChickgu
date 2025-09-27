@@ -6,12 +6,14 @@ class PaymentFlow extends StatefulWidget {
   final String courseTitle;
   final String totalPriceText;
   final List<String> skills;
+  final String? videoId; // when provided, act as per-video checkout
 
   const PaymentFlow({
     super.key,
     required this.courseTitle,
     required this.totalPriceText,
     required this.skills,
+    this.videoId,
   });
 
   @override
@@ -38,10 +40,7 @@ class _PaymentFlowState extends State<PaymentFlow> {
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700),
         ),
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.black87,
-          ),
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () {
             if (_stepIndex > 0) {
               setState(() => _stepIndex -= 1);
@@ -116,13 +115,19 @@ class _PaymentFlowState extends State<PaymentFlow> {
     if (_stepIndex < 3) {
       setState(() => _stepIndex += 1);
     } else {
+      // Finalize purchase: per-video or full course
+      if (widget.videoId != null && widget.videoId!.isNotEmpty) {
+        Navigator.of(context).maybePop(true);
+        return;
+      }
       PurchaseService.instance.markPurchased(widget.courseTitle);
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => CourseOutlinePage(
-            courseTitle: widget.courseTitle,
-            university: 'Universiti Putra Malaysia',
-          ),
+          builder:
+              (_) => CourseOutlinePage(
+                courseTitle: widget.courseTitle,
+                university: 'Universiti Putra Malaysia',
+              ),
         ),
       );
     }
@@ -161,9 +166,8 @@ class _Dot extends StatelessWidget {
   Widget build(BuildContext context) {
     return CircleAvatar(
       radius: 16,
-      backgroundColor: active
-          ? const Color(0xff47b2ff)
-          : const Color(0xffcfe9fb),
+      backgroundColor:
+          active ? const Color(0xff47b2ff) : const Color(0xffcfe9fb),
       child: Text(label, style: const TextStyle(color: Colors.white)),
     );
   }
@@ -202,9 +206,13 @@ class _OverviewStep extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: skills
-                .map((s) => Chip(label: Text(s), backgroundColor: Colors.white))
-                .toList(),
+            children:
+                skills
+                    .map(
+                      (s) =>
+                          Chip(label: Text(s), backgroundColor: Colors.white),
+                    )
+                    .toList(),
           ),
         ],
       ),

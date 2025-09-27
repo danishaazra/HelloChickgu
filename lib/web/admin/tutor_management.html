@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutor Management - Hello Chickgu</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: #f8fafc;
+    }
+
+    .dashboard {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: #4FC3F7;
+      padding: 24px 0;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-header {
+      padding: 0 24px 24px;
+      border-bottom: 1px solid rgba(17, 24, 39, 0.1);
+      margin-bottom: 24px;
+    }
+
+    .sidebar-header h2 {
+      color: #111827;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .nav-menu {
+      flex: 1;
+      padding: 0 16px;
+    }
+
+    .nav-item {
+      display: block;
+      width: 100%;
+      padding: 16px 20px;
+      margin-bottom: 8px;
+      background: transparent;
+      border: none;
+      border-radius: 12px;
+      color: #111827;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .nav-item:hover {
+      background: rgba(17, 24, 39, 0.1);
+      transform: translateX(4px);
+    }
+
+    .nav-item.active {
+      background: rgba(17, 24, 39, 0.15);
+    }
+
+    .nav-item i {
+      margin-right: 12px;
+      width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 24px 16px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .tutor-image {
+      max-width: 120px;
+      height: auto;
+      opacity: 0.8;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .content-header {
+      margin-bottom: 32px;
+    }
+
+    .content-header h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+
+    .content-header p {
+      color: #6b7280;
+      font-size: 16px;
+    }
+
+    /* Search and Filter Bar */
+    .search-filter-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 300px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 12px 16px 12px 40px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 14px;
+      background: white;
+    }
+
+    .search-box .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6b7280;
+    }
+
+    .filter-dropdown {
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: white;
+      font-size: 14px;
+      min-width: 150px;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
+    }
+
+    .stat-card h3 {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card .number {
+      font-size: 28px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    .stat-card .change {
+      font-size: 14px;
+      color: #059669;
+      font-weight: 600;
+    }
+
+    /* Tutor Cards */
+    .tutors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 24px;
+    }
+
+    .tutor-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
+      transition: all 0.2s ease;
+    }
+
+    .tutor-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .tutor-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .tutor-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #4FC3F7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .tutor-info h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    .tutor-info p {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .tutor-details {
+      margin-bottom: 16px;
+    }
+
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .detail-label {
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .detail-value {
+      color: #111827;
+      font-weight: 600;
+    }
+
+    .subjects-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .subject-tag {
+      background: #4FC3F7;
+      color: #111827;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .tutor-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: #4FC3F7;
+      color: #111827;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .btn-success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .btn:hover {
+      opacity: 0.8;
+    }
+
+    /* Status Badges */
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-active {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-suspended {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    /* Modal Styles */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 16px;
+      width: min(800px, 96%);
+      max-height: 90vh;
+      overflow: auto;
+      box-shadow: 0 20px 50px rgba(17, 24, 39, 0.25);
+      border: 1px solid #e5e7eb;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #6b7280;
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .profile-section {
+      margin-bottom: 24px;
+    }
+
+    .profile-section h4 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #4FC3F7;
+    }
+
+    .profile-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+
+    .profile-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .profile-item label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #6b7280;
+    }
+
+    .profile-item span {
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .qualifications-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .qualifications-list li {
+      position: relative;
+      padding-left: 20px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .qualifications-list li:before {
+      content: "🎓";
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 20px 24px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .dashboard {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        padding: 16px;
+      }
+      
+      .sidebar-header {
+        display: none;
+      }
+      
+      .nav-menu {
+        display: flex;
+        gap: 8px;
+        padding: 0;
+      }
+      
+      .nav-item {
+        margin-bottom: 0;
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+      
+      .sidebar-footer {
+        display: none;
+      }
+      
+      .main-content {
+        padding: 16px;
+      }
+
+      .search-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-box {
+        min-width: auto;
+      }
+
+      .tutors-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .profile-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <h2>Admin Panel</h2>
+      </div>
+      <div class="nav-menu">
+        <a href="dashboard_admin.html" class="nav-item">
+          <i>📊</i> Dashboard
+        </a>
+        <a href="tutor_management.html" class="nav-item active">
+          <i>👥</i> Tutor Management
+        </a>
+        <a href="courses.html" class="nav-item">
+          <i>📚</i> Courses
+        </a>
+        <a href="application.html" class="nav-item">
+          <i>📝</i> Applications
+        </a>
+        <a href="admin_video.html" class="nav-item">
+          <i>🎥</i> Video Review
+        </a>
+        <a href="login_admin.html" class="nav-item">
+          <i>🚪</i> Logout
+        </a>
+      </div>
+      <div class="sidebar-footer">
+        <img src="../../../assets/tutor_chickgu.png" alt="Admin Chickgu" class="tutor-image">
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="content-header">
+        <h1>Tutor Management</h1>
+        <p>Manage all tutors, view profiles, and control access permissions.</p>
+      </div>
+
+      <!-- Search and Filter -->
+      <div class="search-filter-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search tutors by name or email...">
+        </div>
+        <select class="filter-dropdown" id="statusFilter">
+          <option value="all">All Status</option>
+          <option value="active">Active</option>
+          <option value="suspended">Suspended</option>
+          <option value="pending">Pending</option>
+        </select>
+        <select class="filter-dropdown" id="subjectFilter">
+          <option value="all">All Subjects</option>
+          <option value="mathematics">Mathematics</option>
+          <option value="physics">Physics</option>
+          <option value="computer-science">Computer Science</option>
+          <option value="chemistry">Chemistry</option>
+        </select>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Tutors</h3>
+          <div class="number" id="totalTutorsNum">0</div>
+          <div class="change" id="totalTutorsNote"></div>
+        </div>
+        <div class="stat-card">
+          <h3>Active</h3>
+          <div class="number" id="activeTutorsNum">0</div>
+          <div class="change" id="activeTutorsNote"></div>
+        </div>
+        <div class="stat-card">
+          <h3>Suspended</h3>
+          <div class="number" id="suspendedTutorsNum">0</div>
+          <div class="change" id="suspendedTutorsNote"></div>
+        </div>
+        <div class="stat-card">
+          <h3>Pending</h3>
+          <div class="number" id="pendingTutorsNum">0</div>
+          <div class="change" id="pendingTutorsNote"></div>
+        </div>
+      </div>
+
+      <!-- Tutors Grid -->
+      <div class="tutors-grid" id="tutorsGrid">
+        <!-- Tutor cards will be populated here -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Profile Modal -->
+  <div id="profileModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Tutor Profile Details</h3>
+        <button class="close-btn" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body" id="profileContent">
+        <!-- Profile content will be populated here -->
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+        <button class="btn btn-danger" id="suspendBtn" onclick="toggleSuspend()">Suspend</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+      appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+      messagingSenderId: '864651268854',
+      projectId: 'hellochickgu',
+      authDomain: 'hellochickgu.firebaseapp.com',
+      storageBucket: 'hellochickgu.appspot.com',
+      measurementId: 'G-52RMQVE2SQ',
+    };
+    if (firebase.apps && firebase.apps.length) { firebase.app(); } else { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.firestore();
+
+    let tutors = [];
+    let currentTutorId = null; // equals tutors doc id (uid)
+
+    async function loadData() {
+      const [tutorsSnap, pendingSnap] = await Promise.all([
+        db.collection('tutors').get(),
+        db.collection('tutor_applicants').where('status', '==', 'pending').get(),
+      ]);
+
+      tutors = tutorsSnap.docs.map(d => ({
+        id: d.id,
+        name: d.data().name || d.data().email || 'Tutor',
+        email: d.data().email || '',
+        subjects: Array.isArray(d.data().subjects) ? d.data().subjects : [],
+        qualification: d.data().qualification || '',
+        status: (d.data().status || 'active'),
+        joinDate: (d.data().createdAt && d.data().createdAt.toDate) ? d.data().createdAt.toDate().toISOString() : new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        videos: d.data().videosCount || 0,
+        qualifications: [],
+      }));
+
+      // Stats
+      const total = tutors.length;
+      const active = tutors.filter(t => t.status === 'active').length;
+      const suspended = tutors.filter(t => t.status === 'suspended' || t.status === 'disabled').length;
+      const pending = pendingSnap.size;
+
+      document.getElementById('totalTutorsNum').textContent = total;
+      document.getElementById('activeTutorsNum').textContent = active;
+      document.getElementById('suspendedTutorsNum').textContent = suspended;
+      document.getElementById('pendingTutorsNum').textContent = pending;
+
+      const pct = (n) => total ? Math.round((n/total)*100) : 0;
+      document.getElementById('totalTutorsNote').textContent = total ? '' : '';
+      document.getElementById('activeTutorsNote').textContent = `${pct(active)}% of total`;
+      document.getElementById('suspendedTutorsNote').textContent = `${pct(suspended)}% of total`;
+      document.getElementById('pendingTutorsNote').textContent = `${pending} awaiting approval`;
+
+      renderTutors();
+    }
+
+    // Render tutors (uses global tutors array)
+    function renderTutors() {
+      const grid = document.getElementById('tutorsGrid');
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const statusFilter = document.getElementById('statusFilter').value;
+      const subjectFilter = document.getElementById('subjectFilter').value;
+
+      const filteredTutors = tutors.filter(tutor => {
+        const matchesSearch = tutor.name.toLowerCase().includes(searchTerm) || 
+                             tutor.email.toLowerCase().includes(searchTerm);
+        const matchesStatus = statusFilter === 'all' || tutor.status === statusFilter;
+        const matchesSubject = subjectFilter === 'all' || 
+                              tutor.subjects.some(subject => 
+                                subject.toLowerCase().includes(subjectFilter.replace('-', ' '))
+                              );
+        return matchesSearch && matchesStatus && matchesSubject;
+      });
+
+      grid.innerHTML = filteredTutors.map(tutor => `
+        <div class="tutor-card">
+          <div class="tutor-header">
+            <div class="tutor-avatar">${(tutor.name||'T').split(' ').map(n => n[0]).join('')}</div>
+            <div class="tutor-info">
+              <h3>${tutor.name}</h3>
+              <p>${tutor.email}</p>
+            </div>
+          </div>
+          <div class="tutor-details">
+            <div class="detail-item">
+              <span class="detail-label">Status:</span>
+              <span class="status-badge status-${tutor.status}">${tutor.status}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Join Date:</span>
+              <span class="detail-value">${new Date(tutor.joinDate).toLocaleDateString()}</span>
+            </div>
+          </div>
+          <div class="subjects-list">
+            ${tutor.subjects.map(subject => `<span class="subject-tag">${subject}</span>`).join('')}
+          </div>
+          <div class="tutor-actions">
+            <button class="btn btn-primary" onclick="viewProfile('${tutor.id}')">View Profile</button>
+            ${tutor.status === 'active' ? 
+              `<button class="btn btn-danger" onclick="suspendTutor('${tutor.id}')">Suspend</button>` :
+              `<button class="btn btn-success" onclick="activateTutor('${tutor.id}')">Activate</button>`
+            }
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // View profile modal
+    function viewProfile(tutorId) {
+      const tutor = tutors.find(t => t.id === tutorId);
+      if (!tutor) return;
+
+      currentTutorId = tutorId;
+      const modal = document.getElementById('profileModal');
+      const content = document.getElementById('profileContent');
+      const suspendBtn = document.getElementById('suspendBtn');
+
+      content.innerHTML = `
+        <div class="profile-section">
+          <h4>Personal Information</h4>
+          <div class="profile-grid">
+            <div class="profile-item">
+              <label>Full Name</label>
+              <span>${tutor.name}</span>
+            </div>
+            <div class="profile-item">
+              <label>Email</label>
+              <span>${tutor.email}</span>
+            </div>
+            <div class="profile-item">
+              <label>Status</label>
+              <span class="status-badge status-${tutor.status}">${tutor.status}</span>
+            </div>
+          </div>
+        </div>
+        <div class="profile-section">
+          <h4>Subjects Taught</h4>
+          <div class="subjects-list">
+            ${tutor.subjects.map(subject => `<span class="subject-tag">${subject}</span>`).join('')}
+          </div>
+        </div>
+      `;
+
+      suspendBtn.textContent = tutor.status === 'active' ? 'Suspend Tutor' : 'Activate Tutor';
+      suspendBtn.className = tutor.status === 'active' ? 'btn btn-danger' : 'btn btn-success';
+      
+      modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('profileModal').style.display = 'none';
+      currentTutorId = null;
+    }
+
+    async function suspendTutor(tutorId) {
+      const tutor = tutors.find(t => t.id === tutorId);
+      if (!tutor) return;
+      if (!confirm(`Suspend ${tutor.name}?`)) return;
+      await db.collection('tutors').doc(tutorId).update({ status: 'suspended' });
+      await loadData();
+      alert(`${tutor.name} has been suspended.`);
+    }
+
+    async function activateTutor(tutorId) {
+      const tutor = tutors.find(t => t.id === tutorId);
+      if (!tutor) return;
+      if (!confirm(`Activate ${tutor.name}?`)) return;
+      await db.collection('tutors').doc(tutorId).update({ status: 'active' });
+      await loadData();
+      alert(`${tutor.name} has been activated.`);
+    }
+
+    // Navigation highlighting
+    const currentPage = window.location.pathname.split('/').pop();
+    document.querySelectorAll('.nav-item').forEach(item => {
+      if (item.getAttribute('href') === currentPage) {
+        item.classList.add('active');
+      }
+    });
+
+    // Event listeners
+    document.getElementById('searchInput').addEventListener('input', renderTutors);
+    document.getElementById('statusFilter').addEventListener('change', renderTutors);
+    document.getElementById('subjectFilter').addEventListener('change', renderTutors);
+
+    // Close modal when clicking outside
+    document.getElementById('profileModal').addEventListener('click', (e) => {
+      if (e.target.id === 'profileModal') {
+        closeModal();
+      }
+    });
+
+    // Initialize
+    loadData();
+  </script>
+</body>
+</html>

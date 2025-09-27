@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Review - Hello Chickgu</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: #f8fafc;
+    }
+
+    .dashboard {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: #4FC3F7;
+      padding: 24px 0;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-header {
+      padding: 0 24px 24px;
+      border-bottom: 1px solid rgba(17, 24, 39, 0.1);
+      margin-bottom: 24px;
+    }
+
+    .sidebar-header h2 {
+      color: #111827;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .nav-menu {
+      flex: 1;
+      padding: 0 16px;
+    }
+
+    .nav-item {
+      display: block;
+      width: 100%;
+      padding: 16px 20px;
+      margin-bottom: 8px;
+      background: transparent;
+      border: none;
+      border-radius: 12px;
+      color: #111827;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .nav-item:hover {
+      background: rgba(17, 24, 39, 0.1);
+      transform: translateX(4px);
+    }
+
+    .nav-item.active {
+      background: rgba(17, 24, 39, 0.15);
+    }
+
+    .nav-item i {
+      margin-right: 12px;
+      width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 24px 16px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .tutor-image {
+      max-width: 120px;
+      height: auto;
+      opacity: 0.8;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .content-header {
+      margin-bottom: 32px;
+    }
+
+    .content-header h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+
+    .content-header p {
+      color: #6b7280;
+      font-size: 16px;
+    }
+
+    /* Search and Filter Bar */
+    .search-filter-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 300px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 12px 16px 12px 40px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 14px;
+      background: white;
+    }
+
+    .search-box .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6b7280;
+    }
+
+    .filter-dropdown {
+      padding: 12px 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      background: white;
+      font-size: 14px;
+      min-width: 150px;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
+    }
+
+    .stat-card h3 {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card .number {
+      font-size: 28px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    .stat-card .change {
+      font-size: 14px;
+      color: #059669;
+      font-weight: 600;
+    }
+
+    /* Video Cards */
+    .videos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 24px;
+    }
+
+    .video-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
+      transition: all 0.2s ease;
+    }
+
+    .video-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .video-thumbnail {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 48px;
+      position: relative;
+    }
+
+    .video-duration {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .video-content {
+      padding: 20px;
+    }
+
+    .video-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .video-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #111827;
+      line-height: 1.4;
+      flex: 1;
+    }
+
+    .video-status {
+      margin-left: 12px;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-approved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .video-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .video-description {
+      color: #6b7280;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .video-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 16px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    .video-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: #4FC3F7;
+      color: #111827;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .btn-success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .btn:hover {
+      opacity: 0.8;
+    }
+
+    /* Modal Styles */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 16px;
+      width: min(1000px, 96%);
+      max-height: 90vh;
+      overflow: auto;
+      box-shadow: 0 20px 50px rgba(17, 24, 39, 0.25);
+      border: 1px solid #e5e7eb;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #6b7280;
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .video-preview-section {
+      margin-bottom: 24px;
+    }
+
+    .video-player {
+      width: 100%;
+      height: 400px;
+      background: #000;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .video-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .info-section h4 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #4FC3F7;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .info-label {
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .info-value {
+      color: #111827;
+      font-weight: 600;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 20px 24px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .btn-large {
+      padding: 12px 24px;
+      font-size: 14px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .dashboard {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        padding: 16px;
+      }
+      
+      .sidebar-header {
+        display: none;
+      }
+      
+      .nav-menu {
+        display: flex;
+        gap: 8px;
+        padding: 0;
+      }
+      
+      .nav-item {
+        margin-bottom: 0;
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+      
+      .sidebar-footer {
+        display: none;
+      }
+      
+      .main-content {
+        padding: 16px;
+      }
+
+      .search-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-box {
+        min-width: auto;
+      }
+
+      .videos-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .video-info {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <h2>Admin Panel</h2>
+      </div>
+      <div class="nav-menu">
+        <a href="dashboard_admin.html" class="nav-item">
+          <i>📊</i> Dashboard
+        </a>
+        <a href="tutor_management.html" class="nav-item">
+          <i>👥</i> Tutor Management
+        </a>
+        <a href="application.html" class="nav-item">
+          <i>📝</i> Applications
+        </a>
+        <a href="admin_video.html" class="nav-item active">
+          <i>🎥</i> Video Review
+        </a>
+        <a href="login_admin.html" class="nav-item">
+          <i>🚪</i> Logout
+        </a>
+      </div>
+      <div class="sidebar-footer">
+        <img src="../../../assets/tutor_chickgu.png" alt="Admin Chickgu" class="tutor-image">
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="content-header">
+        <h1>Video Review</h1>
+        <p>Review and manage video content submitted by tutors.</p>
+      </div>
+
+      <!-- Search and Filter -->
+      <div class="search-filter-bar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search videos by title or tutor...">
+        </div>
+        <select class="filter-dropdown" id="tutorFilter">
+          <option value="all">All Tutors</option>
+        </select>
+        <select class="filter-dropdown" id="statusFilter">
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <select class="filter-dropdown" id="subjectFilter">
+          <option value="all">All Subjects</option>
+          <option value="mathematics">Mathematics</option>
+          <option value="physics">Physics</option>
+          <option value="computer-science">Computer Science</option>
+          <option value="chemistry">Chemistry</option>
+        </select>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Videos</h3>
+          <div class="number" id="videosTotalNum">0</div>
+          <div class="change" id="videosTotalNote"></div>
+        </div>
+        <div class="stat-card">
+          <h3>Pending Review</h3>
+          <div class="number" id="videosPendingNum">0</div>
+          <div class="change" id="videosPendingNote"></div>
+        </div>
+        <div class="stat-card">
+          <h3>Approved</h3>
+          <div class="number" id="videosApprovedNum">0</div>
+          <div class="change" id="videosApprovedNote"></div>
+        </div>
+        <div class="stat-card">
+          <h3>Rejected</h3>
+          <div class="number" id="videosRejectedNum">0</div>
+          <div class="change" id="videosRejectedNote"></div>
+        </div>
+      </div>
+
+      <!-- Videos Grid -->
+      <div class="videos-grid" id="videosGrid">
+        <!-- Video cards will be populated here -->
+      </div>
+    </main>
+  </div>
+
+  <!-- Video Review Modal -->
+  <div id="videoModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Video Review</h3>
+        <button class="close-btn" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-body" id="videoContent">
+        <!-- Video content will be populated here -->
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+        <button class="btn btn-danger btn-large" id="rejectBtn" onclick="rejectVideo()">Reject Video</button>
+        <button class="btn btn-danger btn-large" id="deleteBtn" onclick="deleteVideo()">Delete Video</button>
+        <button class="btn btn-success btn-large" id="approveBtn" onclick="approveVideo()">Approve Video</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+      appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+      messagingSenderId: '864651268854',
+      projectId: 'hellochickgu',
+      authDomain: 'hellochickgu.firebaseapp.com',
+      storageBucket: 'hellochickgu.appspot.com',
+      measurementId: 'G-52RMQVE2SQ',
+    };
+    if (firebase.apps && firebase.apps.length) { firebase.app(); } else { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.firestore();
+
+    let videos = [];
+    let currentVideoId = null;
+
+    async function loadTutorsIntoFilter() {
+      const sel = document.getElementById('tutorFilter');
+      const snap = await db.collection('tutors').get();
+      const items = snap.docs.map(d => ({ id: d.id, ...(d.data()) }));
+      sel.innerHTML = '<option value="all">All Tutors</option>' + items.map(t => `<option value="${t.id}">${t.name || t.email || t.id}</option>`).join('');
+    }
+
+    async function loadVideos() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const statusFilter = document.getElementById('statusFilter').value;
+      const subjectFilter = document.getElementById('subjectFilter').value;
+      const tutorFilter = document.getElementById('tutorFilter').value;
+
+      let query = db.collection('videos');
+
+      if (tutorFilter !== 'all') {
+        query = query.where('tutorUid', '==', tutorFilter);
+      }
+
+      if (statusFilter !== 'all') {
+        query = query.where('status', '==', statusFilter);
+      }
+
+      if (subjectFilter !== 'all') {
+        query = query.where('subject', '==', subjectFilter.replace('-', ' '));
+      }
+
+      if (searchTerm) {
+        query = query.where('title', '>=', searchTerm)
+                     .where('title', '<=', searchTerm + '\uf8ff');
+      }
+
+      query = query.orderBy('createdAt', 'desc');
+
+      const videoSnap = await query.get();
+      videos = videoSnap.docs.map(d => {
+        const v = d.data();
+        return {
+          id: d.id,
+          title: v.title || '',
+          description: v.description || '',
+          tutorUid: v.tutorUid || '-',
+          duration: v.duration || '00:00',
+          submittedDate: v.createdAt && v.createdAt.toDate ? v.createdAt.toDate().toISOString() : new Date().toISOString(),
+          status: v.status || 'pending',
+          price: v.price || 0,
+          youtube: v.youtube || '',
+          views: v.views || 0,
+          likes: v.likes || 0,
+          comments: v.comments || 0,
+          tutorName: '-',
+        };
+      }).sort((a,b)=> new Date(b.submittedDate) - new Date(a.submittedDate));
+
+      // Enrich with tutor names
+      const uidSet = Array.from(new Set(videos.map(v => v.tutorUid).filter(Boolean)));
+      await Promise.all(uidSet.map(async (uid) => {
+        try {
+          const t = await db.collection('tutors').doc(uid).get();
+          const name = (t.exists && (t.data().name || t.data().email)) ? (t.data().name || t.data().email) : uid;
+          videos.filter(v => v.tutorUid === uid).forEach(v => v.tutorName = name);
+        } catch (_) {}
+      }));
+
+      renderVideos();
+      updateStats();
+    }
+
+    function updateStats() {
+      const total = videos.length;
+      const pending = videos.filter(v => v.status === 'pending').length;
+      const approved = videos.filter(v => v.status === 'approved').length;
+      const rejected = videos.filter(v => v.status === 'rejected').length;
+      const pct = (n) => total ? Math.round((n/total)*100) : 0;
+      document.getElementById('videosTotalNum').textContent = total;
+      document.getElementById('videosTotalNote').textContent = `${pct(total)}% total`;
+      document.getElementById('videosPendingNum').textContent = pending;
+      document.getElementById('videosPendingNote').textContent = `${pct(pending)}% pending`;
+      document.getElementById('videosApprovedNum').textContent = approved;
+      document.getElementById('videosApprovedNote').textContent = `${pct(approved)}% approved`;
+      document.getElementById('videosRejectedNum').textContent = rejected;
+      document.getElementById('videosRejectedNote').textContent = `${pct(rejected)}% rejected`;
+    }
+
+    function renderVideos() {
+      const grid = document.getElementById('videosGrid');
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const statusFilter = document.getElementById('statusFilter').value;
+      const subjectFilter = document.getElementById('subjectFilter').value;
+      const tutorFilter = document.getElementById('tutorFilter').value;
+
+      const filteredVideos = videos.filter(video => {
+        const matchesSearch = video.title.toLowerCase().includes(searchTerm) || 
+                             video.tutorUid.toLowerCase().includes(searchTerm);
+        const matchesStatus = statusFilter === 'all' || video.status === statusFilter;
+        const matchesSubject = subjectFilter === 'all' || 
+                             video.subject.toLowerCase().includes(subjectFilter.replace('-', ' '));
+        const matchesTutor = tutorFilter === 'all' || video.tutorUid === tutorFilter;
+        return matchesSearch && matchesStatus && matchesSubject && matchesTutor;
+      });
+
+      grid.innerHTML = filteredVideos.map(video => `
+        <div class="video-card">
+          <div class="video-thumbnail">
+            🎥
+            <div class="video-duration">${video.duration}</div>
+          </div>
+          <div class="video-content">
+            <div class="video-header">
+              <h3 class="video-title">${video.title}</h3>
+              <span class="video-status status-${video.status}">${video.status}</span>
+            </div>
+            <div class="video-meta">
+              <span>By ${video.tutorName || video.tutorUid}</span>
+              <span>${new Date(video.submittedDate).toLocaleDateString()}</span>
+            </div>
+            <p class="video-description">${video.description}</p>
+            <div class="video-stats">
+              <div class="stat-item">
+                <div class="stat-number">RM ${Number(video.price||0).toFixed(2)}</div>
+                <div class="stat-label">Price</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">${video.views}</div>
+                <div class="stat-label">Views</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">${video.likes}</div>
+                <div class="stat-label">Likes</div>
+              </div>
+              <a class="btn btn-secondary" href="${video.youtube||'#'}" target="_blank" rel="noopener">Watch</a>
+            </div>
+            <div class="video-actions">
+              ${video.status === 'pending' ? `
+                <button class="btn btn-primary" onclick="viewVideo('${video.id}')">Review</button>
+                <button class="btn btn-success" onclick="approveVideo('${video.id}')">Approve</button>
+                <button class="btn btn-danger" onclick="rejectVideo('${video.id}')">Reject</button>
+              ` : video.status === 'approved' ? `
+                <button class="btn btn-secondary" onclick="viewVideo('${video.id}')">View</button>
+                <button class="btn btn-danger" onclick="deleteVideo('${video.id}')">Take Down</button>
+              ` : `
+                <button class="btn btn-secondary" onclick="viewVideo('${video.id}')">View</button>
+                <button class="btn btn-danger" onclick="deleteVideo('${video.id}')">Delete</button>
+              `}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // View video modal
+    function viewVideo(videoId) {
+      const video = videos.find(v => v.id === videoId);
+      if (!video) return;
+
+      currentVideoId = videoId;
+      const modal = document.getElementById('videoModal');
+      const content = document.getElementById('videoContent');
+      const approveBtn = document.getElementById('approveBtn');
+      const rejectBtn = document.getElementById('rejectBtn');
+      const deleteBtn = document.getElementById('deleteBtn');
+
+      content.innerHTML = `
+        <div class="video-preview-section">
+          <div class="video-player">
+            🎬 Video Player
+            <div style="font-size: 14px; margin-top: 8px; opacity: 0.7;">
+              ${video.title}
+            </div>
+          </div>
+          <div class="video-info">
+            <div class="info-section">
+              <h4>Video Details</h4>
+              <div class="info-item">
+                <span class="info-label">Title:</span>
+                <span class="info-value">${video.title}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Duration:</span>
+                <span class="info-value">${video.duration}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Price:</span>
+                <span class="info-value">RM ${Number(video.price||0).toFixed(2)}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">YouTube:</span>
+                <span class="info-value"><a href="${video.youtube||'#'}" target="_blank" rel="noopener">Open</a></span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Status:</span>
+                <span class="info-value status-${video.status}">${video.status}</span>
+              </div>
+            </div>
+            <div class="info-section">
+              <h4>Tutor Information</h4>
+              <div class="info-item">
+                <span class="info-label">Tutor Name:</span>
+                <span class="info-value">${video.tutorName || '-'}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Tutor UID:</span>
+                <span class="info-value">${video.tutorUid}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Submitted:</span>
+                <span class="info-value">${new Date(video.submittedDate).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </div>
+          <div class="info-section">
+            <h4>Description</h4>
+            <p style="color: #374151; line-height: 1.6;">${video.description}</p>
+          </div>
+        </div>
+      `;
+
+      // Show/hide action buttons based on status
+      if (video.status === 'pending') {
+        approveBtn.style.display = 'inline-block';
+        rejectBtn.style.display = 'inline-block';
+        deleteBtn.style.display = 'none';
+      } else if (video.status === 'approved') {
+        approveBtn.style.display = 'none';
+        rejectBtn.style.display = 'none';
+        deleteBtn.style.display = 'inline-block';
+        deleteBtn.textContent = 'Take Down Video';
+      } else {
+        approveBtn.style.display = 'none';
+        rejectBtn.style.display = 'none';
+        deleteBtn.style.display = 'inline-block';
+        deleteBtn.textContent = 'Delete Video';
+      }
+      
+      modal.style.display = 'flex';
+    }
+
+    // Close modal
+    function closeModal() {
+      document.getElementById('videoModal').style.display = 'none';
+      currentVideoId = null;
+    }
+
+    async function approveVideo(videoId = null) {
+      const vidId = videoId || currentVideoId;
+      const video = videos.find(v => v.id === vidId);
+      if (!video) return;
+      if (!confirm(`Approve "${video.title}"?`)) return;
+      await db.collection('videos').doc(String(vidId)).update({ status: 'approved', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      video.status = 'approved';
+      renderVideos(); updateStats(); closeModal();
+    }
+
+    async function rejectVideo(videoId = null) {
+      const vidId = videoId || currentVideoId;
+      const video = videos.find(v => v.id === vidId);
+      if (!video) return;
+      if (!confirm(`Reject "${video.title}"?`)) return;
+      await db.collection('videos').doc(String(vidId)).update({ status: 'rejected', updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      video.status = 'rejected';
+      renderVideos(); updateStats(); closeModal();
+    }
+
+    async function deleteVideo(videoId = null) {
+      const vidId = videoId || currentVideoId;
+      const video = videos.find(v => v.id === vidId);
+      if (!video) return;
+      const action = video.status === 'approved' ? 'take down' : 'delete';
+      if (!confirm(`Are you sure you want to ${action} "${video.title}"?`)) return;
+      await db.collection('videos').doc(String(vidId)).delete();
+      const index = videos.findIndex(v => v.id === vidId);
+      if (index > -1) { videos.splice(index, 1); renderVideos(); updateStats(); }
+      closeModal();
+    }
+
+    // Navigation highlighting
+    const currentPage = window.location.pathname.split('/').pop();
+    document.querySelectorAll('.nav-item').forEach(item => {
+      if (item.getAttribute('href') === currentPage) {
+        item.classList.add('active');
+      }
+    });
+
+    // Event listeners
+    document.getElementById('searchInput').addEventListener('input', renderVideos);
+    document.getElementById('statusFilter').addEventListener('change', renderVideos);
+    document.getElementById('subjectFilter').addEventListener('change', renderVideos);
+    document.getElementById('tutorFilter').addEventListener('change', () => loadVideos());
+
+    // Close modal when clicking outside
+    document.getElementById('videoModal').addEventListener('click', (e) => {
+      if (e.target.id === 'videoModal') {
+        closeModal();
+      }
+    });
+
+    // Initialize
+    loadTutorsIntoFilter().then(loadVideos);
+  </script>
+</body>
+</html>

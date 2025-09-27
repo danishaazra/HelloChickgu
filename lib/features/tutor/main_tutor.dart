@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'tutor2.dart';
 import 'package:hellochickgu/services/purchase_service.dart';
 import 'course_outline.dart';
+import 'best_tutor.dart';
 
 class TutorListPage extends StatefulWidget {
   const TutorListPage({super.key});
@@ -11,8 +12,6 @@ class TutorListPage extends StatefulWidget {
 }
 
 class _TutorListPageState extends State<TutorListPage> {
-  final TextEditingController _searchController = TextEditingController();
-
   final List<_CategoryChip> _categories = const [
     _CategoryChip(label: 'Computer Science', icon: Icons.computer),
     _CategoryChip(label: 'Mathematics', icon: Icons.calculate),
@@ -30,7 +29,6 @@ class _TutorListPageState extends State<TutorListPage> {
       course: Course(
         title: 'UI/UX Fundamentals',
         university: 'Universiti Putra Malaysia',
-        priceText: 'RM45',
         description:
             'Learn human-centered design, wireframing, prototyping, and usability testing. This course helps you craft intuitive experiences with solid visual hierarchies and interaction patterns.',
         lecturesText: '40+ Lectures',
@@ -54,7 +52,6 @@ class _TutorListPageState extends State<TutorListPage> {
       course: Course(
         title: 'Python Programming',
         university: 'Universiti Sains Malaysia',
-        priceText: 'RM30',
         description:
             'Start from the basics and progress to data structures, OOP, and problem solving with Python. Build a solid foundation to tackle scripting and backend tasks.',
         lecturesText: '50+ Lectures',
@@ -79,7 +76,6 @@ class _TutorListPageState extends State<TutorListPage> {
       course: Course(
         title: 'Game Development',
         university: 'Universiti Putra Malaysia',
-        priceText: 'RM55',
         description:
             'Explore game design pipelines, 2D/3D rendering basics, physics, and scripting. Build a small game project and learn to iterate on gameplay and user feedback.',
         lecturesText: '60+ Lectures',
@@ -99,10 +95,7 @@ class _TutorListPageState extends State<TutorListPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.black87,
-          ),
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         centerTitle: true,
@@ -156,10 +149,11 @@ class _TutorListPageState extends State<TutorListPage> {
                 if (purchased) {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => CourseOutlinePage(
-                        courseTitle: t.course.title,
-                        university: t.course.university,
-                      ),
+                      builder:
+                          (_) => CourseOutlinePage(
+                            courseTitle: t.course.title,
+                            university: t.course.university,
+                          ),
                     ),
                   );
                 } else {
@@ -197,20 +191,26 @@ class _TutorListPageState extends State<TutorListPage> {
             ),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search Tutor...',
-              filled: true,
-              fillColor: Colors.white,
-              prefixIcon: const Icon(Icons.search),
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 0,
-                horizontal: 12,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
-                borderSide: BorderSide.none,
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder:
+                        (_) => const BestTutorPage(courseTitle: 'Best Tutor'),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.emoji_events),
+              label: const Text('Best Tutor'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xff1492e6),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
               ),
             ),
           ),
@@ -265,26 +265,20 @@ class _TutorCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Builder(
-                        builder: (context) {
-                          final purchased = PurchaseService.instance
-                              .isPurchased(item.course.title);
-                          return TextButton(
-                            onPressed: onTap,
-                            style: TextButton.styleFrom(
-                              backgroundColor: const Color(0xffdff3ff),
-                              foregroundColor: const Color(0xff1492e6),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Text(purchased ? 'Learn Now' : 'Enroll Now'),
-                          );
-                        },
+                      TextButton(
+                        onPressed: onTap,
+                        style: TextButton.styleFrom(
+                          backgroundColor: const Color(0xffdff3ff),
+                          foregroundColor: const Color(0xff1492e6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Learn Now'),
                       ),
                       const Spacer(),
                       const Icon(

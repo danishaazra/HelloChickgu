@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Hello Chickgu</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: #f8fafc;
+    }
+
+    .dashboard {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: #4FC3F7;
+      padding: 24px 0;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-header {
+      padding: 0 24px 24px;
+      border-bottom: 1px solid rgba(17, 24, 39, 0.1);
+      margin-bottom: 24px;
+    }
+
+    .sidebar-header h2 {
+      color: #111827;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .nav-menu {
+      flex: 1;
+      padding: 0 16px;
+    }
+
+    .nav-item {
+      display: block;
+      width: 100%;
+      padding: 16px 20px;
+      margin-bottom: 8px;
+      background: transparent;
+      border: none;
+      border-radius: 12px;
+      color: #111827;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .nav-item:hover {
+      background: rgba(17, 24, 39, 0.1);
+      transform: translateX(4px);
+    }
+
+    .nav-item.active {
+      background: rgba(17, 24, 39, 0.15);
+    }
+
+    .nav-item i {
+      margin-right: 12px;
+      width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 24px 16px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .tutor-image {
+      max-width: 120px;
+      height: auto;
+      opacity: 0.8;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .content-header {
+      margin-bottom: 32px;
+    }
+
+    .content-header h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+
+    .content-header p {
+      color: #6b7280;
+      font-size: 16px;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
+    }
+
+    .stat-card h3 {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-card .number {
+      font-size: 32px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    .stat-card .change {
+      font-size: 14px;
+      color: #059669;
+      font-weight: 600;
+    }
+
+    /* Section Cards */
+    .section-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
+      margin-bottom: 24px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .section-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .view-all-btn {
+      background: #4FC3F7;
+      color: #111827;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .view-all-btn:hover {
+      background: #29b6f6;
+    }
+
+    /* Data Tables */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .data-table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    .data-table td {
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .data-table tr:hover {
+      background: #f9fafb;
+    }
+
+    /* Status Badges */
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-approved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status-active {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: #4FC3F7;
+      color: #111827;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .btn:hover {
+      opacity: 0.8;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .dashboard {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        padding: 16px;
+      }
+      
+      .sidebar-header {
+        display: none;
+      }
+      
+      .nav-menu {
+        display: flex;
+        gap: 8px;
+        padding: 0;
+      }
+      
+      .nav-item {
+        margin-bottom: 0;
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+      
+      .sidebar-footer {
+        display: none;
+      }
+      
+      .main-content {
+        padding: 16px;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+
+      .data-table {
+        font-size: 12px;
+      }
+
+      .data-table th,
+      .data-table td {
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <h2>Admin Panel</h2>
+      </div>
+      <div class="nav-menu">
+        <a href="dashboard_admin.html" class="nav-item active">
+          <i>📊</i> Dashboard
+        </a>
+        <a href="tutor_management.html" class="nav-item">
+          <i>👥</i> Tutor Management
+        </a>
+        <a href="application.html" class="nav-item">
+          <i>📝</i> Applications
+        </a>
+        <a href="courses.html" class="nav-item">
+          <i>📚</i> Courses
+        </a>
+        <a href="admin_video.html" class="nav-item">
+          <i>🎥</i> Video Review
+        </a>
+        <a href="login_admin.html" class="nav-item">
+          <i>🚪</i> Logout
+        </a>
+      </div>
+      <div class="sidebar-footer">
+        <img src="../../../assets/tutor_chickgu.png" alt="Admin Chickgu" class="tutor-image">
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="content-header">
+        <h1>Admin Dashboard</h1>
+        <p>Manage tutors, applications, and video content across the platform.</p>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Tutors</h3>
+          <div class="number" id="dashTutorsTotal">0</div>
+          <div class="change" id="dashTutorsNote"></div>
+        </div>
+        <div class="stat-card">
+          <h3>Pending Applications</h3>
+          <div class="number" id="dashAppsPending">0</div>
+          <div class="change" id="dashAppsNote"></div>
+        </div>
+        <div class="stat-card">
+          <h3>Videos Under Review</h3>
+          <div class="number" id="dashVideosPending">0</div>
+          <div class="change" id="dashVideosPendingNote"></div>
+        </div>
+        <div class="stat-card">
+          <h3>Total Videos</h3>
+          <div class="number" id="dashVideosTotal">0</div>
+          <div class="change" id="dashVideosTotalNote"></div>
+        </div>
+      </div>
+
+      <!-- Recent Tutor Applications -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2>Recent Tutor Applications</h2>
+          <button class="view-all-btn">View All</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Subject</th>
+              <th>Qualification</th>
+              <th>Status</th>
+              <th>Applied Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="recentAppsBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Recent Video Submissions -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2>Recent Video Submissions</h2>
+          <button class="view-all-btn">View All</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Video Title</th>
+              <th>Tutor</th>
+              <th>Subject</th>
+              <th>Duration</th>
+              <th>Status</th>
+              <th>Submitted Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="recentVideosBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Active Tutors -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2>Active Tutors</h2>
+          <button class="view-all-btn">Manage All</button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tutor Name</th>
+              <th>Email</th>
+              <th>Subjects</th>
+              <th>Videos</th>
+              <th>Status</th>
+              <th>Join Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="activeTutorsBody"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
+  <script>
+    // Firebase init
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+      appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+      messagingSenderId: '864651268854',
+      projectId: 'hellochickgu',
+      authDomain: 'hellochickgu.firebaseapp.com',
+      storageBucket: 'hellochickgu.appspot.com',
+      measurementId: 'G-52RMQVE2SQ',
+    };
+    if (firebase.apps && firebase.apps.length) { firebase.app(); } else { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.firestore();
+
+    // Navigation highlighting based on current page
+    const currentPage = window.location.pathname.split('/').pop();
+    document.querySelectorAll('.nav-item').forEach(item => {
+      if (item.getAttribute('href') === currentPage) {
+        item.classList.add('active');
+      }
+    });
+
+    async function loadStatsAndLists() {
+      const [tutorsSnap, appsPendingSnap, videosPendingSnap, videosAllSnap] = await Promise.all([
+        db.collection('tutors').get(),
+        db.collection('tutor_applicants').where('status', '==', 'pending').get(),
+        db.collection('videos').where('status', '==', 'pending').get(),
+        db.collection('videos').get(),
+      ]);
+
+      // Stats
+      document.getElementById('dashTutorsTotal').textContent = tutorsSnap.size;
+      document.getElementById('dashAppsPending').textContent = appsPendingSnap.size;
+      document.getElementById('dashVideosPending').textContent = videosPendingSnap.size;
+      document.getElementById('dashVideosTotal').textContent = videosAllSnap.size;
+
+      // Recent Applications (latest 5)
+      const appsSnap = await db.collection('tutor_applicants').orderBy('appliedAt', 'desc').limit(5).get();
+      const appsRows = appsSnap.docs.map(d => {
+        const a = d.data();
+        const date = a.appliedAt && a.appliedAt.toDate ? a.appliedAt.toDate().toLocaleDateString() : '';
+        const statusCls = a.status === 'approved' ? 'status-approved' : a.status === 'rejected' ? 'status-rejected' : 'status-pending';
+        const subject = Array.isArray(a.subjects) ? a.subjects.join(', ') : (a.subject || '');
+        return `
+          <tr>
+            <td>${a.applicantName || '-'}</td>
+            <td>${a.applicantEmail || '-'}</td>
+            <td>${subject}</td>
+            <td>${a.qualification || '-'}</td>
+            <td><span class="status-badge ${statusCls}">${a.status || 'pending'}</span></td>
+            <td>${date}</td>
+            <td class="action-buttons">
+              <a class="btn btn-primary" href="application.html">Review</a>
+              <a class="btn btn-secondary" href="application.html">Details</a>
+            </td>
+          </tr>`;
+      }).join('');
+      document.getElementById('recentAppsBody').innerHTML = appsRows;
+
+      // Recent Videos (latest 5)
+      const videosSnap = await db.collection('videos').orderBy('createdAt', 'desc').limit(5).get();
+      const tutorCache = {};
+      async function tutorName(uid) {
+        if (!uid) return '-';
+        if (tutorCache[uid]) return tutorCache[uid];
+        try { const t = await db.collection('tutors').doc(uid).get(); tutorCache[uid] = t.exists ? (t.data().name || t.data().email || uid) : uid; } catch (_) { tutorCache[uid] = uid; }
+        return tutorCache[uid];
+      }
+      const rows = [];
+      for (const doc of videosSnap.docs) {
+        const v = doc.data();
+        const date = v.createdAt && v.createdAt.toDate ? v.createdAt.toDate().toLocaleDateString() : '';
+        const statusCls = v.status === 'approved' ? 'status-approved' : v.status === 'rejected' ? 'status-rejected' : 'status-pending';
+        const name = await tutorName(v.tutorUid);
+        rows.push(`
+          <tr>
+            <td>${v.title || '-'}</td>
+            <td>${name}</td>
+            <td>-</td>
+            <td>${v.duration || '00:00'}</td>
+            <td><span class="status-badge ${statusCls}">${v.status || 'pending'}</span></td>
+            <td>${date}</td>
+            <td class="action-buttons">
+              <a class="btn ${v.status==='pending' ? 'btn-primary' : 'btn-secondary'}" href="admin_video.html">${v.status==='pending' ? 'Review' : 'View'}</a>
+            </td>
+          </tr>`);
+      }
+      document.getElementById('recentVideosBody').innerHTML = rows.join('');
+
+      // Active tutors (latest 5 active)
+      const activeSnap = await db.collection('tutors').where('status','==','active').limit(5).get();
+      const activeRows = activeSnap.docs.map(d => {
+        const t = d.data();
+        const subjects = Array.isArray(t.subjects) ? t.subjects.join(', ') : '';
+        const joinDate = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate().toLocaleDateString() : '';
+        return `
+          <tr>
+            <td>${t.name || '-'}</td>
+            <td>${t.email || '-'}</td>
+            <td>${subjects}</td>
+            <td>${t.videosCount || 0}</td>
+            <td><span class="status-badge status-active">Active</span></td>
+            <td>${joinDate}</td>
+            <td class="action-buttons">
+              <a class="btn btn-primary" href="tutor_management.html">Profile</a>
+              <a class="btn btn-secondary" href="admin_video.html">Videos</a>
+            </td>
+          </tr>`;
+      }).join('');
+      document.getElementById('activeTutorsBody').innerHTML = activeRows;
+    }
+
+    loadStatsAndLists();
+  </script>
+</body>
+</html>

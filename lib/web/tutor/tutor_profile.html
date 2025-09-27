@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutor Profile - Hello Chickgu</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: #f8fafc;
+    }
+
+    .profile-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: #F4B942;
+      padding: 24px 0;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar-header {
+      padding: 0 24px 24px;
+      border-bottom: 1px solid rgba(17, 24, 39, 0.1);
+      margin-bottom: 24px;
+    }
+
+    .sidebar-header h2 {
+      color: #111827;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .nav-menu {
+      flex: 1;
+      padding: 0 16px;
+    }
+
+    .nav-item {
+      display: block;
+      width: 100%;
+      padding: 16px 20px;
+      margin-bottom: 8px;
+      background: transparent;
+      border: none;
+      border-radius: 12px;
+      color: #111827;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .nav-item:hover {
+      background: rgba(17, 24, 39, 0.1);
+      transform: translateX(4px);
+    }
+
+    .nav-item.active {
+      background: rgba(17, 24, 39, 0.15);
+    }
+
+    .nav-item i {
+      margin-right: 12px;
+      width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 24px 16px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .tutor-image {
+      max-width: 120px;
+      height: auto;
+      opacity: 0.8;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .profile-header {
+      margin-bottom: 32px;
+    }
+
+    .profile-header h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+
+    .profile-header p {
+      color: #6b7280;
+      font-size: 16px;
+    }
+
+    /* Profile Content */
+    .profile-content {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 32px;
+      align-items: start;
+    }
+
+    .profile-info {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
+    }
+
+    .info-section {
+      margin-bottom: 32px;
+    }
+
+    .info-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .info-section h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #F4B942;
+    }
+
+    .info-item {
+      margin-bottom: 16px;
+    }
+
+    .info-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .info-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #6b7280;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .info-value {
+      font-size: 16px;
+      color: #111827;
+      font-weight: 500;
+    }
+
+    .subjects-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .subject-tag {
+      background: #F4B942;
+      color: #111827;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .qualifications-list {
+      list-style: none;
+    }
+
+    .qualifications-list li {
+      position: relative;
+      padding-left: 20px;
+      margin-bottom: 8px;
+      font-size: 16px;
+      color: #111827;
+    }
+
+    .qualifications-list li:before {
+      content: "🎓";
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    /* Profile Picture */
+    .profile-picture-section {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      border: 1px solid #e5e7eb;
+      text-align: center;
+    }
+
+    .profile-picture {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #F4B942;
+      margin-bottom: 16px;
+    }
+
+    .edit-profile-btn {
+      background: #F4B942;
+      color: #111827;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 24px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .edit-profile-btn:hover {
+      background: #e6a73a;
+      transform: translateY(-2px);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .profile-content {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      
+      .profile-picture-section {
+        order: -1;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .profile-container {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        padding: 16px;
+      }
+      
+      .sidebar-header {
+        display: none;
+      }
+      
+      .nav-menu {
+        display: flex;
+        gap: 8px;
+        padding: 0;
+      }
+      
+      .nav-item {
+        margin-bottom: 0;
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+      
+      .sidebar-footer {
+        display: none;
+      }
+      
+      .main-content {
+        padding: 16px;
+      }
+      
+      .profile-info {
+        padding: 20px;
+      }
+      
+      .profile-picture-section {
+        padding: 20px;
+      }
+      
+      .profile-picture {
+        width: 150px;
+        height: 150px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="profile-container">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <h2>Tutor Panel</h2>
+      </div>
+      <div class="nav-menu">
+        <a href="dashboard_tutor.html" class="nav-item">
+          <i>📊</i> Dashboard
+        </a>
+        <a href="tutor_profile.html" class="nav-item active">
+          <i>👤</i> My Profile
+        </a>
+        <a href="tutor_video.html" class="nav-item">
+          <i>🎥</i> My Videos
+        </a>
+        <a href="login_tutor.html" class="nav-item">
+          <i>🚪</i> Logout
+        </a>
+      </div>
+      <div class="sidebar-footer">
+        <img src="../../../assets/tutor_chickgu.png" alt="Tutor Chickgu" class="tutor-image">
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="profile-header">
+        <h1>My Profile</h1>
+        <p>Manage your tutor profile and personal information.</p>
+      </div>
+
+      <div class="profile-content">
+        <!-- Profile Information -->
+        <div class="profile-info">
+          <div class="info-section">
+            <h3>Personal Information</h3>
+            <div class="info-item">
+              <div class="info-label">Full Name</div>
+              <div class="info-value" id="profileName">-</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Email Address</div>
+              <div class="info-value" id="profileEmail">-</div>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <h3>Subjects I Teach</h3>
+            <div class="subjects-list" id="subjectsList"></div>
+          </div>
+
+          <div class="info-section">
+            <h3>Qualifications</h3>
+            <ul class="qualifications-list" id="qualificationsList"></ul>
+          </div>
+        </div>
+
+        <!-- Profile Picture -->
+        <div class="profile-picture-section">
+          <img src="../../../assets/tutor_chickgu.png" alt="Profile Picture" class="profile-picture">
+          <h3>Profile Picture</h3>
+          <p style="color: #6b7280; margin-bottom: 16px;">Upload a professional photo</p>
+          <button class="edit-profile-btn">Edit Profile</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
+  <script>
+    // Navigation highlighting based on current page
+    const currentPage = window.location.pathname.split('/').pop();
+    document.querySelectorAll('.nav-item').forEach(item => {
+      if (item.getAttribute('href') === currentPage) {
+        item.classList.add('active');
+      }
+    });
+
+    // Edit profile button functionality
+    document.querySelector('.edit-profile-btn').addEventListener('click', () => {
+      alert('Edit profile functionality would open here');
+    });
+
+    // Firebase init
+    const firebaseConfig = {
+      apiKey: 'AIzaSyCDk4CoDqoT0Ohg9OVeaTV-0aJMMRW3rqU',
+      appId: '1:864651268854:web:ef8e6d24d079af4c6b92d7',
+      messagingSenderId: '864651268854',
+      projectId: 'hellochickgu',
+      authDomain: 'hellochickgu.firebaseapp.com',
+      storageBucket: 'hellochickgu.appspot.com',
+      measurementId: 'G-52RMQVE2SQ',
+    };
+    if (firebase.apps && firebase.apps.length) { firebase.app(); } else { firebase.initializeApp(firebaseConfig); }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    async function loadProfile() {
+      try {
+        // Wait briefly for an existing session (if came from login)
+        await new Promise(r => setTimeout(r, 300));
+        const user = auth.currentUser;
+        if (!user) { /* optional: redirect to login */ return; }
+        const uid = user.uid;
+        const doc = await db.collection('tutors').doc(uid).get();
+        if (!doc.exists) return;
+        const data = doc.data();
+        document.getElementById('profileName').textContent = data.name || user.displayName || '-';
+        document.getElementById('profileEmail').textContent = data.email || user.email || '-';
+        const subjects = Array.isArray(data.subjects) ? data.subjects : [];
+        document.getElementById('subjectsList').innerHTML = subjects.map(s => `<span class="subject-tag">${s}</span>`).join('');
+        const quals = Array.isArray(data.qualifications) ? data.qualifications : (data.qualification ? [data.qualification] : []);
+        document.getElementById('qualificationsList').innerHTML = quals.map(q => `<li>${q}</li>`).join('');
+      } catch (_) {}
+    }
+
+    // If auth state changes, reload profile
+    auth.onAuthStateChanged(() => loadProfile());
+    loadProfile();
+  </script>
+</body>
+</html>
+
+

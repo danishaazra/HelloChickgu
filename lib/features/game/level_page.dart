@@ -1,9 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:hellochickgu/features/game/quiz1.dart';
+import 'package:hellochickgu/features/game/quiz2.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
+import 'package:hellochickgu/features/game/quiz3.dart';
+import 'package:hellochickgu/features/game/quiz4.dart';
+import 'package:hellochickgu/features/game/training_page.dart';
+import 'package:hellochickgu/map.dart';
+import 'package:hellochickgu/services/quiz_service.dart';
+import 'package:hellochickgu/features/game/quiz_review.dart';
+import 'package:hellochickgu/features/game/quiz_bank.dart';
 
 class LevelPage extends StatefulWidget {
-  const LevelPage({super.key});
+  final int? initialHighestUnlockedLevel;
+  final int? completedLevel;
+
+  const LevelPage({
+    super.key,
+    this.initialHighestUnlockedLevel,
+    this.completedLevel,
+  });
 
   @override
   State<LevelPage> createState() => _LevelPageState();
@@ -15,13 +30,26 @@ class _LevelPageState extends State<LevelPage> {
   Set<int> completedLevels = {}; // Track completed levels
 
   void _openTraining() {
-    Navigator.of(context).pushNamed('/training');
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => const TrainingPage()))
+        .then((_) {
+          if (mounted) {
+            setState(() {
+              _trainingSelected = false;
+            });
+          }
+        });
   }
 
   void _onTapLevel(int level) {
-    // Only allow access to unlocked levels
+    // For levels 5+, always open the unified popup (Coming Soon layout inside)
+    if (level >= 5) {
+      _showLevelPopup(context, level);
+      return;
+    }
+
+    // For levels 1-4, only allow access to unlocked levels
     if (level <= highestUnlockedLevel) {
-      // Show level completion popup
       _showLevelPopup(context, level);
     }
   }
@@ -31,38 +59,211 @@ class _LevelPageState extends State<LevelPage> {
     setState(() {
       completedLevels.add(level);
     });
-    
-    // Only unlock next level if current level was completed
-    if (level == highestUnlockedLevel && level < 11) {
-        setState(() {
-          highestUnlockedLevel += 1;
-        });
-      }
+
+    // Stop progression at level 4. Show Coming Soon after finishing level 4.
+    if (level >= 4) {
+      setState(() {
+        highestUnlockedLevel = highestUnlockedLevel.clamp(1, 4);
+      });
+      _showComingSoonDialog();
+      return;
     }
+
+    // Only unlock next level if current level was completed and below cap
+    if (level == highestUnlockedLevel && level < 4) {
+      setState(() {
+        highestUnlockedLevel += 1;
+      });
+    }
+  }
 
   void _showLevelPopup(BuildContext context, int level) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return LevelCompletionPopup(
-          level: level,
-          isCompleted: completedLevels.contains(level),
-          onStartGame: () => _navigateToQuiz(level),
+        // For level 5+, show Coming Soon with same popup layout
+        if (level >= 5) {
+            return LevelCompletionPopup(
+            level: level,
+            isCompleted: true,
+            onStartGame: () {
+              Navigator.of(context).pop();
+            },
+            overridePointsText: '---',
+            overrideTimeText: '---',
+            startLabel: 'Coming Soon',
+            isComingSoon: true,
+            imageAssetOverride: 'assets/comingsoon.png',
+            disableStart: false,
+              onClose: () {
+                Navigator.of(context).pop();
+              },
+          );
+        }
+
+        return FutureBuilder<Map<String, dynamic>?>(
+          future: QuizService.instance.getLevelSummaryOrResult(level: level),
+          builder: (context, snapshot) {
+            final hasResult = snapshot.hasData && snapshot.data != null;
+            final data = snapshot.data;
+            final pointsText =
+                hasResult
+                    ? (data!['points_collected'] ?? '-').toString()
+                    : '---';
+            final timeText =
+                hasResult
+                    ? _formatSeconds(
+                      ((data!['time_taken_seconds'] ?? 0) as num).toInt(),
+                    )
+                    : '---';
+            return LevelCompletionPopup(
+              level: level,
+              isCompleted: hasResult,
+              onStartGame:
+                  hasResult
+                      ? () => _openReview(level, data!)
+                      : () => _navigateToQuiz(level),
+              overridePointsText: pointsText,
+              overrideTimeText: timeText,
+              startLabel: hasResult ? 'Review Questions' : 'Start Game!',
+              onClose: () {
+                Navigator.of(context).pop();
+                // After closing, go to next level if this level is completed
+                if (hasResult) {
+                  final int nextLevel = level + 1;
+                  // If next is <= 4 open its popup, otherwise show Coming Soon popup
+                  if (nextLevel <= 4) {
+                    _onTapLevel(nextLevel);
+                  } else {
+                    _showLevelPopup(context, 5);
+                  }
+                }
+              },
+            );
+          },
         );
       },
     );
   }
 
+  String _formatSeconds(int seconds) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
   void _navigateToQuiz(int level) {
+    // Block navigation for levels beyond 4
+    if (level >= 5) {
+      Navigator.of(context).maybePop();
+      _showComingSoonDialog();
+      return;
+    }
+
     Navigator.of(context).pop(); // Close popup
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const quiz1(),
-      ),
-    ).then((_) {
-      // When returning from quiz, mark level as completed
+    Widget destination;
+    if (level == 2) {
+      destination = const quiz2();
+    } else if (level == 3) {
+      destination = const quiz3();
+    } else if (level == 4) {
+      destination = const quiz4();
+    } else {
+      destination = quiz1(level: level);
+    }
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => destination)).then((_) {
       _completeLevel(level);
+      // Refresh highest unlocked level from server after returning
+      QuizService.instance.getHighestUnlockedLevel().then((lvl) {
+        if (!mounted) return;
+        setState(() {
+          // Cap at level 4 for now
+          highestUnlockedLevel = lvl.clamp(1, 4);
+        });
+      });
+    });
+  }
+
+  void _showComingSoonDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Coming Soon'),
+          content: const Text('You\'ve reached the current end of the journey. More levels are coming soon!'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _openReview(int level, Map<String, dynamic> result) {
+    Navigator.of(context).pop();
+    // Navigate to appropriate review UI based on level
+    // Fetch detailed answers from quiz_results
+    QuizService.instance.getLatestQuizResult(quizNumber: level).then((detail) {
+      if (!mounted) return;
+      if (detail == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No saved answers found to review.')),
+        );
+        return;
+      }
+      if (level == 1) {
+        // Prefer built-in bank for consistent layout
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => QuizReviewPage(
+                  questions: quiz1Questions(),
+                  selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
+                ),
+          ),
+        );
+      } else if (level == 2) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => QuizReviewPage(
+                  questions: quiz2Questions(),
+                  selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
+                ),
+          ),
+        );
+      } else if (level == 3) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => QuizReviewPage(
+                  questions: quiz3Questions(),
+                  selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
+                ),
+          ),
+        );
+      } else if (level == 4) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => QuizReviewPage(
+                  questions: quiz4Questions(),
+                  selectedAnswers: List<dynamic>.from(detail['answers'] ?? []),
+                ),
+          ),
+        );
+      }
     });
   }
 
@@ -82,16 +283,12 @@ class _LevelPageState extends State<LevelPage> {
 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/backgroundgame.png',
-            fit: BoxFit.cover,
-          ),
+          Image.asset('assets/backgroundgame.png', fit: BoxFit.cover),
           // Top controls as a sticky app bar row
           SafeArea(
             child: Stack(
@@ -106,13 +303,24 @@ class _LevelPageState extends State<LevelPage> {
                         child: GestureDetector(
                           onTap: _openComputerScienceModal,
                           child: Container(
-                            padding: Responsive.scalePaddingSymmetric(context, horizontal: 16, vertical: 10),
+                            padding: Responsive.scalePaddingSymmetric(
+                              context,
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF4B942),
-                              borderRadius: Responsive.scaleBorderRadiusAll(context, 8),
+                              borderRadius: Responsive.scaleBorderRadiusAll(
+                                context,
+                                8,
+                              ),
                               border: Border.all(color: Colors.white, width: 2),
                               boxShadow: const [
-                                BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
                               ],
                             ),
                             child: const Row(
@@ -127,7 +335,10 @@ class _LevelPageState extends State<LevelPage> {
                                   ),
                                 ),
                                 SizedBox(width: 6),
-                                Icon(Icons.arrow_drop_down, color: Colors.white),
+                                Icon(
+                                  Icons.arrow_drop_down,
+                                  color: Colors.white,
+                                ),
                               ],
                             ),
                           ),
@@ -139,14 +350,24 @@ class _LevelPageState extends State<LevelPage> {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
                           boxShadow: const [
-                            BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
                           ],
                           border: Border.all(color: Colors.white, width: 2),
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.home_outlined, size: 20),
+                          icon: const Icon(Icons.map_outlined, size: 20),
                           color: Colors.black,
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const MapChickgu(),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],
@@ -169,7 +390,10 @@ class _LevelPageState extends State<LevelPage> {
                       children: [
                         _BottomPill(
                           label: 'Level',
-                          background: _trainingSelected ? Colors.grey.shade700 : const Color(0xFFFFB6C1),
+                          background:
+                              _trainingSelected
+                                  ? Colors.grey.shade700
+                                  : const Color(0xFFFFB6C1),
                           textColor: Colors.black,
                           borderColor: _trainingSelected ? null : Colors.white,
                           borderWidth: _trainingSelected ? null : 2,
@@ -184,7 +408,10 @@ class _LevelPageState extends State<LevelPage> {
                         ),
                         _BottomPill(
                           label: 'Training',
-                          background: _trainingSelected ? const Color(0xFFFFB6C1) : Colors.grey.shade300,
+                          background:
+                              _trainingSelected
+                                  ? const Color(0xFFFFB6C1)
+                                  : Colors.grey.shade300,
                           textColor: Colors.black,
                           borderColor: _trainingSelected ? Colors.white : null,
                           borderWidth: _trainingSelected ? 2 : null,
@@ -208,6 +435,24 @@ class _LevelPageState extends State<LevelPage> {
         ],
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialHighestUnlockedLevel != null) {
+      highestUnlockedLevel = widget.initialHighestUnlockedLevel!.clamp(1, 11);
+    }
+    if (widget.completedLevel != null) {
+      completedLevels.add(widget.completedLevel!.clamp(1, 11));
+    }
+    // Also fetch latest unlocked level from Firestore to preserve progress across navigation
+    QuizService.instance.getHighestUnlockedLevel().then((lvl) {
+      if (!mounted) return;
+      setState(() {
+        highestUnlockedLevel = lvl.clamp(1, 11);
+      });
+    });
   }
 }
 
@@ -235,14 +480,16 @@ class _LevelMap extends StatelessWidget {
       const Offset(0.85, 0.29), // 9
       const Offset(0.6, 0.23), // 10
       const Offset(0.2, 0.17),
- 
     ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final double width = constraints.maxWidth;
         final double height = constraints.maxHeight;
-        final int currentIndex = (highestUnlockedLevel - 1).clamp(0, levelPositions.length - 1);
+        final int currentIndex = (highestUnlockedLevel - 1).clamp(
+          0,
+          levelPositions.length - 1,
+        );
         // current position computed implicitly where needed
 
         return Stack(
@@ -309,7 +556,11 @@ class _LevelBubbleFrac extends StatelessWidget {
                 color: fillColor,
                 shape: BoxShape.circle,
                 boxShadow: const [
-                  BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
                 ],
                 border: Border.all(color: ringColor, width: 3),
               ),
@@ -329,7 +580,8 @@ class _LevelBubbleFrac extends StatelessWidget {
                 bottom: size * 0.6,
                 child: Builder(
                   builder: (context) {
-                    final bool shouldFlip = level == 4 || level == 5 || level == 9 || level == 10;
+                    final bool shouldFlip =
+                        level == 4 || level == 5 || level == 9 || level == 10;
                     final Widget chicken = _AnimatedChicken(
                       image: Image.asset(
                         'assets/chickenLevel.png',
@@ -339,10 +591,10 @@ class _LevelBubbleFrac extends StatelessWidget {
                     );
                     return shouldFlip
                         ? Transform(
-                            alignment: Alignment.center,
-                            transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
-                            child: chicken,
-                          )
+                          alignment: Alignment.center,
+                          transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
+                          child: chicken,
+                        )
                         : chicken;
                   },
                 ),
@@ -350,9 +602,14 @@ class _LevelBubbleFrac extends StatelessWidget {
             Positioned(
               right: -2,
               top: -2,
-              child: unlocked
-                  ? const SizedBox.shrink()
-                  : const Icon(Icons.lock, size: 18, color: Color(0xFF4FC3F7)),
+              child:
+                  unlocked
+                      ? const SizedBox.shrink()
+                      : const Icon(
+                        Icons.lock,
+                        size: 18,
+                        color: Color(0xFF4FC3F7),
+                      ),
             ),
           ],
         ),
@@ -392,11 +649,16 @@ class _BottomPill extends StatelessWidget {
           color: background,
           borderRadius: BorderRadius.circular(24),
           boxShadow: const [
-            BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
           ],
-          border: (borderColor != null && borderWidth != null)
-              ? Border.all(color: borderColor!, width: borderWidth!)
-              : null,
+          border:
+              (borderColor != null && borderWidth != null)
+                  ? Border.all(color: borderColor!, width: borderWidth!)
+                  : null,
         ),
         alignment: Alignment.center,
         child: Text(
@@ -438,7 +700,8 @@ class _SearchSubjectsSheetState extends State<_SearchSubjectsSheet> {
   @override
   Widget build(BuildContext context) {
     final String q = _queryController.text.toLowerCase();
-    final List<String> filtered = subjects.where((s) => s.toLowerCase().contains(q)).toList();
+    final List<String> filtered =
+        subjects.where((s) => s.toLowerCase().contains(q)).toList();
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.7,
@@ -460,7 +723,10 @@ class _SearchSubjectsSheetState extends State<_SearchSubjectsSheet> {
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
-              const Text('Search Subjects & Courses', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+              const Text(
+                'Search Subjects & Courses',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -508,12 +774,28 @@ class LevelCompletionPopup extends StatefulWidget {
   final int level;
   final bool isCompleted;
   final VoidCallback onStartGame;
+  final String? overridePointsText;
+  final String? overrideTimeText;
+  final String? startLabel;
+  final bool isComingSoon;
+  final String? imageAssetOverride;
+  final String? titleOverride;
+  final bool disableStart;
+  final VoidCallback? onClose;
 
   const LevelCompletionPopup({
-    super.key, 
+    super.key,
     required this.level,
     required this.isCompleted,
     required this.onStartGame,
+    this.overridePointsText,
+    this.overrideTimeText,
+    this.startLabel,
+    this.isComingSoon = false,
+    this.imageAssetOverride,
+    this.titleOverride,
+    this.disableStart = false,
+    this.onClose,
   });
 
   @override
@@ -533,13 +815,9 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
       vsync: this,
     );
 
-    _bounceAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _bounceController,
-      curve: Curves.elasticOut,
-    ));
+    _bounceAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _bounceController, curve: Curves.elasticOut),
+    );
 
     _bounceController.forward();
   }
@@ -555,7 +833,7 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = Responsive.isSmallScreen(context);
     final isVerySmallScreen = Responsive.isVerySmallScreen(context);
-    
+
     return Dialog(
       backgroundColor: Colors.transparent,
       child: AnimatedBuilder(
@@ -564,13 +842,19 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
           return Transform.scale(
             scale: _bounceAnimation.value,
             child: Container(
-              width: isVerySmallScreen ? screenSize.width * 0.9 : 
-                     isSmallScreen ? screenSize.width * 0.85 : 
-                     Responsive.scaleWidth(context, 320),
+              width:
+                  isVerySmallScreen
+                      ? screenSize.width * 0.9
+                      : isSmallScreen
+                      ? screenSize.width * 0.85
+                      : Responsive.scaleWidth(context, 320),
               constraints: BoxConstraints(
-                maxHeight: isVerySmallScreen ? screenSize.height * 0.8 :
-                           isSmallScreen ? screenSize.height * 0.85 :
-                           screenSize.height * 0.9,
+                maxHeight:
+                    isVerySmallScreen
+                        ? screenSize.height * 0.8
+                        : isSmallScreen
+                        ? screenSize.height * 0.85
+                        : screenSize.height * 0.9,
               ),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
@@ -600,7 +884,10 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                   SingleChildScrollView(
                     child: Padding(
                       padding: EdgeInsets.only(
-                        top: Responsive.scaleHeight(context, 70), // Space for close button
+                        top: Responsive.scaleHeight(
+                          context,
+                          70,
+                        ), // Space for close button
                         left: Responsive.scaleWidth(context, 25),
                         right: Responsive.scaleWidth(context, 25),
                         bottom: Responsive.scaleHeight(context, 25),
@@ -608,162 +895,53 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                        // Chicken image without background
-                        Container(
-                          width: Responsive.scaleWidth(context, 130),
-                          height: Responsive.scaleHeight(context, 130),
-                          child: ClipOval(
-                            child: Image.asset(
-                              'assets/chickenHappy.png',
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        
-                        SizedBox(height: isSmallScreen ? 15 : 25),
-                        
-                        // Level title with cute styling
-                        Container(
-                          padding: Responsive.scalePaddingSymmetric(context, horizontal: 20, vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF4FC3F7), Color(0xFF29B6F6)],
-                            ),
-                            borderRadius: Responsive.scaleBorderRadiusAll(context, 20),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black26,
-                                blurRadius: 8,
-                                offset: Offset(0, 4),
+                          // Top image (supports coming soon override)
+                          Container(
+                            width: Responsive.scaleWidth(context, widget.isComingSoon ? 170 : 130),
+                            height: Responsive.scaleHeight(context, widget.isComingSoon ? 170 : 130),
+                            child: ClipOval(
+                              child: Image.asset(
+                                widget.imageAssetOverride ??
+                                    (widget.isComingSoon
+                                        ? 'assets/comingsoon.png'
+                                        : 'assets/chickenHappy.png'),
+                                fit: BoxFit.cover,
                               ),
-                            ],
-                          ),
-                          child: Text(
-                            'Level ${widget.level}',
-                            style: TextStyle(
-                              fontFamily: 'Baloo2',
-                              fontSize: Responsive.scaleFont(context, 26),
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              shadows: const [
-                                Shadow(
-                                  color: Colors.black26,
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
                             ),
                           ),
-                        ),
-                        
-                        SizedBox(height: isSmallScreen ? 15 : 25),
-                        
-                        // Points section with cute icon
-                        Container(
-                          padding: Responsive.scalePaddingSymmetric(context, horizontal: 20, vertical: 12),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFFF4B942).withOpacity(0.2),
-                                const Color(0xFFFFD54F).withOpacity(0.2),
-                              ],
+
+                          SizedBox(height: isSmallScreen ? 15 : 25),
+
+                          // Title with cute styling (supports coming soon override)
+                          Container(
+                            padding: Responsive.scalePaddingSymmetric(
+                              context,
+                              horizontal: 20,
+                              vertical: 8,
                             ),
-                            borderRadius: Responsive.scaleBorderRadiusAll(context, 16),
-                            border: Border.all(
-                              color: const Color(0xFFF4B942),
-                              width: 2,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.stars,
-                                color: const Color(0xFFF4B942),
-                                size: Responsive.scaleFont(context, 24),
-                              ),
-                              SizedBox(width: Responsive.scaleWidth(context, 8)),
-                              Text(
-                                widget.isCompleted ? 'Points: 850' : 'Points: ---',
-                                style: TextStyle(
-                                  fontFamily: 'Baloo2',
-                                  fontSize: Responsive.scaleFont(context, 20),
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        SizedBox(height: isSmallScreen ? 10 : 15),
-                        
-                        // Time taken section with cute icon
-                        Container(
-                          padding: Responsive.scalePaddingSymmetric(context, horizontal: 20, vertical: 12),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFF4FC3F7).withOpacity(0.2),
-                                const Color(0xFF29B6F6).withOpacity(0.2),
-                              ],
-                            ),
-                            borderRadius: Responsive.scaleBorderRadiusAll(context, 16),
-                            border: Border.all(
-                              color: const Color(0xFF4FC3F7),
-                              width: 2,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.timer,
-                                color: const Color(0xFF4FC3F7),
-                                size: Responsive.scaleFont(context, 24),
-                              ),
-                              SizedBox(width: Responsive.scaleWidth(context, 8)),
-                              Text(
-                                widget.isCompleted ? 'Time Taken: 2:45' : 'Time Taken: ---',
-                                style: TextStyle(
-                                  fontFamily: 'Baloo2',
-                                  fontSize: Responsive.scaleFont(context, 20),
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        SizedBox(height: isSmallScreen ? 20 : 30),
-                        
-                        // Start game button with yellow styling like computer science
-                        GestureDetector(
-                          onTap: widget.onStartGame,
-                          child: Container(
-                            width: double.infinity,
-                            padding: Responsive.scalePaddingSymmetric(context, vertical: 16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF4B942),
-                              borderRadius: Responsive.scaleBorderRadiusAll(context, 16),
-                              border: Border.all(color: Colors.white, width: 2),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF4FC3F7), Color(0xFF29B6F6)],
+                              ),
+                              borderRadius: Responsive.scaleBorderRadiusAll(
+                                context,
+                                20,
+                              ),
                               boxShadow: const [
                                 BoxShadow(
                                   color: Colors.black26,
-                                  blurRadius: 6,
-                                  offset: Offset(0, 2),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 4),
                                 ),
                               ],
                             ),
                             child: Text(
-                              'Start Game!',
-                              textAlign: TextAlign.center,
+                              widget.titleOverride ?? 'Level ${widget.level}',
                               style: TextStyle(
-                              fontFamily: 'Baloo2',
-                                color: Colors.white,
-                                fontSize: Responsive.scaleFont(context, 20),
+                                fontFamily: 'Baloo2',
+                                fontSize: Responsive.scaleFont(context, 26),
                                 fontWeight: FontWeight.bold,
+                                color: Colors.white,
                                 shadows: const [
                                   Shadow(
                                     color: Colors.black26,
@@ -774,45 +952,244 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                               ),
                             ),
                           ),
-                        ),
-                      ],
+
+                          SizedBox(height: isSmallScreen ? 15 : 25),
+
+                          // Cute coming soon message under the level title
+                          if (widget.isComingSoon)
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: Responsive.scaleWidth(context, 8),
+                              ),
+                              child: Text(
+                                'Peep peep! New adventures are hatching soon.\nCome back for extra fun and shiny rewards! 🐣✨',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: 'Baloo2',
+                                  fontSize: Responsive.scaleFont(context, 16),
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+
+                          // Points removed for Coming Soon
+                          if (!widget.isComingSoon) Container(
+                            padding: Responsive.scalePaddingSymmetric(
+                              context,
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(0xFFF4B942).withOpacity(0.2),
+                                  const Color(0xFFFFD54F).withOpacity(0.2),
+                                ],
+                              ),
+                              borderRadius: Responsive.scaleBorderRadiusAll(
+                                context,
+                                16,
+                              ),
+                              border: Border.all(
+                                color: const Color(0xFFF4B942),
+                                width: 2,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.stars,
+                                  color: const Color(0xFFF4B942),
+                                  size: Responsive.scaleFont(context, 24),
+                                ),
+                                SizedBox(
+                                  width: Responsive.scaleWidth(context, 8),
+                                ),
+                                Text(
+                                  widget.isCompleted
+                                      ? 'Points: ${widget.overridePointsText ?? '---'}'
+                                      : 'Points: ---',
+                                  style: TextStyle(
+                                    fontFamily: 'Baloo2',
+                                    fontSize: Responsive.scaleFont(context, 20),
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          SizedBox(height: isSmallScreen ? 10 : 15),
+
+                          // Time removed for Coming Soon
+                          if (!widget.isComingSoon) Container(
+                            padding: Responsive.scalePaddingSymmetric(
+                              context,
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(0xFF4FC3F7).withOpacity(0.2),
+                                  const Color(0xFF29B6F6).withOpacity(0.2),
+                                ],
+                              ),
+                              borderRadius: Responsive.scaleBorderRadiusAll(
+                                context,
+                                16,
+                              ),
+                              border: Border.all(
+                                color: const Color(0xFF4FC3F7),
+                                width: 2,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.timer,
+                                  color: const Color(0xFF4FC3F7),
+                                  size: Responsive.scaleFont(context, 24),
+                                ),
+                                SizedBox(
+                                  width: Responsive.scaleWidth(context, 8),
+                                ),
+                                Text(
+                                  widget.isCompleted
+                                      ? 'Time Taken: ${widget.overrideTimeText ?? '---'}'
+                                      : 'Time Taken: ---',
+                                  style: TextStyle(
+                                    fontFamily: 'Baloo2',
+                                    fontSize: Responsive.scaleFont(context, 20),
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          SizedBox(height: isSmallScreen ? 20 : 30),
+
+                          // Start game button (disabled for coming soon)
+                          GestureDetector(
+                            onTap: widget.disableStart ? null : widget.onStartGame,
+                            child: Container(
+                              width: double.infinity,
+                              padding: Responsive.scalePaddingSymmetric(
+                                context,
+                                vertical: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: widget.disableStart
+                                    ? Colors.grey.shade400
+                                    : const Color(0xFFF4B942),
+                                borderRadius: Responsive.scaleBorderRadiusAll(
+                                  context,
+                                  16,
+                                ),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.black26,
+                                    blurRadius: 6,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                widget.startLabel ?? (widget.isComingSoon ? 'Coming Soon' : 'Start Game!'),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: 'Baloo2',
+                                  color: Colors.white,
+                                  fontSize: Responsive.scaleFont(context, 20),
+                                  fontWeight: FontWeight.bold,
+                                  shadows: const [
+                                    Shadow(
+                                      color: Colors.black26,
+                                      blurRadius: 4,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  ),
-                  
+
                   // Neatly positioned sparkles with random timing
                   ...List.generate(36, (index) {
                     // Create a neat grid pattern but with slight randomization
                     final int cols = 6;
                     final int row = index ~/ cols;
                     final int col = index % cols;
-                    
+
                     // Base grid positions with some randomization - make responsive
-                    final double baseX = Responsive.scaleWidth(context, (col * 50.0) + 15);
-                    final double baseY = Responsive.scaleHeight(context, (row * 30.0) + 10);
-                    
+                    final double baseX = Responsive.scaleWidth(
+                      context,
+                      (col * 50.0) + 15,
+                    );
+                    final double baseY = Responsive.scaleHeight(
+                      context,
+                      (row * 30.0) + 10,
+                    );
+
                     // Add slight randomization to make it look more natural
-                    final double randomOffsetX = Responsive.scaleWidth(context, (index * 7.3) % 20.0 - 10.0);
-                    final double randomOffsetY = Responsive.scaleHeight(context, (index * 11.7) % 15.0 - 7.5);
-                    
+                    final double randomOffsetX = Responsive.scaleWidth(
+                      context,
+                      (index * 7.3) % 20.0 - 10.0,
+                    );
+                    final double randomOffsetY = Responsive.scaleHeight(
+                      context,
+                      (index * 11.7) % 15.0 - 7.5,
+                    );
+
                     final double finalX = baseX + randomOffsetX;
                     final double finalY = baseY + randomOffsetY;
-                    
+
                     // Ensure stars stay within bounds and avoid chicken area
-                    final double chickenCenterX = Responsive.scaleWidth(context, 160);
-                    final double chickenCenterY = Responsive.scaleHeight(context, 155);
-                    final double chickenRadius = Responsive.scaleWidth(context, 75);
-                    
-                    final double distanceFromChicken = 
-                        ((finalX - chickenCenterX) * (finalX - chickenCenterX) + 
-                         (finalY - chickenCenterY) * (finalY - chickenCenterY));
-                    
+                    final double chickenCenterX = Responsive.scaleWidth(
+                      context,
+                      160,
+                    );
+                    final double chickenCenterY = Responsive.scaleHeight(
+                      context,
+                      155,
+                    );
+                    final double chickenRadius = Responsive.scaleWidth(
+                      context,
+                      75,
+                    );
+
+                    final double distanceFromChicken =
+                        ((finalX - chickenCenterX) * (finalX - chickenCenterX) +
+                            (finalY - chickenCenterY) *
+                                (finalY - chickenCenterY));
+
                     // If too close to chicken, move to a safe position
                     if (distanceFromChicken < (chickenRadius * chickenRadius)) {
                       // Move to edges of the container
-                      final double safeX = finalX < chickenCenterX ? Responsive.scaleWidth(context, 20.0) : Responsive.scaleWidth(context, 280.0);
-                      final double safeY = finalY < chickenCenterY ? Responsive.scaleHeight(context, 20.0) : Responsive.scaleHeight(context, 180.0);
-                      
+                      final double safeX =
+                          finalX < chickenCenterX
+                              ? Responsive.scaleWidth(context, 20.0)
+                              : Responsive.scaleWidth(context, 280.0);
+                      final double safeY =
+                          finalY < chickenCenterY
+                              ? Responsive.scaleHeight(context, 20.0)
+                              : Responsive.scaleHeight(context, 180.0);
+
                       return Positioned(
                         left: safeX,
                         top: safeY,
@@ -822,7 +1199,7 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                         ),
                       );
                     }
-                    
+
                     // Create individual animation for each star with random timing
                     return Positioned(
                       left: finalX,
@@ -833,7 +1210,7 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                       ),
                     );
                   }),
-                  
+
                   // Close button - positioned at the very end for highest z-index
                   Positioned(
                     top: Responsive.scaleHeight(context, 10),
@@ -842,17 +1219,29 @@ class _LevelCompletionPopupState extends State<LevelCompletionPopup>
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () {
-                          print("X button tapped!"); // Debug print
-                          Navigator.of(context).pop();
+                          if (widget.onClose != null) {
+                            widget.onClose!();
+                          } else {
+                            Navigator.of(context).pop();
+                          }
                         },
-                        borderRadius: Responsive.scaleBorderRadiusAll(context, 20),
+                        borderRadius: Responsive.scaleBorderRadiusAll(
+                          context,
+                          20,
+                        ),
                         child: Container(
                           width: Responsive.scaleWidth(context, 40),
                           height: Responsive.scaleHeight(context, 40),
                           decoration: BoxDecoration(
-                            borderRadius: Responsive.scaleBorderRadiusAll(context, 20),
+                            borderRadius: Responsive.scaleBorderRadiusAll(
+                              context,
+                              20,
+                            ),
                             color: Colors.white,
-                            border: Border.all(color: Colors.grey.shade300, width: 1),
+                            border: Border.all(
+                              color: Colors.grey.shade300,
+                              width: 1,
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.3),
@@ -886,10 +1275,7 @@ class _RandomStarAnimation extends StatefulWidget {
   final int index;
   final double size;
 
-  const _RandomStarAnimation({
-    required this.index,
-    required this.size,
-  });
+  const _RandomStarAnimation({required this.index, required this.size});
 
   @override
   State<_RandomStarAnimation> createState() => _RandomStarAnimationState();
@@ -903,11 +1289,14 @@ class _RandomStarAnimationState extends State<_RandomStarAnimation>
   @override
   void initState() {
     super.initState();
-    
+
     // Create unique animation timing for each star
-    final double randomDelay = (widget.index * 0.3) % 2.0; // Random delay up to 2 seconds
-    final double randomDuration = 1.5 + (widget.index * 0.2) % 1.5; // Random duration between 1.5-3 seconds
-    
+    final double randomDelay =
+        (widget.index * 0.3) % 2.0; // Random delay up to 2 seconds
+    final double randomDuration =
+        1.5 +
+        (widget.index * 0.2) % 1.5; // Random duration between 1.5-3 seconds
+
     _controller = AnimationController(
       duration: Duration(milliseconds: (randomDuration * 1000).round()),
       vsync: this,
@@ -916,10 +1305,7 @@ class _RandomStarAnimationState extends State<_RandomStarAnimation>
     _animation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     // Start animation with random delay
     Future.delayed(Duration(milliseconds: (randomDelay * 1000).round()), () {
@@ -976,7 +1362,9 @@ class _AnimatedChickenState extends State<_AnimatedChicken>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 600), // 0.8 seconds for super fast, energetic movement
+      duration: const Duration(
+        milliseconds: 600,
+      ), // 0.8 seconds for super fast, energetic movement
       vsync: this,
     );
 
@@ -984,28 +1372,19 @@ class _AnimatedChickenState extends State<_AnimatedChicken>
     _floatAnimation = Tween<double>(
       begin: 0.0,
       end: -15.0, // Move up 15 pixels (more noticeable movement)
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     // Horizontal wiggling movement
     _wiggleAnimation = Tween<double>(
       begin: -8.0,
       end: 8.0, // Wiggle left and right (more range)
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     // Slight rotation for more dynamic movement
     _rotateAnimation = Tween<double>(
       begin: -0.15, // More noticeable left tilt
-      end: 0.15,    // More noticeable right tilt
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+      end: 0.15, // More noticeable right tilt
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _controller.repeat(reverse: true); // Continuous movement
   }

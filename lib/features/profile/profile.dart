@@ -1,18 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:hellochickgu/features/auth/login.dart';
+import 'package:hellochickgu/services/auth_service.dart';
+import 'package:hellochickgu/services/statistics_service.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 import 'dart:math' as math;
 
-
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
+
+  Future<String> _fetchUsername() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return 'Guest';
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final data = doc.data() as Map<String, dynamic>?;
+      return (data?['username'] as String?)?.trim().isNotEmpty == true
+          ? (data!['username'] as String)
+          : (user.displayName ?? user.email ?? 'User');
+    } catch (_) {
+      return user.displayName ?? user.email ?? 'User';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final Color borderColor = Theme.of(context).colorScheme.primary;
     final TextTheme textTheme = Theme.of(context).textTheme;
-    final isSmallScreen = Responsive.isSmallScreen(context);
-    final isVerySmallScreen = Responsive.isVerySmallScreen(context);
 
     return Scaffold(
       body: SafeArea(
@@ -61,7 +78,8 @@ class ProfilePage extends StatelessWidget {
                                 child: IconButton(
                                   icon: const Icon(Icons.arrow_back),
                                   color: Colors.black,
-                                  onPressed: () => Navigator.of(context).maybePop(),
+                                  onPressed:
+                                      () => Navigator.of(context).maybePop(),
                                   tooltip: 'Back',
                                 ),
                               ),
@@ -86,11 +104,17 @@ class ProfilePage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
-                      Text(
-                        'Nurin Sunoo',
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      FutureBuilder<String>(
+                        future: _fetchUsername(),
+                        builder: (context, snapshot) {
+                          final name = snapshot.data ?? '...';
+                          return Text(
+                            name,
+                            style: textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -116,44 +140,48 @@ class ProfilePage extends StatelessWidget {
                       return ListView.separated(
                         padding: EdgeInsets.zero,
                         itemCount: titles.length,
-                        itemBuilder: (context, index) => _ProfileItem(
-                          icon: icons[index],
-                          title: titles[index],
-                          onTap: () {
-                            if (index == 0) {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const PersonalInformationPage(),
-                                ),
-                              );
-                            } else if (index == 1) {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const SubscriptionsPage(),
-                                ),
-                              );
-                            } else if (index == 2) {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const BadgesPage(),
-                                ),
-                              );
-                            } else if (index == 3) {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const StatisticsPage(),
-                                ),
-                              );
-                            } else if (index == 4) {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const SettingsPage(),
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                        separatorBuilder: (context, index) => const Divider(height: 1),
+                        itemBuilder:
+                            (context, index) => _ProfileItem(
+                              icon: icons[index],
+                              title: titles[index],
+                              onTap: () {
+                                if (index == 0) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder:
+                                          (_) =>
+                                              const PersonalInformationPage(),
+                                    ),
+                                  );
+                                } else if (index == 1) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const SubscriptionsPage(),
+                                    ),
+                                  );
+                                } else if (index == 2) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const BadgesPage(),
+                                    ),
+                                  );
+                                } else if (index == 3) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const StatisticsPage(),
+                                    ),
+                                  );
+                                } else if (index == 4) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const SettingsPage(),
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                        separatorBuilder:
+                            (context, index) => const Divider(height: 1),
                       );
                     },
                   ),
@@ -193,11 +221,7 @@ class _ProfileItem extends StatelessWidget {
   final String title;
   final VoidCallback? onTap;
 
-  const _ProfileItem({
-    required this.icon,
-    required this.title,
-    this.onTap,
-  });
+  const _ProfileItem({required this.icon, required this.title, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -214,24 +238,29 @@ class PersonalInformationPage extends StatefulWidget {
   const PersonalInformationPage({super.key});
 
   @override
-  State<PersonalInformationPage> createState() => _PersonalInformationPageState();
+  State<PersonalInformationPage> createState() =>
+      _PersonalInformationPageState();
 }
 
 class _PersonalInformationPageState extends State<PersonalInformationPage> {
-  final String _bio = 'Curious learner and community member. I enjoy reading, writing, and collecting badges along the journey!';
+  final String _bio =
+      'Curious learner and community member. I enjoy reading, writing, and collecting badges along the journey!';
   late final List<_Post> _posts = <_Post>[
     _Post(
-      authorName: 'Nurin Sunoo',
-      authorAvatarUrl: 'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
+      authorName: '',
+      authorAvatarUrl:
+          'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
       timeAgo: '1s',
-      content: "I'm learning Java and I don't really get the difference between == and .equals(). When I compare two strings, sometimes == doesn't work but .equals() does. Can someone explain why?",
+      content:
+          "I'm learning Java and I don't really get the difference between == and .equals(). When I compare two strings, sometimes == doesn't work but .equals() does. Can someone explain why?",
       likes: 10,
       comments: 2,
       badgeColor: Colors.orange,
     ),
     _Post(
-      authorName: 'Nurin Sunoo',
-      authorAvatarUrl: 'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
+      authorName: '',
+      authorAvatarUrl:
+          'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
       timeAgo: '30m',
       content: 'How do I make a button component in Figma?',
       likes: 10,
@@ -239,16 +268,49 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
       badgeColor: Colors.amber,
     ),
     _Post(
-      authorName: 'Nurin Sunoo',
-      authorAvatarUrl: 'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
+      authorName: '',
+      authorAvatarUrl:
+          'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
       timeAgo: '1h',
-      content: "I'm learning Java and a bit confused... what's the difference between an array and an ArrayList? When should I use one over the other?",
+      content:
+          "I'm learning Java and a bit confused... what's the difference between an array and an ArrayList? When should I use one over the other?",
       likes: 30,
       comments: 11,
       badgeColor: Colors.purple,
     ),
   ];
   int _activeTabIndex = 0; // 0 = Recent Posts, 1 = Achievements
+  String? _username;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+  }
+
+  Future<void> _loadUsername() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final data = doc.data() as Map<String, dynamic>?;
+      final name = (data?['username'] as String?) ?? user.displayName ?? user.email ?? 'User';
+      setState(() {
+        _username = name;
+        // Update posts authorName dynamically
+        for (var i = 0; i < _posts.length; i++) {
+          _posts[i] = _posts[i].copyWith(authorName: name);
+        }
+      });
+    } catch (_) {
+      setState(() {
+        _username = user.displayName ?? user.email ?? 'User';
+        for (var i = 0; i < _posts.length; i++) {
+          _posts[i] = _posts[i].copyWith(authorName: _username!);
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -280,22 +342,22 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                           ),
                         ),
                       ),
-                  Positioned(
+                      Positioned(
                         top: 0,
                         left: 0,
                         right: 0,
                         child: Container(
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
                           child: Stack(
                             children: [
                               Align(
@@ -303,7 +365,8 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                                 child: IconButton(
                                   icon: const Icon(Icons.arrow_back),
                                   color: Colors.black,
-                                  onPressed: () => Navigator.of(context).maybePop(),
+                                  onPressed:
+                                      () => Navigator.of(context).maybePop(),
                                   tooltip: 'Back',
                                 ),
                               ),
@@ -316,7 +379,6 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                                   ),
                                 ),
                               ),
-                              
                             ],
                           ),
                         ),
@@ -330,7 +392,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                   child: Row(
                     children: [
                       Text(
-                        'Nurin Sunoo',
+                        _username ?? 'Loading...',
                         style: textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -390,114 +452,151 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                     duration: const Duration(milliseconds: 250),
                     switchInCurve: Curves.easeOut,
                     switchOutCurve: Curves.easeIn,
-                    child: _activeTabIndex == 0
-                        ? ListView.separated(
-                            key: const ValueKey('posts'),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            itemCount: _posts.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) => _PostCard(post: _posts[index]),
-                          )
-                        : SingleChildScrollView(
-                            key: const ValueKey('journey'),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            physics: const BouncingScrollPhysics(),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text(
-                                    'Achievements',
-                                    style: textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w600,
+                    child:
+                        _activeTabIndex == 0
+                            ? ListView.separated(
+                              key: const ValueKey('posts'),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              itemCount: _posts.length,
+                              separatorBuilder:
+                                  (_, __) => const SizedBox(height: 12),
+                              itemBuilder:
+                                  (context, index) =>
+                                      _PostCard(post: _posts[index]),
+                            )
+                            : SingleChildScrollView(
+                              key: const ValueKey('journey'),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              physics: const BouncingScrollPhysics(),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
                                     ),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  height: 110,
-                                  child: ListView.separated(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: 10,
-                                    separatorBuilder: (_, __) => const SizedBox(width: 12),
-                                    itemBuilder: (context, index) => const _BadgeThumbnail(),
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text(
-                                    'Performance',
-                                    style: textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
+                                    child: Text(
+                                      'Achievements',
+                                      style: textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  child: Column(
-                                    children: [
-                                      SizedBox(
-                                        height: 280,
-                                        child: _RadarChart(
-                                          categories: const [
-                                            'Memory',
-                                            'Solving',
-                                            'Patterns',
-                                            'Logic',
-                                            'Understanding',
-                                          ],
-                                          values: const [
-                                            0.7,
-                                            0.55,
-                                            0.8,
-                                            0.65,
-                                            0.5,
-                                          ],
-                                          categoryColors: const [
-                                            Color(0xFF6C63FF),
-                                            Color(0xFFFF6584),
-                                            Color(0xFF00BFA6),
-                                            Color(0xFFFFC107),
-                                            Color(0xFF29B6F6),
-                                          ],
-                                          levels: 5,
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    height: 110,
+                                    child: ListView.separated(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: 10,
+                                      separatorBuilder:
+                                          (_, __) => const SizedBox(width: 12),
+                                      itemBuilder:
+                                          (context, index) =>
+                                              const _BadgeThumbnail(),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                    child: Text(
+                                      'Performance',
+                                      style: textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
                                         ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Wrap(
-                                        alignment: WrapAlignment.center,
-                                        spacing: 16,
-                                        runSpacing: 8,
-                                        children: const [
-                                          _LegendDot(color: Color(0xFF6C63FF), label: 'Memory'),
-                                          _LegendDot(color: Color(0xFFFF6584), label: 'Solving'),
-                                          _LegendDot(color: Color(0xFF00BFA6), label: 'Patterns'),
-                                          _LegendDot(color: Color(0xFFFFC107), label: 'Logic'),
-                                          _LegendDot(color: Color(0xFF29B6F6), label: 'Understanding'),
-                                        ],
-                                      ),
-                                    ],
+                                      ],
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        SizedBox(
+                                          height: 280,
+                                          child: _RadarChart(
+                                            categories: const [
+                                              'Memory',
+                                              'Solving',
+                                              'Patterns',
+                                              'Logic',
+                                              'Understanding',
+                                            ],
+                                            values: const [
+                                              0.7,
+                                              0.55,
+                                              0.8,
+                                              0.65,
+                                              0.5,
+                                            ],
+                                            categoryColors: const [
+                                              Color(0xFF6C63FF),
+                                              Color(0xFFFF6584),
+                                              Color(0xFF00BFA6),
+                                              Color(0xFFFFC107),
+                                              Color(0xFF29B6F6),
+                                            ],
+                                            levels: 5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Wrap(
+                                          alignment: WrapAlignment.center,
+                                          spacing: 16,
+                                          runSpacing: 8,
+                                          children: const [
+                                            _LegendDot(
+                                              color: Color(0xFF6C63FF),
+                                              label: 'Memory',
+                                            ),
+                                            _LegendDot(
+                                              color: Color(0xFFFF6584),
+                                              label: 'Solving',
+                                            ),
+                                            _LegendDot(
+                                              color: Color(0xFF00BFA6),
+                                              label: 'Patterns',
+                                            ),
+                                            _LegendDot(
+                                              color: Color(0xFFFFC107),
+                                              label: 'Logic',
+                                            ),
+                                            _LegendDot(
+                                              color: Color(0xFF29B6F6),
+                                              label: 'Understanding',
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 24),
-                              ],
+                                  const SizedBox(height: 24),
+                                ],
+                              ),
                             ),
-                          ),
                   ),
                 ),
               ],
@@ -506,19 +605,19 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
               top: 200 - 48,
               left: 24,
               child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: borderColor, width: 5),
-                    ),
-                    child: const CircleAvatar(
-                      radius: 48,
-                      backgroundImage: NetworkImage(
-                        'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
-                      ),
-                      backgroundColor: Colors.white,
-                    ),
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: borderColor, width: 5),
+                ),
+                child: const CircleAvatar(
+                  radius: 48,
+                  backgroundImage: NetworkImage(
+                    'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
                   ),
+                  backgroundColor: Colors.white,
+                ),
+              ),
             ),
           ],
         ),
@@ -536,7 +635,7 @@ class _BadgeThumbnail extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 90,
-                      decoration: BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
@@ -548,11 +647,7 @@ class _BadgeThumbnail extends StatelessWidget {
         ],
       ),
       child: Center(
-        child: Icon(
-          Icons.emoji_events,
-          color: Colors.amber.shade600,
-          size: 32,
-        ),
+        child: Icon(Icons.emoji_events, color: Colors.amber.shade600, size: 32),
       ),
     );
   }
@@ -597,9 +692,9 @@ class _TabButton extends StatelessWidget {
           child: Text(
             label,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: isActive ? activeColor : inactiveColor,
-                  fontWeight: FontWeight.w600,
-                ),
+              color: isActive ? activeColor : inactiveColor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ),
@@ -627,6 +722,18 @@ class _Post {
     required this.comments,
     required this.badgeColor,
   });
+
+  _Post copyWith({String? authorName}) {
+    return _Post(
+      authorName: authorName ?? this.authorName,
+      authorAvatarUrl: authorAvatarUrl,
+      timeAgo: timeAgo,
+      content: content,
+      likes: likes,
+      comments: comments,
+      badgeColor: badgeColor,
+    );
+  }
 }
 
 class _PostCard extends StatelessWidget {
@@ -671,7 +778,11 @@ class _PostCard extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
                       ),
-                      child: const Icon(Icons.star, size: 10, color: Colors.white),
+                      child: const Icon(
+                        Icons.star,
+                        size: 10,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
@@ -683,14 +794,14 @@ class _PostCard extends StatelessWidget {
                       Text(
                         post.authorName,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       Text(
                         post.timeAgo,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ),
@@ -698,18 +809,23 @@ class _PostCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              post.content,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+            Text(post.content, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.favorite_border, size: 18, color: Colors.grey.shade700),
+                Icon(
+                  Icons.favorite_border,
+                  size: 18,
+                  color: Colors.grey.shade700,
+                ),
                 const SizedBox(width: 6),
                 Text('${post.likes}'),
                 const SizedBox(width: 16),
-                Icon(Icons.mode_comment_outlined, size: 18, color: Colors.grey.shade700),
+                Icon(
+                  Icons.mode_comment_outlined,
+                  size: 18,
+                  color: Colors.grey.shade700,
+                ),
                 const SizedBox(width: 6),
                 Text('${post.comments}'),
               ],
@@ -720,8 +836,6 @@ class _PostCard extends StatelessWidget {
     );
   }
 }
-
-
 
 class SubscriptionsPage extends StatelessWidget {
   const SubscriptionsPage({super.key});
@@ -767,7 +881,10 @@ class SubscriptionsPage extends StatelessWidget {
                 const SizedBox(height: 8),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -793,10 +910,15 @@ class SubscriptionsPage extends StatelessWidget {
                                 width: 48,
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Icon(Icons.school, color: Theme.of(context).colorScheme.primary),
+                                child: Icon(
+                                  Icons.school,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -808,22 +930,42 @@ class SubscriptionsPage extends StatelessWidget {
                                         Expanded(
                                           child: Text(
                                             'Tutor Subscription',
-                                            style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                                            style: textTheme.titleMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                           ),
                                         ),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: Colors.green.shade50,
-                                            borderRadius: BorderRadius.circular(999),
-                                            border: Border.all(color: Colors.green.shade200),
+                                            borderRadius: BorderRadius.circular(
+                                              999,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.green.shade200,
+                                            ),
                                           ),
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: const [
-                                              Icon(Icons.check_circle, color: Colors.green, size: 16),
+                                              Icon(
+                                                Icons.check_circle,
+                                                color: Colors.green,
+                                                size: 16,
+                                              ),
                                               SizedBox(width: 6),
-                                              Text('Active', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+                                              Text(
+                                                'Active',
+                                                style: TextStyle(
+                                                  color: Colors.green,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),
@@ -832,16 +974,27 @@ class SubscriptionsPage extends StatelessWidget {
                                     const SizedBox(height: 6),
                                     Text(
                                       'Active until Oct 31, 2025',
-                                      style: textTheme.bodyMedium?.copyWith(color: Colors.grey.shade700),
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        color: Colors.grey.shade700,
+                                      ),
                                     ),
                                     const SizedBox(height: 12),
                                     Wrap(
                                       spacing: 8,
                                       runSpacing: 8,
                                       children: const [
-                                        _SubChip(icon: Icons.play_circle_outline, label: 'Unlimited sessions'),
-                                        _SubChip(icon: Icons.download_outlined, label: 'Download notes'),
-                                        _SubChip(icon: Icons.support_agent_outlined, label: 'Priority support'),
+                                        _SubChip(
+                                          icon: Icons.play_circle_outline,
+                                          label: 'Unlimited sessions',
+                                        ),
+                                        _SubChip(
+                                          icon: Icons.download_outlined,
+                                          label: 'Download notes',
+                                        ),
+                                        _SubChip(
+                                          icon: Icons.support_agent_outlined,
+                                          label: 'Priority support',
+                                        ),
                                       ],
                                     ),
                                   ],
@@ -869,10 +1022,7 @@ class _SubChip extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _SubChip({
-    required this.icon,
-    required this.label,
-  });
+  const _SubChip({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -917,7 +1067,7 @@ class BadgesPage extends StatelessWidget {
                 children: [
                   Align(
                     alignment: Alignment.centerLeft,
-                      child: IconButton(
+                    child: IconButton(
                       icon: const Icon(Icons.arrow_back),
                       color: Colors.black,
                       onPressed: () => Navigator.of(context).maybePop(),
@@ -948,9 +1098,7 @@ class BadgesPage extends StatelessWidget {
                   ),
                   itemCount: 10, // You can adjust this based on your badges
                   itemBuilder: (context, index) {
-                    return _BadgeItem(
-                      badgeIndex: index,
-                    );
+                    return _BadgeItem(badgeIndex: index);
                   },
                 ),
               ),
@@ -965,9 +1113,7 @@ class BadgesPage extends StatelessWidget {
 class _BadgeItem extends StatelessWidget {
   final int badgeIndex;
 
-  const _BadgeItem({
-    required this.badgeIndex,
-  });
+  const _BadgeItem({required this.badgeIndex});
 
   @override
   Widget build(BuildContext context) {
@@ -1022,8 +1168,47 @@ class _BadgeItem extends StatelessWidget {
   }
 }
 
-class StatisticsPage extends StatelessWidget {
+class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
+
+  @override
+  State<StatisticsPage> createState() => _StatisticsPageState();
+}
+
+class _StatisticsPageState extends State<StatisticsPage> {
+  Map<String, double> _statistics = {
+    'understanding': 0.0,
+    'solving': 0.0,
+    'patterns': 0.0,
+    'memory': 0.0,
+    'logic': 0.0,
+  };
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStatistics();
+  }
+
+  Future<void> _loadStatistics() async {
+    try {
+      final stats = await StatisticsService.instance.getUserStatistics();
+      if (mounted) {
+        setState(() {
+          _statistics = stats;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading statistics: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1037,7 +1222,7 @@ class StatisticsPage extends StatelessWidget {
           children: [
             Container(
               height: 60,
-                        color: Colors.white,
+              color: Colors.white,
               child: Stack(
                 children: [
                   Align(
@@ -1085,47 +1270,75 @@ class StatisticsPage extends StatelessWidget {
                           const SizedBox(height: 8),
                           SizedBox(
                             height: 320,
-                            child: _RadarChart(
-                              categories: const [
-                                'Memory',
-                                'Solving',
-                                'Patterns',
-                                'Logic',
-                                'Understanding',
-                              ],
-                              values: const [
-                                0.7, // Memory
-                                0.55, // Solving
-                                0.8, // Patterns
-                                0.65, // Logic
-                                0.5, // Understanding
-                              ],
-                              categoryColors: const [
-                                Color(0xFF6C63FF),
-                                Color(0xFFFF6584),
-                                Color(0xFF00BFA6),
-                                Color(0xFFFFC107),
-                                Color(0xFF29B6F6),
-                              ],
-                              levels: 5,
-                            ),
+                            child:
+                                _isLoading
+                                    ? const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                    : _RadarChart(
+                                      categories: const [
+                                        'Understanding',
+                                        'Solving',
+                                        'Patterns',
+                                        'Memory',
+                                        'Logic',
+                                      ],
+                                      values: [
+                                        _statistics['understanding']!,
+                                        _statistics['solving']!,
+                                        _statistics['patterns']!,
+                                        _statistics['memory']!,
+                                        _statistics['logic']!,
+                                      ],
+                                      categoryColors: const [
+                                        Color(
+                                          0xFF29B6F6,
+                                        ), // Understanding - Light Blue
+                                        Color(0xFFFF6584), // Solving - Pink
+                                        Color(0xFF00BFA6), // Patterns - Teal
+                                        Color(0xFF6C63FF), // Memory - Purple
+                                        Color(0xFFFFC107), // Logic - Yellow
+                                      ],
+                                      levels: 5,
+                                    ),
                           ),
                           const SizedBox(height: 12),
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 16,
-                            runSpacing: 8,
-                            children: const [
-                              _LegendDot(color: Color(0xFF6C63FF), label: 'Memory'),
-                              _LegendDot(color: Color(0xFFFF6584), label: 'Solving'),
-                              _LegendDot(color: Color(0xFF00BFA6), label: 'Patterns'),
-                              _LegendDot(color: Color(0xFFFFC107), label: 'Logic'),
-                              _LegendDot(color: Color(0xFF29B6F6), label: 'Understanding'),
-                            ],
-                          ),
+                          if (!_isLoading)
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              spacing: 16,
+                              runSpacing: 8,
+                              children: const [
+                                _LegendDot(
+                                  color: Color(0xFF29B6F6),
+                                  label: 'Understanding',
+                                ),
+                                _LegendDot(
+                                  color: Color(0xFFFF6584),
+                                  label: 'Solving',
+                                ),
+                                _LegendDot(
+                                  color: Color(0xFF00BFA6),
+                                  label: 'Patterns',
+                                ),
+                                _LegendDot(
+                                  color: Color(0xFF6C63FF),
+                                  label: 'Memory',
+                                ),
+                                _LegendDot(
+                                  color: Color(0xFFFFC107),
+                                  label: 'Logic',
+                                ),
+                              ],
+                            ),
                         ],
                       ),
                     ),
+                    if (!_isLoading) ...[
+                      const SizedBox(height: 16),
+                      // Additional statistics cards
+                      _buildStatisticsCards(),
+                    ],
                   ],
                 ),
               ),
@@ -1135,16 +1348,147 @@ class StatisticsPage extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildStatisticsCards() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                title: 'Understanding',
+                value: '${(_statistics['understanding']! * 100).toInt()}%',
+                color: const Color(0xFF29B6F6),
+                icon: Icons.lightbulb_outline,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatCard(
+                title: 'Solving',
+                value: '${(_statistics['solving']! * 100).toInt()}%',
+                color: const Color(0xFFFF6584),
+                icon: Icons.psychology_outlined,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                title: 'Patterns',
+                value: '${(_statistics['patterns']! * 100).toInt()}%',
+                color: const Color(0xFF00BFA6),
+                icon: Icons.pattern_outlined,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatCard(
+                title: 'Memory',
+                value: '${(_statistics['memory']! * 100).toInt()}%',
+                color: const Color(0xFF6C63FF),
+                icon: Icons.memory_outlined,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                title: 'Logic',
+                value: '${(_statistics['logic']! * 100).toInt()}%',
+                color: const Color(0xFFFFC107),
+                icon: Icons.psychology,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(), // Empty space for alignment
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final Color color;
+  final IconData icon;
+
+  const _StatCard({
+    required this.title,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _LegendDot extends StatelessWidget {
   final Color color;
   final String label;
 
-  const _LegendDot({
-    required this.color,
-    required this.label,
-  });
+  const _LegendDot({required this.color, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -1190,10 +1534,10 @@ class _RadarChart extends StatelessWidget {
             values: values,
             categoryColors: categoryColors,
             levels: levels,
-            labelStyle: Theme.of(context)
-                    .textTheme
-                    .labelSmall
-                    ?.copyWith(color: Colors.black87) ??
+            labelStyle:
+                Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: Colors.black87) ??
                 const TextStyle(fontSize: 11, color: Colors.black87),
           ),
           size: Size.square(size),
@@ -1226,10 +1570,11 @@ class _RadarChartPainter extends CustomPainter {
     final int count = categories.length;
     final double angleStep = (2 * 3.141592653589793) / count;
 
-    final Paint gridPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.25)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
+    final Paint gridPaint =
+        Paint()
+          ..color = Colors.grey.withOpacity(0.25)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1;
 
     // Draw concentric polygons (levels)
     for (int level = 1; level <= levels; level++) {
@@ -1237,7 +1582,8 @@ class _RadarChartPainter extends CustomPainter {
       final Path ring = Path();
       for (int i = 0; i < count; i++) {
         final double angle = -3.141592653589793 / 2 + i * angleStep;
-        final Offset p = center + Offset(r * math.cos(angle), r * math.sin(angle));
+        final Offset p =
+            center + Offset(r * math.cos(angle), r * math.sin(angle));
         if (i == 0) {
           ring.moveTo(p.dx, p.dy);
         } else {
@@ -1249,26 +1595,36 @@ class _RadarChartPainter extends CustomPainter {
     }
 
     // Draw axes and labels
-    final Paint axisPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
+    final Paint axisPaint =
+        Paint()
+          ..color = Colors.grey.withOpacity(0.35)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1;
 
     for (int i = 0; i < count; i++) {
       final double angle = -3.141592653589793 / 2 + i * angleStep;
-      final Offset tip = center + Offset(radius * math.cos(angle), radius * math.sin(angle));
+      final Offset tip =
+          center + Offset(radius * math.cos(angle), radius * math.sin(angle));
       canvas.drawLine(center, tip, axisPaint);
 
       // Label
       final TextPainter tp = TextPainter(
-        text: TextSpan(text: categories[i], style: labelStyle.copyWith(color: categoryColors[i])),
+        text: TextSpan(
+          text: categories[i],
+          style: labelStyle.copyWith(color: categoryColors[i]),
+        ),
         textDirection: TextDirection.ltr,
         maxLines: 1,
       )..layout();
       final double labelPadding = 8;
       Offset labelOffset = tip;
       // Adjust label position outward a bit
-      labelOffset = center + Offset((radius + labelPadding) * math.cos(angle), (radius + labelPadding) * math.sin(angle));
+      labelOffset =
+          center +
+          Offset(
+            (radius + labelPadding) * math.cos(angle),
+            (radius + labelPadding) * math.sin(angle),
+          );
       labelOffset = labelOffset - Offset(tp.width / 2, tp.height / 2);
       tp.paint(canvas, labelOffset);
     }
@@ -1279,7 +1635,8 @@ class _RadarChartPainter extends CustomPainter {
     for (int i = 0; i < count; i++) {
       final double angle = -3.141592653589793 / 2 + i * angleStep;
       final double r = radius * values[i].clamp(0.0, 1.0);
-      final Offset p = center + Offset(r * math.cos(angle), r * math.sin(angle));
+      final Offset p =
+          center + Offset(r * math.cos(angle), r * math.sin(angle));
       dataPoints.add(p);
       if (i == 0) {
         dataPath.moveTo(p.dx, p.dy);
@@ -1289,13 +1646,15 @@ class _RadarChartPainter extends CustomPainter {
     }
     dataPath.close();
 
-    final Paint fillPaint = Paint()
-      ..color = const Color(0xFF6C63FF).withOpacity(0.15)
-      ..style = PaintingStyle.fill;
-    final Paint strokePaint = Paint()
-      ..color = const Color(0xFF6C63FF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+    final Paint fillPaint =
+        Paint()
+          ..color = const Color(0xFF6C63FF).withOpacity(0.15)
+          ..style = PaintingStyle.fill;
+    final Paint strokePaint =
+        Paint()
+          ..color = const Color(0xFF6C63FF)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2;
 
     canvas.drawPath(dataPath, fillPaint);
     canvas.drawPath(dataPath, strokePaint);
@@ -1465,28 +1824,33 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
- 
-
   void _showSignOutDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Sign Out'),
+            content: const Text('Are you sure you want to sign out?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Sign out and return to login screen
+                  AuthService.instance.signOut().then((_) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                      (route) => false,
+                    );
+                  });
+                },
+                child: const Text('Sign Out'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Add sign out logic here
-            },
-            child: const Text('Sign Out'),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1495,10 +1859,7 @@ class _SettingsSection extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _SettingsSection({
-    required this.title,
-    required this.children,
-  });
+  const _SettingsSection({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -1518,7 +1879,7 @@ class _SettingsSection extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -1555,10 +1916,9 @@ class _SettingsItem extends StatelessWidget {
       leading: Icon(icon, color: Colors.grey.shade600),
       title: Text(title),
       subtitle: Text(subtitle),
-      trailing: trailing ?? (onTap != null ? const Icon(Icons.chevron_right) : null),
+      trailing:
+          trailing ?? (onTap != null ? const Icon(Icons.chevron_right) : null),
       onTap: onTap,
     );
   }
 }
-
-
