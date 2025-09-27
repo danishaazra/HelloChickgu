@@ -188,17 +188,18 @@ class _ModuleTile extends StatelessWidget {
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => ModuleContentPage(
-              courseTitle:
-                  (ModalRoute.of(context)?.settings.arguments as String?) ??
-                  'Module',
-              moduleTitle: title,
-              backgroundImage: 'assets/librarybg.png',
-              subtopicTitle: 'Understanding Python',
-              progress: progress,
-              currentPage: 3, // set to last page for testing popup
-              totalPages: 3,
-            ),
+            builder:
+                (_) => ModuleContentPage(
+                  courseTitle:
+                      (ModalRoute.of(context)?.settings.arguments as String?) ??
+                      'Module',
+                  moduleTitle: title,
+                  backgroundImage: 'assets/librarybg.png',
+                  subtopicTitle: 'Understanding Python',
+                  progress: progress,
+                  currentPage: 3, // set to last page for testing popup
+                  totalPages: 3,
+                ),
           ),
         );
       },
@@ -240,9 +241,8 @@ class _ModuleTile extends StatelessWidget {
             Text(
               "${(progress * 100).toInt()}%",
               style: TextStyle(
-                color: inProgress || completed
-                    ? AppTheme.primaryBlue
-                    : baseColor,
+                color:
+                    inProgress || completed ? AppTheme.primaryBlue : baseColor,
                 fontWeight: FontWeight.w700,
               ),
             ),
