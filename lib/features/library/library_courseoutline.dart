@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../shared/theme/theme.dart';
 import 'library_content.dart';
+import '../../services/library_service.dart';
 
 class CourseOutlinePage extends StatelessWidget {
   final String courseTitle;
   final int modules;
   final String duration;
+  final String? courseId; // Optional courseId for database fetching
 
   const CourseOutlinePage({
     super.key,
     required this.courseTitle,
     required this.modules,
     required this.duration,
+    this.courseId,
   });
 
   @override
@@ -121,35 +124,105 @@ class CourseOutlinePage extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Example module list
-            Column(
-              children: const [
-                _ModuleTile(
-                  number: 1,
-                  title: "Module 1: Introduction to Python",
-                  progress: 0.67,
-                ),
-                _ModuleTile(
-                  number: 2,
-                  title: "Module 2: Python Basics",
-                  progress: 0,
-                ),
-                _ModuleTile(
-                  number: 3,
-                  title: "Module 3: Control Flow",
-                  progress: 0,
-                ),
-                _ModuleTile(
-                  number: 4,
-                  title: "Module 4: Data Structures",
-                  progress: 0,
-                ),
-              ],
+            // Module list from database
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: courseId != null 
+                  ? LibraryService().getCourseModules(courseId!)
+                  : Future.value([]), // Fallback to empty list if no courseId
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error loading modules',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            snapshot.error.toString(),
+                            style: theme.textTheme.bodySmall,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final modules = snapshot.data ?? [];
+
+                if (modules.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.library_books_outlined,
+                            size: 48,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No modules available',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Modules will appear here when they are added to this course.',
+                            style: theme.textTheme.bodySmall,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: modules.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final module = entry.value;
+                    return _ModuleTile(
+                      number: index + 1,
+                      title: module['title'] ?? 'Untitled Module',
+                      progress: _getModuleProgress(module), // You can implement this based on user progress
+                      moduleData: module,
+                      courseId: courseId,
+                    );
+                  }).toList(),
+                );
+              },
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// Helper method to get module progress (you can implement this based on user progress tracking)
+  double _getModuleProgress(Map<String, dynamic> module) {
+    // For now, return 0 (not started) for all modules
+    // You can implement this to fetch actual user progress from the database
+    return 0.0;
   }
 }
 
@@ -157,11 +230,15 @@ class _ModuleTile extends StatelessWidget {
   final int number;
   final String title;
   final double progress;
+  final Map<String, dynamic>? moduleData;
+  final String? courseId;
 
   const _ModuleTile({
     required this.number,
     required this.title,
     required this.progress,
+    this.moduleData,
+    this.courseId,
   });
 
   @override
@@ -189,15 +266,19 @@ class _ModuleTile extends StatelessWidget {
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ModuleContentPage(
-              courseTitle:
-                  (ModalRoute.of(context)?.settings.arguments as String?) ??
-                  'Module',
+              courseTitle: courseId != null 
+                  ? (moduleData?['courseTitle'] ?? 'Course')
+                  : 'Module',
               moduleTitle: title,
               backgroundImage: 'assets/librarybg.png',
-              subtopicTitle: 'Understanding Python',
+              subtopicTitle: moduleData?['content'] != null 
+                  ? 'Module Content' 
+                  : 'Understanding Python',
               progress: progress,
-              currentPage: 3, // set to last page for testing popup
-              totalPages: 3,
+              currentPage: 1,
+              totalPages: 1,
+              courseId: courseId,
+              moduleId: moduleData?['id'],
             ),
           ),
         );

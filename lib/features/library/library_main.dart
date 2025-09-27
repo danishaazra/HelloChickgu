@@ -5,6 +5,7 @@ import '../../shared/theme/theme.dart';
 import 'library_courseoutline.dart';
 import '../chatbot/chippy_chatbot.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
+import '../../services/library_service.dart';
 
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
@@ -12,7 +13,6 @@ class LibraryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isSmallScreen = Responsive.isSmallScreen(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -45,7 +45,6 @@ class _LibraryContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isSmallScreen = Responsive.isSmallScreen(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -531,28 +530,87 @@ class _CoursesGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = _sampleCourses;
     final isSmallScreen = Responsive.isSmallScreen(context);
     final double aspect =
         isSmallScreen ? 0.50 : 0.62; // increase card height further
-    return GridView.builder(
-      itemCount: items.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: aspect,
-      ),
-      itemBuilder: (context, index) {
-        final course = items[index];
-        return CourseCard(
-          title: course.title,
-          imageWidget: course.imageWidget,
-          modulesText: course.modulesText,
-          timeText: course.timeText,
-          isActive: course.isActive,
+    
+    return StreamBuilder<List<Course>>(
+      stream: LibraryService().getCoursesStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading courses',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  snapshot.error.toString(),
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        final courses = snapshot.data ?? [];
+
+        if (courses.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.library_books_outlined,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No courses available',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Check back later for new courses!',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        return GridView.builder(
+          itemCount: courses.length,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: aspect,
+          ),
+          itemBuilder: (context, index) {
+            final course = courses[index];
+            return DatabaseCourseCard(course: course);
+          },
         );
       },
     );
@@ -682,6 +740,7 @@ class CourseCard extends StatelessWidget {
                               courseTitle: title,
                               modules: moduleCount,
                               duration: timeText,
+                              courseId: null, // Legacy CourseCard doesn't have courseId
                             ),
                       ),
                     );
@@ -696,6 +755,198 @@ class CourseCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class DatabaseCourseCard extends StatelessWidget {
+  const DatabaseCourseCard({super.key, required this.course});
+
+  final Course course;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isSmall = Responsive.isSmallScreen(context);
+    
+    // Get appropriate icon based on course title
+    Widget getCourseIcon() {
+      final title = course.title.toLowerCase();
+      if (title.contains('python') || title.contains('programming')) {
+        return const Icon(Icons.code, size: 36, color: Colors.black87);
+      } else if (title.contains('architecture') || title.contains('computer')) {
+        return const Icon(Icons.memory, size: 36, color: Colors.black87);
+      } else if (title.contains('data') || title.contains('structure')) {
+        return const Icon(Icons.hub, size: 36, color: Colors.black87);
+      } else if (title.contains('network')) {
+        return const Icon(Icons.router, size: 36, color: Colors.black87);
+      } else if (title.contains('web') || title.contains('development')) {
+        return const Icon(Icons.web, size: 36, color: Colors.black87);
+      } else if (title.contains('mobile') || title.contains('app')) {
+        return const Icon(Icons.phone_android, size: 36, color: Colors.black87);
+      } else {
+        return const Icon(Icons.school, size: 36, color: Colors.black87);
+      }
+    }
+
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: AppTheme.bgWhite,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  height: isSmall ? 70 : 80,
+                  width: double.infinity,
+                  child: ColoredBox(
+                    color: AppTheme.bgLightBlue,
+                    child: Center(child: getCourseIcon()),
+                  ),
+                ),
+              ),
+              SizedBox(height: isSmall ? 8 : 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      course.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  _DatabaseBookmarkToggle(courseTitle: course.title),
+                ],
+              ),
+              SizedBox(height: isSmall ? 2 : 6),
+              SizedBox(height: isSmall ? 4 : 8),
+              Text(
+                '${course.moduleCount} modules • ${course.estimatedDuration}',
+                style: theme.textTheme.bodySmall,
+              ),
+              SizedBox(height: isSmall ? 4 : 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: ButtonStyle(
+                    padding: MaterialStateProperty.all(
+                      EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: isSmall ? 5 : 10,
+                      ),
+                    ),
+                    minimumSize: MaterialStateProperty.all(
+                      Size.fromHeight(isSmall ? 32 : 40),
+                    ),
+                    shape: MaterialStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    side: MaterialStateProperty.all(
+                      BorderSide(color: AppTheme.primaryBlue, width: 2),
+                    ),
+                    backgroundColor: MaterialStateProperty.resolveWith((states) {
+                      if (states.contains(MaterialState.hovered) ||
+                          states.contains(MaterialState.pressed) ||
+                          states.contains(MaterialState.focused)) {
+                        return AppTheme.primaryBlue;
+                      }
+                      return Colors.white;
+                    }),
+                    foregroundColor: MaterialStateProperty.resolveWith((states) {
+                      if (states.contains(MaterialState.hovered) ||
+                          states.contains(MaterialState.pressed) ||
+                          states.contains(MaterialState.focused)) {
+                        return Colors.white;
+                      }
+                      return AppTheme.primaryBlue;
+                    }),
+                    overlayColor: MaterialStateProperty.all(
+                      AppTheme.primaryBlue.withOpacity(0.1),
+                    ),
+                    elevation: MaterialStateProperty.all(0),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => CourseOutlinePage(
+                          courseTitle: course.title,
+                          modules: course.moduleCount,
+                          duration: course.estimatedDuration,
+                          courseId: course.id, // Pass the course ID for database fetching
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'Start',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DatabaseBookmarkToggle extends StatefulWidget {
+  const _DatabaseBookmarkToggle({required this.courseTitle});
+  final String courseTitle;
+
+  @override
+  State<_DatabaseBookmarkToggle> createState() => _DatabaseBookmarkToggleState();
+}
+
+class _DatabaseBookmarkToggleState extends State<_DatabaseBookmarkToggle> {
+  bool _loading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = AppTheme.primaryBlue;
+    return FutureBuilder<bool>(
+      future: LibraryService().isCourseBookmarked(widget.courseTitle),
+      builder: (context, snapshot) {
+        final isBookmarked = snapshot.data ?? false;
+        return IconButton(
+          onPressed: _loading ? null : () async {
+            setState(() => _loading = true);
+            await LibraryService().toggleCourseBookmark(widget.courseTitle);
+            if (mounted) setState(() => _loading = false);
+          },
+          iconSize: 22,
+          padding: const EdgeInsets.all(6),
+          constraints: const BoxConstraints(),
+          icon: _loading
+              ? SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                )
+              : Icon(
+                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                  color: color,
+                ),
+          tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark',
+        );
+      },
     );
   }
 }
@@ -719,7 +970,7 @@ class _BookmarkToggleState extends State<_BookmarkToggle> {
             .collection('users')
             .doc(user.uid)
             .get();
-    final data = snap.data() as Map<String, dynamic>?;
+      final data = snap.data();
     final list =
         (data?['bookmarked_courses'] as List?)?.cast<String>() ?? <String>[];
     return list.toSet();
@@ -732,7 +983,7 @@ class _BookmarkToggleState extends State<_BookmarkToggle> {
     final doc = FirebaseFirestore.instance.collection('users').doc(user.uid);
     await FirebaseFirestore.instance.runTransaction((txn) async {
       final snap = await txn.get(doc);
-      final data = snap.data() as Map<String, dynamic>? ?? {};
+      final data = snap.data() ?? {};
       final current =
           (data['bookmarked_courses'] as List?)?.cast<String>() ?? <String>[];
       if (current.contains(widget.courseTitle)) {
@@ -769,49 +1020,4 @@ class _BookmarkToggleState extends State<_BookmarkToggle> {
   }
 }
 
-class _CourseItemData {
-  _CourseItemData({
-    required this.title,
-    required this.imageWidget,
-    required this.modulesText,
-    required this.timeText,
-    required this.isActive,
-  });
 
-  final String title;
-  final Widget imageWidget;
-  final String modulesText;
-  final String timeText;
-  final bool isActive;
-}
-
-final List<_CourseItemData> _sampleCourses = [
-  _CourseItemData(
-    title: 'Python Programming',
-    imageWidget: const Icon(Icons.code, size: 36, color: Colors.black87),
-    modulesText: '5 modules',
-    timeText: '3h 10m',
-    isActive: true,
-  ),
-  _CourseItemData(
-    title: 'Computer Architecture',
-    imageWidget: const Icon(Icons.memory, size: 36, color: Colors.black87),
-    modulesText: '8 modules',
-    timeText: '6h 40m',
-    isActive: false,
-  ),
-  _CourseItemData(
-    title: 'Data Structures',
-    imageWidget: const Icon(Icons.hub, size: 36, color: Colors.black87),
-    modulesText: '6 modules',
-    timeText: '4h 25m',
-    isActive: false,
-  ),
-  _CourseItemData(
-    title: 'Intro to Networking',
-    imageWidget: const Icon(Icons.router, size: 36, color: Colors.black87),
-    modulesText: '7 modules',
-    timeText: '5h 05m',
-    isActive: false,
-  ),
-];
