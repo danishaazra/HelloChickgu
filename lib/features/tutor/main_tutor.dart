@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'tutor2.dart';
 import 'package:hellochickgu/services/purchase_service.dart';
 import 'course_outline.dart';
+import 'best_tutor.dart';
 
 class TutorListPage extends StatefulWidget {
   const TutorListPage({super.key});
@@ -11,8 +12,6 @@ class TutorListPage extends StatefulWidget {
 }
 
 class _TutorListPageState extends State<TutorListPage> {
-  final TextEditingController _searchController = TextEditingController();
-
   final List<_CategoryChip> _categories = const [
     _CategoryChip(label: 'Computer Science', icon: Icons.computer),
     _CategoryChip(label: 'Mathematics', icon: Icons.calculate),
@@ -192,20 +191,26 @@ class _TutorListPageState extends State<TutorListPage> {
             ),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search Tutor...',
-              filled: true,
-              fillColor: Colors.white,
-              prefixIcon: const Icon(Icons.search),
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 0,
-                horizontal: 12,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
-                borderSide: BorderSide.none,
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder:
+                        (_) => const BestTutorPage(courseTitle: 'Best Tutor'),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.emoji_events),
+              label: const Text('Best Tutor'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xff1492e6),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
               ),
             ),
           ),

@@ -168,7 +168,7 @@ class _Quiz3EndState extends State<quiz3end>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [

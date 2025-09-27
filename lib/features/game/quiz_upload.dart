@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../../shared/theme/theme.dart';
 import 'generated_quiz_page.dart';
 import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'package:dio/dio.dart';
+import 'dart:convert';
+import 'dart:math';
 
 class UploadQuizPage extends StatefulWidget {
   const UploadQuizPage({super.key});
@@ -13,7 +17,49 @@ class UploadQuizPage extends StatefulWidget {
 class _UploadQuizPageState extends State<UploadQuizPage> {
   bool isNotesSelected = true;
   String? selectedFileName;
+  PlatformFile? _selectedFile;
   bool isUploading = false;
+
+  String _getBaseUrl() {
+    // If testing on a physical device, hardcode your Mac LAN IP here:
+    const String? lanIp = 'http://192.168.0.105:8000';
+    if (lanIp != null) return lanIp;
+    if (Platform.isAndroid) return 'http://10.0.2.2:8000';
+    return 'http://127.0.0.1:8000';
+  }
+
+  Future<void> _ensureReachable(Dio dio, String baseUrl) async {
+    try {
+      await dio.get('$baseUrl/docs');
+    } catch (_) {
+      throw Exception(
+        'Cannot reach backend at $baseUrl. Is the server running and accessible?',
+      );
+    }
+  }
+
+  Future<Response<dynamic>> _postWithRetry(
+    Dio dio,
+    String url,
+    Future<FormData> Function() makeForm,
+  ) async {
+    DioException? lastErr;
+    for (int attempt = 0; attempt < 3; attempt++) {
+      try {
+        final form = await makeForm();
+        return await dio.post(
+          url,
+          data: form,
+          options: Options(contentType: 'multipart/form-data'),
+        );
+      } on DioException catch (e) {
+        lastErr = e;
+        final delay = 400 * pow(2, attempt).toInt();
+        await Future.delayed(Duration(milliseconds: delay));
+      }
+    }
+    throw lastErr ?? DioException(requestOptions: RequestOptions(path: url));
+  }
 
   Future<void> _pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -26,13 +72,14 @@ class _UploadQuizPageState extends State<UploadQuizPage> {
     );
     if (result != null && result.files.isNotEmpty) {
       setState(() {
-        selectedFileName = result.files.first.name;
+        _selectedFile = result.files.first;
+        selectedFileName = _selectedFile!.name;
       });
     }
   }
 
   Future<void> _uploadFile() async {
-    if (selectedFileName == null) {
+    if (_selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a file first')),
       );
@@ -43,35 +90,96 @@ class _UploadQuizPageState extends State<UploadQuizPage> {
       isUploading = true;
     });
 
-    // Simulate upload and processing
-    await Future.delayed(const Duration(seconds: 3));
+    try {
+      final baseUrl = _getBaseUrl();
+      final dio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 120),
+          sendTimeout: const Duration(seconds: 120),
+          receiveDataWhenStatusError: true,
+        ),
+      );
 
-    setState(() {
-      isUploading = false;
-    });
+      await _ensureReachable(dio, baseUrl);
 
-    // Store the file name before resetting
-    final uploadedFileName = selectedFileName!;
+      final String? filePath = _selectedFile!.path;
+      if (filePath == null) {
+        throw Exception(
+          'Selected file has no path. Please pick a file from device storage.',
+        );
+      }
 
-    // Generate questions and navigate to quiz page
-    final List<Map<String, dynamic>> generated = _generateQuestionsFromFileName(
-      uploadedFileName,
-    );
-    if (mounted) {
+      Future<FormData> makeForm() async {
+        return FormData.fromMap({
+          'file': await MultipartFile.fromFile(
+            filePath,
+            filename: _selectedFile!.name,
+          ),
+        });
+      }
+
+      final resp = await _postWithRetry(
+        dio,
+        '$baseUrl/generate_quiz',
+        makeForm,
+      );
+
+      dynamic body = resp.data;
+      if (body is String) {
+        body = jsonDecode(body);
+      }
+
+      final quiz = body['quiz'];
+      if (quiz == null) {
+        final raw = body['raw'] ?? 'Model did not return JSON.';
+        throw Exception('Quiz generation failed. $raw');
+      }
+
+      final List<Map<String, dynamic>> questions = _mapBackendQuizToClient(
+        quiz,
+      );
+
+      if (!mounted) return;
       Navigator.push(
         context,
         MaterialPageRoute(
           builder:
               (context) =>
-                  GeneratedQuizPage(title: 'AI Quiz', questions: generated),
+                  GeneratedQuizPage(title: 'AI Quiz', questions: questions),
         ),
       );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        isUploading = false;
+      });
+    }
+  }
+
+  // Convert backend JSON [{question, options:[...], answer:"A"}] => client format
+  List<Map<String, dynamic>> _mapBackendQuizToClient(List<dynamic> quiz) {
+    int _letterToIndex(String s) {
+      final up = s.trim().toUpperCase();
+      const letters = ['A', 'B', 'C', 'D'];
+      final idx = letters.indexOf(up);
+      return idx >= 0 ? idx : 0;
     }
 
-    // Reset file selection
-    setState(() {
-      selectedFileName = null;
-    });
+    return quiz.map<Map<String, dynamic>>((q) {
+      final List answers = (q['options'] as List?) ?? const [];
+      final String ansLetter = (q['answer'] ?? 'A').toString();
+      return {
+        'question': q['question'] ?? '',
+        'answers': answers.map((e) => e.toString()).toList(),
+        'correctAnswer': _letterToIndex(ansLetter),
+      };
+    }).toList();
   }
 
   List<Map<String, dynamic>> _generateQuestionsFromFileName(String name) {
