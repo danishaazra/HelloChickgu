@@ -282,15 +282,50 @@ class ModuleContentPage extends StatelessWidget {
                   tooltip: 'Previous',
                   size: 48,
                   backgroundColor: Colors.transparent,
-                  onTap: () {},
+                  onTap: () => _navigateToPreviousModule(context),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  '$currentPage/$totalPages',
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.w700,
-                  ),
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _getAllModules(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Text(
+                        '1/1',
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      );
+                    }
+                    
+                    final modules = snapshot.data ?? [];
+                    if (modules.isEmpty) {
+                      return const Text(
+                        '1/1',
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      );
+                    }
+                    
+                    // Find current module position
+                    int currentPosition = 1;
+                    for (int i = 0; i < modules.length; i++) {
+                      if (modules[i]['id'] == moduleId) {
+                        currentPosition = i + 1;
+                        break;
+                      }
+                    }
+                    
+                    return Text(
+                      '$currentPosition/${modules.length}',
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(width: 8),
                 _AssetIconButton(
@@ -298,11 +333,7 @@ class ModuleContentPage extends StatelessWidget {
                   tooltip: 'Next',
                   size: 48,
                   backgroundColor: Colors.transparent,
-                  onTap: () {
-                    if (currentPage >= totalPages) {
-                      _showCompletionDialog(context, moduleTitle);
-                    }
-                  },
+                  onTap: () => _navigateToNextModule(context),
                 ),
               ],
             ),
@@ -334,6 +365,117 @@ class ModuleContentPage extends StatelessWidget {
     
     // Fallback to dummy content
     return _dummyContent(moduleTitle);
+  }
+
+  /// Get all modules for the current course
+  Future<List<Map<String, dynamic>>> _getAllModules() async {
+    if (courseId == null) return [];
+    try {
+      return await LibraryService().getCourseModules(courseId!);
+    } catch (e) {
+      print('Error fetching modules: $e');
+      return [];
+    }
+  }
+
+  /// Navigate to the next module
+  Future<void> _navigateToNextModule(BuildContext context) async {
+    if (courseId == null) return;
+    
+    try {
+      final modules = await _getAllModules();
+      if (modules.isEmpty) return;
+      
+      // Find current module index
+      int currentIndex = -1;
+      for (int i = 0; i < modules.length; i++) {
+        if (modules[i]['id'] == moduleId) {
+          currentIndex = i;
+          break;
+        }
+      }
+      
+      // Check if there's a next module
+      if (currentIndex >= 0 && currentIndex < modules.length - 1) {
+        final nextModule = modules[currentIndex + 1];
+        final nextModuleId = nextModule['id'] as String;
+        final nextModuleTitle = nextModule['title'] as String;
+        
+        // Navigate to next module
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => ModuleContentPage(
+              courseTitle: courseTitle,
+              moduleTitle: nextModuleTitle,
+              backgroundImage: backgroundImage,
+              subtopicTitle: nextModule['content'] != null 
+                  ? 'Module Content' 
+                  : 'Understanding Python',
+              progress: 0.0, // Reset progress for new module
+              currentPage: 1,
+              totalPages: 1,
+              courseId: courseId,
+              moduleId: nextModuleId,
+            ),
+          ),
+        );
+      } else {
+        // No next module, show completion dialog
+        _showCompletionDialog(context, moduleTitle);
+      }
+    } catch (e) {
+      print('Error navigating to next module: $e');
+    }
+  }
+
+  /// Navigate to the previous module
+  Future<void> _navigateToPreviousModule(BuildContext context) async {
+    if (courseId == null) return;
+    
+    try {
+      final modules = await _getAllModules();
+      if (modules.isEmpty) return;
+      
+      // Find current module index
+      int currentIndex = -1;
+      for (int i = 0; i < modules.length; i++) {
+        if (modules[i]['id'] == moduleId) {
+          currentIndex = i;
+          break;
+        }
+      }
+      
+      // Check if there's a previous module
+      if (currentIndex > 0) {
+        final previousModule = modules[currentIndex - 1];
+        final previousModuleId = previousModule['id'] as String;
+        final previousModuleTitle = previousModule['title'] as String;
+        
+        // Navigate to previous module
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => ModuleContentPage(
+              courseTitle: courseTitle,
+              moduleTitle: previousModuleTitle,
+              backgroundImage: backgroundImage,
+              subtopicTitle: previousModule['content'] != null 
+                  ? 'Module Content' 
+                  : 'Understanding Python',
+              progress: 0.0, // Reset progress for new module
+              currentPage: 1,
+              totalPages: 1,
+              courseId: courseId,
+              moduleId: previousModuleId,
+            ),
+          ),
+        );
+      } else {
+        // No previous module, go back to course outline
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      print('Error navigating to previous module: $e');
+    }
   }
 }
 
