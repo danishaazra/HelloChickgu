@@ -6,6 +6,7 @@ import '../../shared/theme/theme.dart';
 import '../chatbot/chippy_chatbot.dart';
 import '../../services/download_service.dart';
 import '../ar/ar_page.dart';
+import '../../services/library_service.dart';
 
 
 class ModuleContentPage extends StatelessWidget {
@@ -16,6 +17,8 @@ class ModuleContentPage extends StatelessWidget {
   final double progress; // 0.0 - 1.0
   final int currentPage;
   final int totalPages;
+  final String? courseId; // Optional courseId for database fetching
+  final String? moduleId; // Optional moduleId for database fetching
 
   const ModuleContentPage({
     super.key,
@@ -26,6 +29,8 @@ class ModuleContentPage extends StatelessWidget {
     required this.progress,
     this.currentPage = 1,
     this.totalPages = 3,
+    this.courseId,
+    this.moduleId,
   });
 
   @override
@@ -149,11 +154,13 @@ class ModuleContentPage extends StatelessWidget {
                             size: 70,
                             backgroundColor: Colors.transparent,
                             onTap: () async {
+                              // Fetch content for download
+                              final content = await _getModuleContent();
                               await _downloadLessonAsPdf(
                                 context,
                                 title: moduleTitle,
                                 subtopic: subtopicTitle,
-                                content: _dummyContent(moduleTitle),
+                                content: content,
                               );
                             },
                           ),
@@ -196,11 +203,63 @@ class ModuleContentPage extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              Text(
-                                _dummyContent(moduleTitle),
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  height: 1.5,
-                                ),
+                              FutureBuilder<String>(
+                                future: _getModuleContent(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(32.0),
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    );
+                                  }
+
+                                  if (snapshot.hasError) {
+                                    return Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(32.0),
+                                        child: Column(
+                                          children: [
+                                            Icon(
+                                              Icons.error_outline,
+                                              size: 48,
+                                              color: Colors.grey[400],
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              'Error loading content',
+                                              style: theme.textTheme.titleMedium,
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              snapshot.error.toString(),
+                                              style: theme.textTheme.bodySmall,
+                                              textAlign: TextAlign.center,
+                                            ),
+                                            const SizedBox(height: 16),
+                                            ElevatedButton(
+                                              onPressed: () {
+                                                // Trigger a rebuild to retry
+                                                (context as Element).markNeedsBuild();
+                                              },
+                                              child: const Text('Retry'),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }
+
+                                  final content = snapshot.data ?? _dummyContent(moduleTitle);
+                                  
+                                  return Text(
+                                    content,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      height: 1.5,
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -251,6 +310,30 @@ class ModuleContentPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Fetch module content from database or return dummy content as fallback
+  Future<String> _getModuleContent() async {
+    // If we have courseId and moduleId, try to fetch from database
+    if (courseId != null && moduleId != null) {
+      try {
+        final modules = await LibraryService().getCourseModules(courseId!);
+        final module = modules.firstWhere(
+          (m) => m['id'] == moduleId,
+          orElse: () => <String, dynamic>{},
+        );
+        
+        if (module.isNotEmpty && module['content'] != null) {
+          return module['content'] as String;
+        }
+      } catch (e) {
+        print('Error fetching module content: $e');
+        // Fall through to dummy content
+      }
+    }
+    
+    // Fallback to dummy content
+    return _dummyContent(moduleTitle);
   }
 }
 
