@@ -18,6 +18,7 @@ class VideoLecturePlayer extends StatefulWidget {
 class _VideoLecturePlayerState extends State<VideoLecturePlayer> {
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
+  Object? _lastError;
 
   @override
   void initState() {
@@ -26,24 +27,43 @@ class _VideoLecturePlayerState extends State<VideoLecturePlayer> {
   }
 
   Future<void> _init() async {
-    final vc = widget.isAsset
-        ? VideoPlayerController.asset(widget.source)
-        : VideoPlayerController.networkUrl(Uri.parse(widget.source));
-    await vc.initialize();
-    final cc = ChewieController(
-      videoPlayerController: vc,
-      autoPlay: false,
-      looping: false,
-      allowMuting: true,
-      allowPlaybackSpeedChanging: true,
-      showControls: true,
-      aspectRatio: vc.value.aspectRatio == 0 ? 16 / 9 : vc.value.aspectRatio,
-    );
-    if (mounted) {
-      setState(() {
-        _videoController = vc;
-        _chewieController = cc;
-      });
+    try {
+      final VideoPlayerController vc =
+          widget.isAsset
+              ? VideoPlayerController.asset(widget.source)
+              : VideoPlayerController.networkUrl(
+                Uri.parse(widget.source),
+                httpHeaders: {
+                  // Helps some CDNs that require a UA
+                  'User-Agent': 'Mozilla/5.0 (Flutter)',
+                },
+                videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+              );
+      await vc.initialize();
+      final double ratio =
+          vc.value.aspectRatio == 0 ? 16 / 9 : vc.value.aspectRatio;
+      final cc = ChewieController(
+        videoPlayerController: vc,
+        autoPlay: true,
+        looping: false,
+        allowMuting: true,
+        allowPlaybackSpeedChanging: true,
+        showControls: true,
+        aspectRatio: ratio,
+      );
+      if (mounted) {
+        setState(() {
+          _videoController = vc;
+          _chewieController = cc;
+          _lastError = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _lastError = e;
+        });
+      }
     }
   }
 
@@ -56,6 +76,17 @@ class _VideoLecturePlayerState extends State<VideoLecturePlayer> {
 
   @override
   Widget build(BuildContext context) {
+    if (_lastError != null) {
+      return SizedBox(
+        height: 220,
+        child: Center(
+          child: Text(
+            'Video failed to load',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+      );
+    }
     if (_chewieController == null) {
       return const SizedBox(
         height: 220,
