@@ -161,14 +161,14 @@ class _Quiz2EndState extends State<quiz2end>
                           scale: _scale,
                           child: Image.asset(
                             'assets/chickenYes.png',
-                            width: 600,
-                            height: 600,
+                            width: 400,
+                            height: 400,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+               
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [

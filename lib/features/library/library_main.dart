@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../shared/theme/theme.dart';
 import 'library_courseoutline.dart';
 import '../chatbot/chippy_chatbot.dart';
@@ -530,15 +532,18 @@ class _CoursesGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = _sampleCourses;
+    final isSmallScreen = Responsive.isSmallScreen(context);
+    final double aspect =
+        isSmallScreen ? 0.50 : 0.62; // increase card height further
     return GridView.builder(
       itemCount: items.length,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.75,
+        childAspectRatio: aspect,
       ),
       itemBuilder: (context, index) {
         final course = items[index];
@@ -573,97 +578,193 @@ class CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.bgWhite,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: SizedBox(
-              height: 84,
-              width: double.infinity,
-              child: ColoredBox(
-                color: AppTheme.bgLightBlue,
-                child: Center(child: imageWidget),
-              ),
-            ),
+    final isSmall = Responsive.isSmallScreen(context);
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: AppTheme.bgWhite,
+            borderRadius: BorderRadius.circular(16),
           ),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 6),
-          const Spacer(),
-          Text('$modulesText • $timeText', style: theme.textTheme.bodySmall),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              style: ButtonStyle(
-                padding: MaterialStateProperty.all(
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                ),
-                shape: MaterialStateProperty.all(
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  height: isSmall ? 70 : 80,
+                  width: double.infinity,
+                  child: ColoredBox(
+                    color: AppTheme.bgLightBlue,
+                    child: Center(child: imageWidget),
                   ),
                 ),
-                side: MaterialStateProperty.all(
-                  BorderSide(color: AppTheme.primaryBlue, width: 2),
-                ),
-                backgroundColor: MaterialStateProperty.resolveWith((states) {
-                  if (states.contains(MaterialState.hovered) ||
-                      states.contains(MaterialState.pressed) ||
-                      states.contains(MaterialState.focused)) {
-                    return AppTheme.primaryBlue;
-                  }
-                  return Colors.white;
-                }),
-                foregroundColor: MaterialStateProperty.resolveWith((states) {
-                  if (states.contains(MaterialState.hovered) ||
-                      states.contains(MaterialState.pressed) ||
-                      states.contains(MaterialState.focused)) {
-                    return Colors.white;
-                  }
-                  return AppTheme.primaryBlue;
-                }),
-                overlayColor: MaterialStateProperty.all(
-                  AppTheme.primaryBlue.withOpacity(0.1),
-                ),
-                elevation: MaterialStateProperty.all(0),
               ),
-              onPressed: () {
-                final int moduleCount =
-                    int.tryParse(modulesText.split(' ').first) ?? 0;
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder:
-                        (_) => CourseOutlinePage(
-                          courseTitle: title,
-                          modules: moduleCount,
-                          duration: timeText,
-                        ),
+              SizedBox(height: isSmall ? 8 : 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
-                );
-              },
-              child: Text(
-                isActive ? 'Continue' : 'Start',
-                style: const TextStyle(fontWeight: FontWeight.w700),
+                  const SizedBox(width: 6),
+                  _BookmarkToggle(courseTitle: title),
+                ],
               ),
-            ),
+              SizedBox(height: isSmall ? 2 : 6),
+              SizedBox(height: isSmall ? 4 : 8),
+              Text(
+                '$modulesText • $timeText',
+                style: theme.textTheme.bodySmall,
+              ),
+              SizedBox(height: isSmall ? 4 : 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: ButtonStyle(
+                    padding: MaterialStateProperty.all(
+                      EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: isSmall ? 5 : 10,
+                      ),
+                    ),
+                    minimumSize: MaterialStateProperty.all(
+                      Size.fromHeight(isSmall ? 32 : 40),
+                    ),
+                    shape: MaterialStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    side: MaterialStateProperty.all(
+                      BorderSide(color: AppTheme.primaryBlue, width: 2),
+                    ),
+                    backgroundColor: MaterialStateProperty.resolveWith((
+                      states,
+                    ) {
+                      if (states.contains(MaterialState.hovered) ||
+                          states.contains(MaterialState.pressed) ||
+                          states.contains(MaterialState.focused)) {
+                        return AppTheme.primaryBlue;
+                      }
+                      return Colors.white;
+                    }),
+                    foregroundColor: MaterialStateProperty.resolveWith((
+                      states,
+                    ) {
+                      if (states.contains(MaterialState.hovered) ||
+                          states.contains(MaterialState.pressed) ||
+                          states.contains(MaterialState.focused)) {
+                        return Colors.white;
+                      }
+                      return AppTheme.primaryBlue;
+                    }),
+                    overlayColor: MaterialStateProperty.all(
+                      AppTheme.primaryBlue.withOpacity(0.1),
+                    ),
+                    elevation: MaterialStateProperty.all(0),
+                  ),
+                  onPressed: () {
+                    final int moduleCount =
+                        int.tryParse(modulesText.split(' ').first) ?? 0;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder:
+                            (_) => CourseOutlinePage(
+                              courseTitle: title,
+                              modules: moduleCount,
+                              duration: timeText,
+                            ),
+                      ),
+                    );
+                  },
+                  child: Text(
+                    isActive ? 'Continue' : 'Start',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BookmarkToggle extends StatefulWidget {
+  const _BookmarkToggle({required this.courseTitle});
+  final String courseTitle;
+
+  @override
+  State<_BookmarkToggle> createState() => _BookmarkToggleState();
+}
+
+class _BookmarkToggleState extends State<_BookmarkToggle> {
+  bool _loading = false;
+
+  Future<Set<String>> _fetchBookmarks() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return <String>{};
+    final snap =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+    final data = snap.data() as Map<String, dynamic>?;
+    final list =
+        (data?['bookmarked_courses'] as List?)?.cast<String>() ?? <String>[];
+    return list.toSet();
+  }
+
+  Future<void> _toggle() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || _loading) return;
+    setState(() => _loading = true);
+    final doc = FirebaseFirestore.instance.collection('users').doc(user.uid);
+    await FirebaseFirestore.instance.runTransaction((txn) async {
+      final snap = await txn.get(doc);
+      final data = snap.data() as Map<String, dynamic>? ?? {};
+      final current =
+          (data['bookmarked_courses'] as List?)?.cast<String>() ?? <String>[];
+      if (current.contains(widget.courseTitle)) {
+        current.remove(widget.courseTitle);
+      } else {
+        current.add(widget.courseTitle);
+      }
+      txn.set(doc, {'bookmarked_courses': current}, SetOptions(merge: true));
+    });
+    if (mounted) setState(() => _loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = AppTheme.primaryBlue;
+    return FutureBuilder<Set<String>>(
+      future: _fetchBookmarks(),
+      builder: (context, snapshot) {
+        final isBookmarked =
+            snapshot.data?.contains(widget.courseTitle) ?? false;
+        return IconButton(
+          onPressed: _toggle,
+          iconSize: 22,
+          padding: const EdgeInsets.all(6),
+          constraints: const BoxConstraints(),
+          icon: Icon(
+            isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+            color: color,
+          ),
+          tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark',
+        );
+      },
     );
   }
 }

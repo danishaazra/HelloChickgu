@@ -16,8 +16,7 @@ class UserService {
           .doc(user.uid)
           .get();
       // Apply offline decay based on time since lastUpdated
-      // Disabled - using real-time decay in base_pet_room.dart instead
-      // await _applyDecayIfNeeded(user.uid, snap);
+      await _applyDecayIfNeeded(user.uid, snap);
       return await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
     } catch (e) {
       print('Error fetching user data: $e');
@@ -110,6 +109,21 @@ class UserService {
       }
     } catch (e) {
       print('Error applying decay: $e');
+    }
+  }
+
+  /// Public helper to apply decay immediately based on current stored timestamp
+  Future<void> applyDecayNow() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      await _applyDecayIfNeeded(user.uid, snap);
+    } catch (e) {
+      print('Error applying decay now: $e');
     }
   }
 }
