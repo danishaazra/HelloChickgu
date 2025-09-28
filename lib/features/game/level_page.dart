@@ -406,25 +406,7 @@ class _LevelPageState extends State<LevelPage> {
                             }
                           },
                         ),
-                        _BottomPill(
-                          label: 'Training',
-                          background:
-                              _trainingSelected
-                                  ? const Color(0xFFFFB6C1)
-                                  : Colors.grey.shade300,
-                          textColor: Colors.black,
-                          borderColor: _trainingSelected ? Colors.white : null,
-                          borderWidth: _trainingSelected ? 2 : null,
-                          height: 50,
-                          onTap: () {
-                            if (!_trainingSelected) {
-                              setState(() {
-                                _trainingSelected = true;
-                              });
-                            }
-                            _openTraining();
-                          },
-                        ),
+                       
                       ],
                     ),
                   ),
