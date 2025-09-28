@@ -3,6 +3,7 @@ import 'shared/theme/theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'features/onboarding/onboarding.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hellochickgu/services/notification_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -58,7 +59,7 @@ class MyApp extends StatelessWidget {
       title: 'Hello Chickgu!',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const ChippyChatbotPage(),
+      home: const OnboardingPage(),
     );
   }
 }
