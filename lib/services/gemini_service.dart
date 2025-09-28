@@ -1,42 +1,34 @@
+// lib/services/gemini_service.dart
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../shared/const.dart';
 
 class GeminiService {
-  GeminiService._internal();
-  static final GeminiService instance = GeminiService._internal();
+  GeminiService._();
+  static final GeminiService instance = GeminiService._();
 
-  // Priority: dart-define -> .env -> empty
-  static final String _apiKey =
-      const String.fromEnvironment('GEMINI_API_KEY').isNotEmpty
-          ? const String.fromEnvironment('GEMINI_API_KEY')
-          : (dotenv.maybeGet('GEMINI_API_KEY') ?? '');
+  GenerativeModel? _model;
 
-  late final GenerativeModel _model = GenerativeModel(
-    model: 'gemini-1.5-flash',
-    apiKey: _apiKey,
-    safetySettings: const [],
-  );
+  /// Initialize Gemini once
+  Future<void> init() async {
+    if (_model != null) return;
 
-  Future<String> askChippy(String prompt) async {
-    if (_apiKey.isEmpty) {
-      throw const GeminiException(
-        'Missing GEMINI_API_KEY. Add it to .env or pass --dart-define=GEMINI_API_KEY=your_key',
-      );
+    final apiKey = GEMINI_API_KEY;
+    if (apiKey.isEmpty) {
+      throw Exception("❌ GEMINI_API_KEY is missing. Check your .env file.");
     }
 
-    final content = [Content.text(prompt)];
-    final response = await _model.generateContent(content);
-    final text = response.text?.trim();
-    if (text == null || text.isEmpty) {
-      throw const GeminiException('Empty response from Gemini');
-    }
-    return text;
+    _model = GenerativeModel(model: GEMINI_MODEL, apiKey: apiKey);
+    print("✅ GeminiService initialized");
   }
-}
 
-class GeminiException implements Exception {
-  final String message;
-  const GeminiException(this.message);
-  @override
-  String toString() => message;
+  /// Send message to Gemini
+  Future<String> sendMessage(String message) async {
+    if (_model == null) {
+      throw Exception("GeminiService not initialized! Call init() first.");
+    }
+
+    final content = [Content.text(message)];
+    final response = await _model!.generateContent(content);
+    return response.text ?? "⚠️ No response from Gemini.";
+  }
 }
