@@ -196,4 +196,88 @@ class LibraryService {
       print('Error toggling bookmark: $e');
     }
   }
+
+  /// Get user's most recent course and progress
+  Future<Map<String, dynamic>?> getRecentCourseProgress() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      final data = doc.data();
+      
+      if (data == null) return null;
+      
+      final recentCourseId = data['recent_course_id'] as String?;
+      final recentCourseTitle = data['recent_course_title'] as String?;
+      final lastAccessed = (data['last_accessed'] as Timestamp?)?.toDate();
+      
+      if (recentCourseId == null || recentCourseTitle == null) return null;
+      
+      // Get progress for the recent course
+      final progress = await getUserProgress(recentCourseId);
+      final modules = await getCourseModules(recentCourseId);
+      
+      return {
+        'courseId': recentCourseId,
+        'courseTitle': recentCourseTitle,
+        'lastAccessed': lastAccessed,
+        'completedModules': progress?['completed_modules'] ?? [],
+        'totalModules': modules.length,
+        'progressPercentage': modules.isNotEmpty 
+            ? ((progress?['completed_modules'] as List?)?.length ?? 0) / modules.length
+            : 0.0,
+      };
+    } catch (e) {
+      print('Error fetching recent course progress: $e');
+      return null;
+    }
+  }
+
+  /// Update user's recent course when they access it
+  Future<void> updateRecentCourse(String courseId, String courseTitle) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      await _firestore.collection('users').doc(user.uid).set({
+        'recent_course_id': courseId,
+        'recent_course_title': courseTitle,
+        'last_accessed': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      print('Error updating recent course: $e');
+    }
+  }
+
+  /// Mark a module as completed
+  Future<void> markModuleCompleted(String courseId, String moduleId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final docRef = _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('courseProgress')
+          .doc(courseId);
+      
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        final data = snapshot.data() ?? {};
+        final completedModules = (data['completed_modules'] as List?)?.cast<String>() ?? [];
+        
+        if (!completedModules.contains(moduleId)) {
+          completedModules.add(moduleId);
+        }
+        
+        transaction.set(docRef, {
+          'completed_modules': completedModules,
+          'last_updated': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      });
+    } catch (e) {
+      print('Error marking module completed: $e');
+    }
+  }
 }

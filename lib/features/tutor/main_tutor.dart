@@ -175,22 +175,35 @@ class _TutorListPageState extends State<TutorListPage> {
   Widget _buildHeroCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xff9fd9ff),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xff9fd9ff), Color(0xff7ac3ff)],
+        ),
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Find Your Best\nTutor!',
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
               color: Colors.white,
+              letterSpacing: 0.5,
+              height: 1.2,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -198,19 +211,33 @@ class _TutorListPageState extends State<TutorListPage> {
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder:
-                        (_) => const BestTutorPage(courseTitle: 'Best Tutor'),
+                        (_) =>
+                            const BestTutorPage(courseTitle: 'Tutorial Videos'),
                   ),
                 );
               },
-              icon: const Icon(Icons.emoji_events),
-              label: const Text('Best Tutor'),
+              icon: const Icon(Icons.emoji_events, size: 20),
+              label: const Text(
+                'Education Learning Videos',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  letterSpacing: 0.5,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: const Color(0xff1492e6),
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 20,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                 ),
+                elevation: 3,
+                shadowColor: Colors.black.withOpacity(0.15),
+                splashFactory: InkRipple.splashFactory,
               ),
             ),
           ),

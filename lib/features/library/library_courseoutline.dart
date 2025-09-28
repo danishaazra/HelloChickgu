@@ -76,28 +76,19 @@ class CourseOutlinePage extends StatelessWidget {
                               size: 20,
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              '$modules Modules',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Icon(
-                              Icons.access_time,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              duration,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            FutureBuilder<int>(
+                              future: _getActualModuleCount(),
+                              builder: (context, snapshot) {
+                                final actualCount = snapshot.data ?? modules;
+                                return Text(
+                                  '$actualCount Modules',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -201,12 +192,18 @@ class CourseOutlinePage extends StatelessWidget {
                   children: modules.asMap().entries.map((entry) {
                     final index = entry.key;
                     final module = entry.value;
-                    return _ModuleTile(
-                      number: index + 1,
-                      title: module['title'] ?? 'Untitled Module',
-                      progress: _getModuleProgress(module), // You can implement this based on user progress
-                      moduleData: module,
-                      courseId: courseId,
+                    return FutureBuilder<double>(
+                      future: _getModuleProgress(module),
+                      builder: (context, progressSnapshot) {
+                        final progress = progressSnapshot.data ?? 0.0;
+                        return _ModuleTile(
+                          number: index + 1,
+                          title: module['title'] ?? 'Untitled Module',
+                          progress: progress,
+                          moduleData: module,
+                          courseId: courseId,
+                        );
+                      },
                     );
                   }).toList(),
                 );
@@ -219,10 +216,31 @@ class CourseOutlinePage extends StatelessWidget {
   }
 
   /// Helper method to get module progress (you can implement this based on user progress tracking)
-  double _getModuleProgress(Map<String, dynamic> module) {
-    // For now, return 0 (not started) for all modules
-    // You can implement this to fetch actual user progress from the database
-    return 0.0;
+  Future<double> _getModuleProgress(Map<String, dynamic> module) async {
+    if (courseId == null || module['id'] == null) return 0.0;
+    
+    try {
+      final progress = await LibraryService().getUserProgress(courseId!);
+      final completedModules = (progress?['completed_modules'] as List?)?.cast<String>() ?? [];
+      return completedModules.contains(module['id']) ? 1.0 : 0.0;
+    } catch (e) {
+      print('Error getting module progress: $e');
+      return 0.0;
+    }
+  }
+
+  /// Get the actual module count from database
+  Future<int> _getActualModuleCount() async {
+    if (courseId != null) {
+      try {
+        final moduleList = await LibraryService().getCourseModules(courseId!);
+        return moduleList.length;
+      } catch (e) {
+        print('Error fetching module count: $e');
+        return modules; // Fallback to passed modules count
+      }
+    }
+    return modules; // Fallback to passed modules count if no courseId
   }
 }
 
@@ -281,7 +299,15 @@ class _ModuleTile extends StatelessWidget {
               moduleId: moduleData?['id'],
             ),
           ),
-        );
+        ).then((_) async {
+          // Mark module as completed when user returns from module content
+          if (courseId != null && moduleData?['id'] != null) {
+            await LibraryService().markModuleCompleted(
+              courseId!, 
+              moduleData!['id'] as String,
+            );
+          }
+        });
       },
       borderRadius: BorderRadius.circular(14),
       child: Container(
@@ -321,9 +347,8 @@ class _ModuleTile extends StatelessWidget {
             Text(
               "${(progress * 100).toInt()}%",
               style: TextStyle(
-                color: inProgress || completed
-                    ? AppTheme.primaryBlue
-                    : baseColor,
+                color:
+                    inProgress || completed ? AppTheme.primaryBlue : baseColor,
                 fontWeight: FontWeight.w700,
               ),
             ),

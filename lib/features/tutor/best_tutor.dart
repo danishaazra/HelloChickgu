@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hellochickgu/services/purchase_service.dart';
-import 'widgets/video_lecture_player.dart';
+import 'widgets/youtube_player.dart';
 import 'payment/video_payment_page.dart';
 
 class BestTutorPage extends StatefulWidget {
@@ -66,24 +66,37 @@ class _BestTutorPageState extends State<BestTutorPage> {
               final data = doc.data();
               final String videoId = doc.id;
               final String title = (data['title'] as String?) ?? 'Untitled';
-              final String author = (data['author'] as String?) ?? '';
-              final String durationText = _readableDuration(data['duration']);
-              final String viewsText = _formatViews(data['views']);
-              final String ageText = (data['ageText'] as String?) ?? '';
-              final List<dynamic> tagsRaw =
-                  (data['tags'] as List<dynamic>?) ?? const [];
-              final List<String> tags =
-                  tagsRaw.map((e) => e.toString()).toList();
-              final String thumbnailUrl =
-                  (data['thumbnailUrl'] as String?) ?? '';
-              final String videoUrl = (data['videoUrl'] as String?) ?? '';
+              final String description = (data['description'] as String?) ?? '';
+              final String youtubeUrl = (data['youtube'] as String?) ?? '';
+              final int views = _safeIntCast(data['views']);
+              final int likes = _safeIntCast(data['likes']);
+              final int comments = _safeIntCast(data['comments']);
+              final int price = _safeIntCast(data['price']);
+              final String status = (data['status'] as String?) ?? '';
+              final Timestamp? createdAt = data['createdAt'] as Timestamp?;
+
+              // Format views
+              final String viewsText = _formatViews(views);
+
+              // Format creation date
+              final String ageText = _formatDate(createdAt);
+
+              // Get thumbnail from YouTube URL
+              final String thumbnailUrl = _getYouTubeThumbnail(youtubeUrl);
+
+              // Get video duration (we'll extract from YouTube)
+              final String durationText =
+                  '00:00'; // Placeholder - would need YouTube API for actual duration
               return _VideoCard(
                 title: title,
-                author: author,
+                description: description,
                 durationText: durationText,
                 viewsText: viewsText,
                 ageText: ageText,
-                tags: tags,
+                likes: likes,
+                comments: comments,
+                price: price,
+                status: status,
                 thumbnailUrl: thumbnailUrl,
                 locked: !PurchaseService.instance.isPurchased(videoId),
                 onTap: () async {
@@ -97,6 +110,7 @@ class _BestTutorPageState extends State<BestTutorPage> {
                             (_) => VideoPaymentPage(
                               videoId: videoId,
                               title: title,
+                              priceText: 'RM $price',
                             ),
                       ),
                     );
@@ -107,7 +121,7 @@ class _BestTutorPageState extends State<BestTutorPage> {
                           builder:
                               (_) => _VideoPlayerScaffold(
                                 title: title,
-                                videoUrl: videoUrl,
+                                videoUrl: youtubeUrl,
                               ),
                         ),
                       );
@@ -119,7 +133,7 @@ class _BestTutorPageState extends State<BestTutorPage> {
                       builder:
                           (_) => _VideoPlayerScaffold(
                             title: title,
-                            videoUrl: videoUrl,
+                            videoUrl: youtubeUrl,
                           ),
                     ),
                   );
@@ -137,21 +151,28 @@ class _BestTutorPageState extends State<BestTutorPage> {
 
 class _VideoCard extends StatelessWidget {
   final String title;
-  final String author;
+  final String description;
   final String durationText;
   final String viewsText;
   final String ageText;
-  final List<String> tags;
+  final int likes;
+  final int comments;
+  final int price;
+  final String status;
   final String thumbnailUrl;
   final bool locked;
   final VoidCallback onTap;
+
   const _VideoCard({
     required this.title,
-    required this.author,
+    required this.description,
     required this.durationText,
     required this.viewsText,
     required this.ageText,
-    required this.tags,
+    required this.likes,
+    required this.comments,
+    required this.price,
+    required this.status,
     required this.thumbnailUrl,
     required this.locked,
     required this.onTap,
@@ -264,9 +285,17 @@ class _VideoCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  if (author.isNotEmpty)
-                    Text(author, style: const TextStyle(color: Colors.black87)),
+                  // Description
+                  if (description.isNotEmpty)
+                    Text(
+                      description,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   const SizedBox(height: 8),
+
+                  // Stats row
                   Row(
                     children: [
                       const Icon(
@@ -274,30 +303,94 @@ class _VideoCard extends StatelessWidget {
                         size: 16,
                         color: Colors.black54,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       Text(
                         viewsText,
-                        style: const TextStyle(color: Colors.black54),
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 12,
+                        ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
+                      const Icon(Icons.favorite, size: 16, color: Colors.red),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatNumber(likes),
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       const Icon(
-                        Icons.access_time,
+                        Icons.comment,
                         size: 16,
                         color: Colors.black54,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       Text(
-                        ageText,
-                        style: const TextStyle(color: Colors.black54),
+                        _formatNumber(comments),
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 12,
+                        ),
                       ),
+                      const Spacer(),
+                      if (status == 'approved')
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Approved',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children:
-                        tags.take(3).map((t) => _TagChip(text: t)).toList(),
+                  const SizedBox(height: 8),
+
+                  // Price and date row
+                  Row(
+                    children: [
+                      if (price > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xff1492e6).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'RM $price',
+                            style: const TextStyle(
+                              color: Color(0xff1492e6),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      const Spacer(),
+                      if (ageText.isNotEmpty)
+                        Text(
+                          ageText,
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -306,23 +399,6 @@ class _VideoCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _TagChip extends StatelessWidget {
-  final String text;
-  const _TagChip({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xffffeef0),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(text, style: const TextStyle(color: Colors.black87)),
     );
   }
 }
@@ -357,7 +433,7 @@ class _VideoPlayerScaffold extends StatelessWidget {
           Container(
             color: Colors.white,
             padding: const EdgeInsets.only(bottom: 8),
-            child: VideoLecturePlayer(source: videoUrl, isAsset: false),
+            child: YouTubePlayer(youtubeUrl: videoUrl, title: title),
           ),
           Expanded(
             child: SingleChildScrollView(
@@ -371,27 +447,63 @@ class _VideoPlayerScaffold extends StatelessWidget {
   }
 }
 
-String _readableDuration(dynamic raw) {
-  if (raw == null) return '00:00';
-  if (raw is String && raw.isNotEmpty) return raw; // already formatted
-  if (raw is int) {
-    final d = Duration(seconds: raw);
-    String two(int n) => n.toString().padLeft(2, '0');
-    final h = d.inHours;
-    final m = d.inMinutes % 60;
-    final s = d.inSeconds % 60;
-    return h > 0 ? '${two(h)}:${two(m)}:${two(s)}' : '${two(m)}:${two(s)}';
-  }
-  return '00:00';
+String _formatViews(int views) {
+  if (views >= 1000000) return '${(views / 1000000).toStringAsFixed(1)}M views';
+  if (views >= 1000) return '${(views / 1000).toStringAsFixed(1)}K views';
+  return '$views views';
 }
 
-String _formatViews(dynamic raw) {
-  if (raw == null) return '';
-  if (raw is String) return raw;
-  if (raw is int) {
-    if (raw >= 1000000) return '${(raw / 1000000).toStringAsFixed(1)}M views';
-    if (raw >= 1000) return '${(raw / 1000).toStringAsFixed(1)}K views';
-    return '$raw views';
+String _formatNumber(int number) {
+  if (number >= 1000000) return '${(number / 1000000).toStringAsFixed(1)}M';
+  if (number >= 1000) return '${(number / 1000).toStringAsFixed(1)}K';
+  return '$number';
+}
+
+String _formatDate(Timestamp? timestamp) {
+  if (timestamp == null) return '';
+
+  final DateTime date = timestamp.toDate();
+  final DateTime now = DateTime.now();
+  final Duration difference = now.difference(date);
+
+  if (difference.inDays > 365) {
+    final years = (difference.inDays / 365).floor();
+    return '$years year${years > 1 ? 's' : ''} ago';
+  } else if (difference.inDays > 30) {
+    final months = (difference.inDays / 30).floor();
+    return '$months month${months > 1 ? 's' : ''} ago';
+  } else if (difference.inDays > 0) {
+    return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+  } else if (difference.inHours > 0) {
+    return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+  } else if (difference.inMinutes > 0) {
+    return '${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''} ago';
+  } else {
+    return 'Just now';
   }
+}
+
+String _getYouTubeThumbnail(String youtubeUrl) {
+  if (youtubeUrl.isEmpty) return '';
+
+  // Extract video ID from YouTube URL
+  final RegExp regExp = RegExp(
+    r'(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})',
+  );
+  final Match? match = regExp.firstMatch(youtubeUrl);
+
+  if (match != null) {
+    final String videoId = match.group(1)!;
+    return 'https://img.youtube.com/vi/$videoId/maxresdefault.jpg';
+  }
+
   return '';
+}
+
+int _safeIntCast(dynamic value) {
+  if (value == null) return 0;
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
 }
