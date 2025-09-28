@@ -29,6 +29,7 @@ class _ChippyChatbotPageState extends State<ChippyChatbotPage> {
   Future<void> _sendMessage() async {
     final text = _inputController.text.trim();
     if (text.isEmpty || _sending) return;
+
     setState(() {
       _sending = true;
       _messages.add(
@@ -36,8 +37,11 @@ class _ChippyChatbotPageState extends State<ChippyChatbotPage> {
       );
       _inputController.clear();
     });
+
     try {
-      final reply = await GeminiService.instance.askChippy(text);
+      // ✅ use new GeminiService
+      final reply = await GeminiService.instance.sendMessage(text);
+
       if (!mounted) return;
       setState(() {
         _messages.add(
@@ -49,7 +53,7 @@ class _ChippyChatbotPageState extends State<ChippyChatbotPage> {
       setState(() {
         _messages.add(
           _Message(
-            text: e.toString(),
+            text: "Error: ${e.toString()}",
             isUser: false,
             color: Colors.red.shade200,
           ),
@@ -66,7 +70,7 @@ class _ChippyChatbotPageState extends State<ChippyChatbotPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Ask Chippy',
+          "Ask Chippy",
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
         centerTitle: true,
@@ -74,7 +78,7 @@ class _ChippyChatbotPageState extends State<ChippyChatbotPage> {
           IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
             icon: const Icon(Icons.close, color: Colors.redAccent),
-            tooltip: 'Close',
+            tooltip: "Close",
           ),
         ],
       ),
@@ -85,14 +89,9 @@ class _ChippyChatbotPageState extends State<ChippyChatbotPage> {
           ),
           Column(
             children: [
-              const SizedBox(height: 8),
-              // chat area
               Expanded(
                 child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
+                  padding: const EdgeInsets.all(16),
                   itemBuilder: (context, index) {
                     final m = _messages[index];
                     return _ChatBubble(
@@ -105,14 +104,14 @@ class _ChippyChatbotPageState extends State<ChippyChatbotPage> {
                   itemCount: _messages.length,
                 ),
               ),
-              // input bar
               SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                  padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
                       Expanded(
                         child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(24),
@@ -124,7 +123,6 @@ class _ChippyChatbotPageState extends State<ChippyChatbotPage> {
                               ),
                             ],
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: TextField(
                             controller: _inputController,
                             textInputAction: TextInputAction.send,
@@ -187,6 +185,7 @@ class _ChatBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final bubbleColor = color ?? (isUser ? AppTheme.primaryBlue : Colors.white);
     final textColor = isUser ? Colors.white : Colors.black87;
+
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -208,11 +207,7 @@ class _ChatBubble extends StatelessWidget {
             ),
           ],
         ),
-        child: Text(
-          text,
-          style: TextStyle(color: textColor, height: 1.3),
-          textAlign: TextAlign.center,
-        ),
+        child: Text(text, style: TextStyle(color: textColor, height: 1.3)),
       ),
     );
   }
@@ -222,5 +217,6 @@ class _Message {
   final String text;
   final bool isUser;
   final Color? color;
+
   const _Message({required this.text, required this.isUser, this.color});
 }
