@@ -50,6 +50,7 @@ class AuthService {
             'uid': user.uid,
             'username': name.trim(),
             'points': 100,
+            'coins': 100,
             'level': 1,
             'currentRoom': 'PetHomePage',
             'lastUpdated': FieldValue.serverTimestamp(),

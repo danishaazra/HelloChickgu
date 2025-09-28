@@ -6,12 +6,14 @@ class PaymentFlow extends StatefulWidget {
   final String courseTitle;
   final String totalPriceText;
   final List<String> skills;
+  final String? videoId; // when provided, act as per-video checkout
 
   const PaymentFlow({
     super.key,
     required this.courseTitle,
     required this.totalPriceText,
     required this.skills,
+    this.videoId,
   });
 
   @override
@@ -89,38 +91,93 @@ class _PaymentFlowState extends State<PaymentFlow> {
   }
 
   void _onContinue() {
-    if (_stepIndex == 1 && _method != 'card') {
-      // For now only card supported
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Only card method is supported in this demo'),
-        ),
-      );
-      return;
-    }
-    if (_stepIndex == 2) {
-      if (_cardNumberController.text.trim().isEmpty ||
-          _cvvController.text.trim().isEmpty ||
-          _expiryController.text.trim().isEmpty ||
-          _nameController.text.trim().isEmpty) {
+    try {
+      if (_stepIndex == 1 && _method != 'card') {
+        // For now only card supported
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please fill all card details')),
+          const SnackBar(
+            content: Text('Only card method is supported in this demo'),
+            backgroundColor: Colors.orange,
+          ),
         );
         return;
       }
-    }
 
-    if (_stepIndex < 3) {
-      setState(() => _stepIndex += 1);
-    } else {
-      PurchaseService.instance.markPurchased(widget.courseTitle);
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder:
-              (_) => CourseOutlinePage(
-                courseTitle: widget.courseTitle,
-                university: 'Universiti Putra Malaysia',
-              ),
+      if (_stepIndex == 2) {
+        final cardNumber = _cardNumberController.text.trim();
+        final cvv = _cvvController.text.trim();
+        final expiry = _expiryController.text.trim();
+        final name = _nameController.text.trim();
+
+        if (cardNumber.isEmpty ||
+            cvv.isEmpty ||
+            expiry.isEmpty ||
+            name.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please fill all card details'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
+        // Basic validation
+        if (cardNumber.length < 13 || cardNumber.length > 19) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please enter a valid card number'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
+        if (cvv.length < 3 || cvv.length > 4) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please enter a valid CVV'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+
+      if (_stepIndex < 3) {
+        setState(() => _stepIndex += 1);
+      } else {
+        // Finalize purchase: per-video or full course
+        if (widget.videoId != null && widget.videoId!.isNotEmpty) {
+          Navigator.of(context).maybePop(true);
+          return;
+        }
+
+        try {
+          PurchaseService.instance.markPurchased(widget.courseTitle);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder:
+                  (_) => CourseOutlinePage(
+                    courseTitle: widget.courseTitle,
+                    university: 'Universiti Putra Malaysia',
+                  ),
+            ),
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Purchase failed: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An error occurred: ${e.toString()}'),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -184,29 +241,68 @@ class _OverviewStep extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              const Text(
-                'Course Name: ',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-              Text(courseTitle),
-            ],
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Course Name:',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  courseTitle,
+                  style: const TextStyle(fontSize: 16),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
-          const Text('Skills'),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children:
-                skills
-                    .map(
-                      (s) =>
-                          Chip(label: Text(s), backgroundColor: Colors.white),
-                    )
-                    .toList(),
+          const Text(
+            'Skills',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
+          const SizedBox(height: 8),
+          if (skills.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'No skills specified',
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children:
+                  skills
+                      .map(
+                        (skill) => Chip(
+                          label: Text(
+                            skill,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          backgroundColor: Colors.white,
+                          elevation: 1,
+                        ),
+                      )
+                      .toList(),
+            ),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -277,29 +373,41 @@ class _CardStep extends StatelessWidget {
           TextField(
             controller: cardNumber,
             keyboardType: TextInputType.number,
-            decoration: _decoration('Card Number'),
+            maxLength: 19, // 16 digits + 3 spaces
+            decoration: _decoration('Card Number (1234 5678 9012 3456)'),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
+                flex: 2,
                 child: TextField(
                   controller: cvv,
                   keyboardType: TextInputType.number,
-                  decoration: _decoration('CVV Number'),
+                  maxLength: 4,
+                  decoration: _decoration('CVV'),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
+                flex: 3,
                 child: TextField(
                   controller: expiry,
-                  decoration: _decoration('Expiry Date'),
+                  keyboardType: TextInputType.number,
+                  maxLength: 5,
+                  decoration: _decoration('MM/YY'),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          TextField(controller: name, decoration: _decoration('Name on Card')),
+          TextField(
+            controller: name,
+            textCapitalization: TextCapitalization.words,
+            decoration: _decoration('Name on Card'),
+            maxLength: 50,
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -315,6 +423,8 @@ class _CardStep extends StatelessWidget {
         borderSide: BorderSide.none,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      counterText: '', // Hide character counter
+      errorStyle: const TextStyle(fontSize: 12),
     );
   }
 }
@@ -324,24 +434,46 @@ class _CompletedStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const SizedBox(height: 20),
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Image.asset(
               'assets/chicken_payment.png',
               height: 220,
               fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  height: 220,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.image_not_supported,
+                    size: 64,
+                    color: Colors.grey,
+                  ),
+                );
+              },
             ),
           ),
-          const SizedBox(height: 12),
-          const Text(
-            'Start Your Learning Today\nBecome the King Chicken',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontWeight: FontWeight.w700),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Start Your Learning Today\nBecome the King Chicken',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -361,7 +493,12 @@ class _BottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        8,
+        16,
+        16 + MediaQuery.of(context).padding.bottom,
+      ),
       color: const Color(0xffe9f3fa),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -370,18 +507,25 @@ class _BottomBar extends StatelessWidget {
             children: [
               const Icon(Icons.payments, color: Color(0xff47b2ff)),
               const SizedBox(width: 8),
-              const Text('Total Price'),
-              const Spacer(),
-              Text(
-                priceText,
-                style: const TextStyle(
-                  color: Color(0xff47b2ff),
-                  fontWeight: FontWeight.w700,
+              const Expanded(
+                child: Text(
+                  'Total Price',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Flexible(
+                child: Text(
+                  priceText,
+                  style: const TextStyle(
+                    color: Color(0xff47b2ff),
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             height: 50,
@@ -392,10 +536,15 @@ class _BottomBar extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                 ),
+                elevation: 2,
               ),
               child: Text(
                 isLast ? 'Done' : 'Continue',
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),

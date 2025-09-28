@@ -131,7 +131,7 @@ class ProfilePage extends StatelessWidget {
                         Icons.settings,
                       ];
                       final List<String> titles = <String>[
-                        'Personal Information',
+                        'Your Profile',
                         'Subscription',
                         'Badges',
                         'Statistic',
@@ -201,10 +201,15 @@ class ProfilePage extends StatelessWidget {
                   ),
                   child: const CircleAvatar(
                     radius: 48,
-                    backgroundImage: NetworkImage(
-                      'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
-                    ),
                     backgroundColor: Colors.white,
+                    child: ClipOval(
+                      child: Image(
+                        image: AssetImage('assets/user1.png'),
+                        width: 96,
+                        height: 96,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -244,72 +249,170 @@ class PersonalInformationPage extends StatefulWidget {
 
 class _PersonalInformationPageState extends State<PersonalInformationPage> {
   final String _bio =
-      'Curious learner and community member. I enjoy reading, writing, and collecting badges along the journey!';
-  late final List<_Post> _posts = <_Post>[
-    _Post(
-      authorName: '',
-      authorAvatarUrl:
-          'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
-      timeAgo: '1s',
-      content:
-          "I'm learning Java and I don't really get the difference between == and .equals(). When I compare two strings, sometimes == doesn't work but .equals() does. Can someone explain why?",
-      likes: 10,
-      comments: 2,
-      badgeColor: Colors.orange,
-    ),
-    _Post(
-      authorName: '',
-      authorAvatarUrl:
-          'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
-      timeAgo: '30m',
-      content: 'How do I make a button component in Figma?',
-      likes: 10,
-      comments: 2,
-      badgeColor: Colors.amber,
-    ),
-    _Post(
-      authorName: '',
-      authorAvatarUrl:
-          'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
-      timeAgo: '1h',
-      content:
-          "I'm learning Java and a bit confused... what's the difference between an array and an ArrayList? When should I use one over the other?",
-      likes: 30,
-      comments: 11,
-      badgeColor: Colors.purple,
-    ),
-  ];
+      '';
+  List<_Post> _posts = <_Post>[];
   int _activeTabIndex = 0; // 0 = Recent Posts, 1 = Achievements
   String? _username;
+  String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
     _loadUsername();
+    _loadUserPosts();
+    _testAllPosts(); // Add this for debugging
+  }
+
+  // Debug method to check all posts in database
+  Future<void> _testAllPosts() async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('posts')
+          .limit(5)
+          .get();
+      
+      print('=== DEBUG: All posts in database ===');
+      for (final doc in querySnapshot.docs) {
+        final data = doc.data();
+        print('Post ID: ${doc.id}');
+        print('User ID: ${data['user_id']}');
+        print('Content: ${data['content']}');
+        print('Created: ${data['created_at']}');
+        print('---');
+      }
+      print('=== END DEBUG ===');
+    } catch (e) {
+      print('Debug query failed: $e');
+    }
   }
 
   Future<void> _loadUsername() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
+    setState(() {
+      _currentUserId = user.uid;
+    });
     try {
       final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
       final data = doc.data() as Map<String, dynamic>?;
       final name = (data?['username'] as String?) ?? user.displayName ?? user.email ?? 'User';
       setState(() {
         _username = name;
-        // Update posts authorName dynamically
-        for (var i = 0; i < _posts.length; i++) {
-          _posts[i] = _posts[i].copyWith(authorName: name);
-        }
       });
     } catch (_) {
       setState(() {
         _username = user.displayName ?? user.email ?? 'User';
-        for (var i = 0; i < _posts.length; i++) {
-          _posts[i] = _posts[i].copyWith(authorName: _username!);
-        }
       });
     }
+  }
+
+  Future<void> _loadUserPosts() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('No current user found');
+      return;
+    }
+
+    print('Loading posts for user: ${user.uid}');
+
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('posts')
+          .where('user_id', isEqualTo: user.uid)
+          .orderBy('created_at', descending: true)
+          .limit(10)
+          .get();
+
+      print('Found ${querySnapshot.docs.length} posts for user');
+
+      final posts = <_Post>[];
+      for (final doc in querySnapshot.docs) {
+        final data = doc.data();
+        print('Post data: $data');
+        
+        final timestamp = (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now();
+        final timeAgo = _formatTimeAgo(timestamp);
+        
+        // Get comment count
+        final commentsSnapshot = await FirebaseFirestore.instance
+            .collection('posts')
+            .doc(doc.id)
+            .collection('comments')
+            .get();
+        
+        posts.add(_Post(
+          authorName: _username ?? 'User',
+          authorAvatarUrl: 'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
+          timeAgo: timeAgo,
+          content: data['content'] as String? ?? '',
+          likes: (data['likes'] as num?)?.toInt() ?? 0,
+          comments: commentsSnapshot.docs.length,
+          badgeColor: _getRandomBadgeColor(),
+        ));
+      }
+      
+      print('Processed ${posts.length} posts');
+      setState(() {
+        _posts = posts;
+      });
+    } catch (e) {
+      print('Error loading user posts: $e');
+      // Try alternative query without orderBy
+      try {
+        print('Trying alternative query...');
+        final querySnapshot = await FirebaseFirestore.instance
+            .collection('posts')
+            .where('user_id', isEqualTo: user.uid)
+            .get();
+        
+        print('Alternative query found ${querySnapshot.docs.length} posts');
+        
+        final posts = <_Post>[];
+        for (final doc in querySnapshot.docs) {
+          final data = doc.data();
+          final timestamp = (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now();
+          final timeAgo = _formatTimeAgo(timestamp);
+          
+          posts.add(_Post(
+            authorName: _username ?? 'User',
+            authorAvatarUrl: 'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
+            timeAgo: timeAgo,
+            content: data['content'] as String? ?? '',
+            likes: (data['likes'] as num?)?.toInt() ?? 0,
+            comments: 0, // Skip comment count for now
+            badgeColor: _getRandomBadgeColor(),
+          ));
+        }
+        
+        // Sort posts by timestamp manually
+        posts.sort((a, b) => b.timeAgo.compareTo(a.timeAgo));
+        
+        setState(() {
+          _posts = posts;
+        });
+      } catch (e2) {
+        print('Alternative query also failed: $e2');
+      }
+    }
+  }
+
+  String _formatTimeAgo(DateTime date) {
+    final Duration diff = DateTime.now().difference(date);
+    if (diff.inSeconds < 60) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    final weeks = (diff.inDays / 7).floor();
+    if (weeks < 5) return '${weeks}w ago';
+    final months = (diff.inDays / 30).floor();
+    if (months < 12) return '${months}mo ago';
+    final years = (diff.inDays / 365).floor();
+    return '${years}y ago';
+  }
+
+  Color _getRandomBadgeColor() {
+    final colors = [Colors.orange, Colors.amber, Colors.purple, Colors.blue, Colors.green];
+    return colors[DateTime.now().millisecond % colors.length];
   }
 
   @override
@@ -372,7 +475,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                               ),
                               Center(
                                 child: Text(
-                                  'Personal Information',
+                                  'Your Profile',
                                   style: textTheme.titleLarge?.copyWith(
                                     color: Colors.black,
                                     fontWeight: FontWeight.w600,
@@ -400,28 +503,6 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Bio',
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _bio,
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -432,7 +513,10 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                         child: _TabButton(
                           label: 'Recent Posts',
                           isActive: _activeTabIndex == 0,
-                          onTap: () => setState(() => _activeTabIndex = 0),
+                          onTap: () {
+                            setState(() => _activeTabIndex = 0);
+                            _loadUserPosts(); // Refresh posts when switching to this tab
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -454,19 +538,50 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                     switchOutCurve: Curves.easeIn,
                     child:
                         _activeTabIndex == 0
-                            ? ListView.separated(
-                              key: const ValueKey('posts'),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              itemCount: _posts.length,
-                              separatorBuilder:
-                                  (_, __) => const SizedBox(height: 12),
-                              itemBuilder:
-                                  (context, index) =>
-                                      _PostCard(post: _posts[index]),
-                            )
+                            ? _posts.isEmpty
+                                ? Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.post_add_outlined,
+                                          size: 64,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'No posts yet',
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Create your first post in the Community section!',
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            color: Colors.grey.shade500,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : RefreshIndicator(
+                                    onRefresh: _loadUserPosts,
+                                    child: ListView.separated(
+                                      key: const ValueKey('posts'),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      itemCount: _posts.length,
+                                      separatorBuilder:
+                                          (_, __) => const SizedBox(height: 12),
+                                      itemBuilder:
+                                          (context, index) =>
+                                              _PostCard(post: _posts[index]),
+                                    ),
+                                  )
                             : SingleChildScrollView(
                               key: const ValueKey('journey'),
                               padding: const EdgeInsets.symmetric(
@@ -496,12 +611,12 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                                         horizontal: 8,
                                       ),
                                       scrollDirection: Axis.horizontal,
-                                      itemCount: 10,
+                                      itemCount: 3,
                                       separatorBuilder:
                                           (_, __) => const SizedBox(width: 12),
                                       itemBuilder:
                                           (context, index) =>
-                                              const _BadgeThumbnail(),
+                                              _BadgeThumbnail(badgeIndex: index),
                                     ),
                                   ),
                                   const SizedBox(height: 20),
@@ -510,7 +625,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                                       horizontal: 8,
                                     ),
                                     child: Text(
-                                      'Performance',
+                                      'Statistics',
                                       style: textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -520,57 +635,74 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                                   Container(
                                     decoration: BoxDecoration(
                                       color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(16),
                                       boxShadow: [
                                         BoxShadow(
                                           color: Colors.black.withOpacity(0.05),
-                                          blurRadius: 8,
+                                          blurRadius: 10,
                                           offset: const Offset(0, 2),
                                         ),
                                       ],
                                     ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
+                                    padding: const EdgeInsets.all(16),
                                     child: Column(
                                       children: [
+                                        const SizedBox(height: 8),
                                         SizedBox(
-                                          height: 280,
-                                          child: _RadarChart(
-                                            categories: const [
-                                              'Memory',
-                                              'Solving',
-                                              'Patterns',
-                                              'Logic',
-                                              'Understanding',
-                                            ],
-                                            values: const [
-                                              0.7,
-                                              0.55,
-                                              0.8,
-                                              0.65,
-                                              0.5,
-                                            ],
-                                            categoryColors: const [
-                                              Color(0xFF6C63FF),
-                                              Color(0xFFFF6584),
-                                              Color(0xFF00BFA6),
-                                              Color(0xFFFFC107),
-                                              Color(0xFF29B6F6),
-                                            ],
-                                            levels: 5,
+                                          height: 320,
+                                          child: FutureBuilder<Map<String, double>>(
+                                            future: StatisticsService.instance.getUserStatistics(),
+                                            builder: (context, snapshot) {
+                                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                                return const Center(
+                                                  child: CircularProgressIndicator(),
+                                                );
+                                              }
+                                              
+                                              final stats = snapshot.data ?? {
+                                                'understanding': 0.0,
+                                                'solving': 0.0,
+                                                'patterns': 0.0,
+                                                'memory': 0.0,
+                                                'logic': 0.0,
+                                              };
+                                              
+                                              return _RadarChart(
+                                                categories: const [
+                                                  'Understanding',
+                                                  'Solving',
+                                                  'Patterns',
+                                                  'Memory',
+                                                  'Logic',
+                                                ],
+                                                values: [
+                                                  stats['understanding']!,
+                                                  stats['solving']!,
+                                                  stats['patterns']!,
+                                                  stats['memory']!,
+                                                  stats['logic']!,
+                                                ],
+                                                categoryColors: const [
+                                                  Color(0xFF29B6F6), // Understanding - Light Blue
+                                                  Color(0xFFFF6584), // Solving - Pink
+                                                  Color(0xFF00BFA6), // Patterns - Teal
+                                                  Color(0xFF6C63FF), // Memory - Purple
+                                                  Color(0xFFFFC107), // Logic - Yellow
+                                                ],
+                                                levels: 5,
+                                              );
+                                            },
                                           ),
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: 12),
                                         Wrap(
                                           alignment: WrapAlignment.center,
                                           spacing: 16,
                                           runSpacing: 8,
                                           children: const [
                                             _LegendDot(
-                                              color: Color(0xFF6C63FF),
-                                              label: 'Memory',
+                                              color: Color(0xFF29B6F6),
+                                              label: 'Understanding',
                                             ),
                                             _LegendDot(
                                               color: Color(0xFFFF6584),
@@ -581,12 +713,12 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                                               label: 'Patterns',
                                             ),
                                             _LegendDot(
-                                              color: Color(0xFFFFC107),
-                                              label: 'Logic',
+                                              color: Color(0xFF6C63FF),
+                                              label: 'Memory',
                                             ),
                                             _LegendDot(
-                                              color: Color(0xFF29B6F6),
-                                              label: 'Understanding',
+                                              color: Color(0xFFFFC107),
+                                              label: 'Logic',
                                             ),
                                           ],
                                         ),
@@ -612,10 +744,15 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                 ),
                 child: const CircleAvatar(
                   radius: 48,
-                  backgroundImage: NetworkImage(
-                    'https://i.pinimg.com/736x/2e/16/fc/2e16fce4b74cb63468147a2a0b54bd90.jpg',
-                  ),
                   backgroundColor: Colors.white,
+                  child: ClipOval(
+                    child: Image(
+                      image: AssetImage('assets/user1.png'),
+                      width: 96,
+                      height: 96,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -629,10 +766,19 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
 // Removed editable field widget since PersonalInformationPage is now view-only
 
 class _BadgeThumbnail extends StatelessWidget {
-  const _BadgeThumbnail();
+  final int badgeIndex;
+  
+  const _BadgeThumbnail({this.badgeIndex = 0});
 
   @override
   Widget build(BuildContext context) {
+    // Define badge images for the Journey section
+    final List<String> journeyBadges = [
+      'assets/badge10.png',
+      'assets/badge50.png', 
+      'assets/badgeSpeed.png',
+    ];
+
     return Container(
       width: 90,
       decoration: BoxDecoration(
@@ -647,7 +793,22 @@ class _BadgeThumbnail extends StatelessWidget {
         ],
       ),
       child: Center(
-        child: Icon(Icons.emoji_events, color: Colors.amber.shade600, size: 32),
+        child: badgeIndex < journeyBadges.length
+            ? Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Image.asset(
+                  journeyBadges[badgeIndex],
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(Icons.emoji_events, color: Colors.amber.shade600, size: 32);
+                  },
+                ),
+              )
+            : Icon(Icons.emoji_events, color: Colors.amber.shade600, size: 32),
       ),
     );
   }
@@ -1096,7 +1257,7 @@ class BadgesPage extends StatelessWidget {
                     mainAxisSpacing: 16,
                     childAspectRatio: 1,
                   ),
-                  itemCount: 10, // You can adjust this based on your badges
+                  itemCount: 3, // Only show 3 badges
                   itemBuilder: (context, index) {
                     return _BadgeItem(badgeIndex: index);
                   },
@@ -1117,6 +1278,15 @@ class _BadgeItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Define badge images and names
+    final List<Map<String, dynamic>> badges = [
+      {'image': 'assets/badge10.png', 'name': 'First Steps'},
+      {'image': 'assets/badge50.png', 'name': 'Half Century'},
+      {'image': 'assets/badgeSpeed.png', 'name': 'Speed Master'},
+    ];
+
+    final badgeData = badges[badgeIndex];
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
@@ -1136,28 +1306,53 @@ class _BadgeItem extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Placeholder for badge image
+                // Badge image
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    Icons.emoji_events,
-                    color: Colors.grey.shade400,
-                    size: 24,
-                  ),
+                  child: badgeData['image'] != null
+                      ? Image.asset(
+                          badgeData['image'],
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.emoji_events,
+                                color: Colors.grey.shade400,
+                                size: 24,
+                              ),
+                            );
+                          },
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.emoji_events,
+                            color: Colors.grey.shade400,
+                            size: 24,
+                          ),
+                        ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Badge ${badgeIndex + 1}',
+                  badgeData['name'],
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey.shade600,
                     fontSize: 10,
                   ),
                   textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

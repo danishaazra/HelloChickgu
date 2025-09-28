@@ -44,10 +44,9 @@ class QuizService {
         'lastUpdated': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
       
-      // Also add coins (1 coin per 10 points earned)
-      final coinsToAdd = pointsCollected ~/ 10;
-      if (coinsToAdd > 0) {
-        await CoinService.instance.addCoins(coinsToAdd);
+      // Also add coins 1:1 with points earned (10 coins per correct answer)
+      if (pointsCollected > 0) {
+        await CoinService.instance.addCoins(pointsCollected);
       }
     } catch (_) {}
   }

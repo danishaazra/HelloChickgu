@@ -227,6 +227,38 @@
       color: white;
       font-size: 48px;
       position: relative;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .video-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 0;
+    }
+
+    .video-thumbnail .play-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.7);
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+      transition: all 0.3s ease;
+    }
+
+    .video-thumbnail:hover .play-overlay {
+      background: rgba(0, 0, 0, 0.9);
+      transform: translate(-50%, -50%) scale(1.1);
     }
 
     .video-duration {
@@ -548,6 +580,9 @@
         <a href="application.html" class="nav-item">
           <i>📝</i> Applications
         </a>
+        <a href="courses.html" class="nav-item">
+          <i>📚</i> Courses
+        </a>
         <a href="admin_video.html" class="nav-item active">
           <i>🎥</i> Video Review
         </a>
@@ -660,6 +695,40 @@
     let videos = [];
     let currentVideoId = null;
 
+    // Function to extract YouTube video ID from URL
+    function getYouTubeVideoId(url) {
+      if (!url) return null;
+      
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+        /youtube\.com\/v\/([^&\n?#]+)/,
+        /youtube\.com\/watch\?.*v=([^&\n?#]+)/
+      ];
+      
+      for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+      }
+      return null;
+    }
+
+    // Function to get YouTube thumbnail URL
+    function getYouTubeThumbnail(youtubeUrl, quality = 'hqdefault') {
+      const videoId = getYouTubeVideoId(youtubeUrl);
+      if (!videoId) return null;
+      
+      const qualities = {
+        'default': 'default.jpg',
+        'medium': 'mqdefault.jpg', 
+        'high': 'hqdefault.jpg',
+        'standard': 'sddefault.jpg',
+        'maxres': 'maxresdefault.jpg'
+      };
+      
+      const qualityKey = qualities[quality] || qualities['hqdefault'];
+      return `https://img.youtube.com/vi/${videoId}/${qualityKey}`;
+    }
+
     async function loadTutorsIntoFilter() {
       const sel = document.getElementById('tutorFilter');
       const snap = await db.collection('tutors').get();
@@ -761,12 +830,19 @@
         return matchesSearch && matchesStatus && matchesSubject && matchesTutor;
       });
 
-      grid.innerHTML = filteredVideos.map(video => `
-        <div class="video-card">
-          <div class="video-thumbnail">
-            🎥
-            <div class="video-duration">${video.duration}</div>
-          </div>
+      grid.innerHTML = filteredVideos.map(video => {
+        const thumbnailUrl = getYouTubeThumbnail(video.youtube);
+        console.log('Video:', video.title, 'YouTube URL:', video.youtube, 'Thumbnail URL:', thumbnailUrl);
+        
+        if (thumbnailUrl) {
+          return `
+          <div class="video-card">
+            <div class="video-thumbnail" style="cursor: pointer;" onclick="window.open('${video.youtube}', '_blank')">
+              <img src="${thumbnailUrl}" alt="${video.title}" 
+                   onerror="this.parentElement.innerHTML='🎥<div class=\\'video-duration\\'>${video.duration}</div>'; this.parentElement.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.parentElement.style.display='flex'; this.parentElement.style.alignItems='center'; this.parentElement.style.justifyContent='center';">
+              <div class="play-overlay">▶</div>
+              <div class="video-duration">${video.duration}</div>
+            </div>
           <div class="video-content">
             <div class="video-header">
               <h3 class="video-title">${video.title}</h3>
@@ -807,7 +883,57 @@
             </div>
           </div>
         </div>
-      `).join('');
+          `;
+        } else {
+          return `
+          <div class="video-card">
+            <div class="video-thumbnail">
+              🎥
+              <div class="video-duration">${video.duration}</div>
+            </div>
+          <div class="video-content">
+            <div class="video-header">
+              <h3 class="video-title">${video.title}</h3>
+              <span class="video-status status-${video.status}">${video.status}</span>
+            </div>
+            <div class="video-meta">
+              <span>By ${video.tutorName || video.tutorUid}</span>
+              <span>${new Date(video.submittedDate).toLocaleDateString()}</span>
+            </div>
+            <p class="video-description">${video.description}</p>
+            <div class="video-stats">
+              <div class="stat-item">
+                <div class="stat-number">RM ${Number(video.price||0).toFixed(2)}</div>
+                <div class="stat-label">Price</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">${video.views}</div>
+                <div class="stat-label">Views</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">${video.likes}</div>
+                <div class="stat-label">Likes</div>
+              </div>
+              <a class="btn btn-secondary" href="${video.youtube||'#'}" target="_blank" rel="noopener">Watch</a>
+            </div>
+            <div class="video-actions">
+              ${video.status === 'pending' ? `
+                <button class="btn btn-primary" onclick="viewVideo('${video.id}')">Review</button>
+                <button class="btn btn-success" onclick="approveVideo('${video.id}')">Approve</button>
+                <button class="btn btn-danger" onclick="rejectVideo('${video.id}')">Reject</button>
+              ` : video.status === 'approved' ? `
+                <button class="btn btn-secondary" onclick="viewVideo('${video.id}')">View</button>
+                <button class="btn btn-danger" onclick="deleteVideo('${video.id}')">Take Down</button>
+              ` : `
+                <button class="btn btn-secondary" onclick="viewVideo('${video.id}')">View</button>
+                <button class="btn btn-danger" onclick="deleteVideo('${video.id}')">Delete</button>
+              `}
+            </div>
+          </div>
+        </div>
+          `;
+        }
+      }).join('');
     }
 
     // View video modal
@@ -822,11 +948,16 @@
       const rejectBtn = document.getElementById('rejectBtn');
       const deleteBtn = document.getElementById('deleteBtn');
 
+      const modalThumbnailUrl = getYouTubeThumbnail(video.youtube, 'maxres');
       content.innerHTML = `
         <div class="video-preview-section">
-          <div class="video-player">
-            🎬 Video Player
-            <div style="font-size: 14px; margin-top: 8px; opacity: 0.7;">
+          <div class="video-player" ${modalThumbnailUrl ? `style="background-image: url('${modalThumbnailUrl}'); background-size: cover; background-position: center;"` : ''}>
+            ${modalThumbnailUrl ? `
+              <div class="play-overlay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.8); border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; cursor: pointer;" onclick="window.open('${video.youtube}', '_blank')">
+                ▶
+              </div>
+            ` : '🎬 Video Player'}
+            <div style="font-size: 14px; margin-top: 8px; opacity: 0.7; position: absolute; bottom: 20px; left: 20px; right: 20px; background: rgba(0,0,0,0.7); padding: 8px; border-radius: 4px; color: white;">
               ${video.title}
             </div>
           </div>
@@ -956,7 +1087,28 @@
       }
     });
 
+    // Test function to check YouTube URL parsing
+    function testYouTubeParsing() {
+      const testUrls = [
+        'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        'https://youtu.be/dQw4w9WgXcQ',
+        'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        'invalid-url'
+      ];
+      
+      console.log('Testing YouTube URL parsing:');
+      testUrls.forEach(url => {
+        const videoId = getYouTubeVideoId(url);
+        const thumbnail = getYouTubeThumbnail(url);
+        console.log(`URL: ${url}`);
+        console.log(`Video ID: ${videoId}`);
+        console.log(`Thumbnail: ${thumbnail}`);
+        console.log('---');
+      });
+    }
+
     // Initialize
+    testYouTubeParsing(); // Run test first
     loadTutorsIntoFilter().then(loadVideos);
   </script>
 </body>

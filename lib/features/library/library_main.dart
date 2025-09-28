@@ -5,6 +5,7 @@ import '../../shared/theme/theme.dart';
 import 'library_courseoutline.dart';
 import '../chatbot/chippy_chatbot.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
+import '../../services/library_service.dart';
 
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key});
@@ -12,7 +13,6 @@ class LibraryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isSmallScreen = Responsive.isSmallScreen(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -39,13 +39,19 @@ class LibraryPage extends StatelessWidget {
   }
 }
 
-class _LibraryContent extends StatelessWidget {
+class _LibraryContent extends StatefulWidget {
   const _LibraryContent();
+
+  @override
+  State<_LibraryContent> createState() => _LibraryContentState();
+}
+
+class _LibraryContentState extends State<_LibraryContent> {
+  String _selectedCategory = 'All';
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isSmallScreen = Responsive.isSmallScreen(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +83,13 @@ class _LibraryContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        const _CategoriesRow(),
+        _CategoriesRow(
+          onCategoryChanged: (category) {
+            setState(() {
+              _selectedCategory = category;
+            });
+          },
+        ),
         const SizedBox(height: 24),
         Text(
           'Courses',
@@ -87,7 +99,7 @@ class _LibraryContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        const _CoursesGrid(),
+        _CoursesGrid(selectedCategory: _selectedCategory),
       ],
     );
   }
@@ -327,7 +339,9 @@ class _SearchField extends StatelessWidget {
 }
 
 class _CategoriesRow extends StatefulWidget {
-  const _CategoriesRow();
+  final Function(String) onCategoryChanged;
+  
+  const _CategoriesRow({required this.onCategoryChanged});
 
   @override
   State<_CategoriesRow> createState() => _CategoriesRowState();
@@ -337,8 +351,6 @@ class _CategoriesRowState extends State<_CategoriesRow> {
   final List<_CategoryData> _categories = const [
     _CategoryData('All', Colors.white),
     _CategoryData('Bookmark', AppTheme.primaryYellow),
-    _CategoryData('Coding', AppTheme.secondaryPink),
-    _CategoryData('Green', AppTheme.secondaryMint),
   ];
 
   int _selectedIndex = 0;
@@ -357,7 +369,10 @@ class _CategoriesRowState extends State<_CategoriesRow> {
                 label: item.label,
                 dotColor: item.dotColor,
                 selected: isSelected,
-                onTap: () => setState(() => _selectedIndex = index),
+                onTap: () {
+                  setState(() => _selectedIndex = index);
+                  widget.onCategoryChanged(item.label);
+                },
               ),
               const SizedBox(width: 8),
             ],
@@ -444,118 +459,373 @@ class _ContinueLessonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const double progress = 1 / 5;
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.primaryYellow,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      clipBehavior: Clip.hardEdge,
-      constraints: const BoxConstraints(minHeight: 150),
-      padding: const EdgeInsets.all(16),
-      child: Stack(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: 120,
-                height: 120,
-                child: Center(
-                  child: Image.asset(
-                    'assets/learning process python.png',
-                    width: 120,
-                    height: 120,
-                    fit: BoxFit.contain,
-                  ),
-                ),
+    
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: LibraryService().getRecentCourseProgress(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            decoration: BoxDecoration(
+              color: AppTheme.primaryYellow,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            clipBehavior: Clip.hardEdge,
+            constraints: const BoxConstraints(minHeight: 150),
+            padding: const EdgeInsets.all(16),
+            child: const Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
               ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          );
+        }
+
+        final progressData = snapshot.data;
+        
+        if (progressData == null) {
+          // No recent course, show default state
+          return Container(
+            decoration: BoxDecoration(
+              color: AppTheme.primaryYellow,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            clipBehavior: Clip.hardEdge,
+            constraints: const BoxConstraints(minHeight: 150),
+            padding: const EdgeInsets.all(16),
+            child: Stack(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      'Python Programming',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 24,
-                        color: Colors.white,
+                    SizedBox(
+                      width: 120,
+                      height: 120,
+                      child: Center(
+                        child: Image.asset(
+                          'assets/learning process python.png',
+                          width: 120,
+                          height: 120,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '1 out of 5 modules',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: LinearProgressIndicator(
-                              value: progress,
-                              minHeight: 16,
-                              color: AppTheme.primaryBlue,
-                              backgroundColor: Colors.white,
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Start Your Learning Journey',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 24,
+                              color: Colors.white,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          '${(progress * 100).round()}%',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
+                          const SizedBox(height: 4),
+                          Text(
+                            'No recent courses',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 12),
+                          Text(
+                            'Choose a course below to begin!',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
+              ],
+            ),
+          );
+        }
+
+        final courseTitle = progressData['courseTitle'] as String;
+        final completedModules = (progressData['completedModules'] as List).length;
+        final totalModules = progressData['totalModules'] as int;
+        final progressPercentage = progressData['progressPercentage'] as double;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: AppTheme.primaryYellow,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          clipBehavior: Clip.hardEdge,
+          constraints: const BoxConstraints(minHeight: 150),
+          padding: const EdgeInsets.all(16),
+          child: Stack(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 120,
+                    height: 120,
+                    child: Center(
+                      child: Image.asset(
+                        'assets/learning process python.png',
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          courseTitle,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 24,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$completedModules out of $totalModules modules',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: LinearProgressIndicator(
+                                  value: progressPercentage.clamp(0.0, 1.0),
+                                  minHeight: 16,
+                                  color: AppTheme.primaryBlue,
+                                  backgroundColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              '${(progressPercentage * 100).round()}%',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          // Removed Ask Chippy button
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
 class _CoursesGrid extends StatelessWidget {
-  const _CoursesGrid();
+  final String selectedCategory;
+  
+  const _CoursesGrid({required this.selectedCategory});
 
   @override
   Widget build(BuildContext context) {
-    final items = _sampleCourses;
     final isSmallScreen = Responsive.isSmallScreen(context);
     final double aspect =
         isSmallScreen ? 0.50 : 0.62; // increase card height further
-    return GridView.builder(
-      itemCount: items.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: aspect,
-      ),
-      itemBuilder: (context, index) {
-        final course = items[index];
-        return CourseCard(
-          title: course.title,
-          imageWidget: course.imageWidget,
-          modulesText: course.modulesText,
-          timeText: course.timeText,
-          isActive: course.isActive,
-        );
+    
+    return StreamBuilder<List<Course>>(
+      stream: LibraryService().getCoursesStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading courses',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  snapshot.error.toString(),
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        final allCourses = snapshot.data ?? [];
+        
+        // Filter courses based on selected category
+        List<Course> filteredCourses = allCourses;
+        if (selectedCategory == 'Bookmark') {
+          // For bookmark filtering, we'll show all courses but filter in itemBuilder
+          // The BookmarkFilteredCourseCard will handle showing only bookmarked ones
+          filteredCourses = allCourses;
+        } else if (selectedCategory != 'All') {
+          // For other categories, you can add filtering logic here
+          // For now, we'll show all courses
+          filteredCourses = allCourses;
+        }
+
+        if (filteredCourses.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.library_books_outlined,
+                  size: 64,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No courses available',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Check back later for new courses!',
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (selectedCategory == 'Bookmark') {
+          // Special handling for bookmark category with proper sorting
+          return FutureBuilder<List<Course>>(
+            future: _getBookmarkedCourses(allCourses),
+            builder: (context, bookmarkSnapshot) {
+              if (bookmarkSnapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+
+              final bookmarkedCourses = bookmarkSnapshot.data ?? [];
+
+              if (bookmarkedCourses.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.bookmark_border,
+                        size: 64,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No bookmarked courses',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Bookmark courses to see them here!',
+                        style: Theme.of(context).textTheme.bodySmall,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return GridView.builder(
+                itemCount: bookmarkedCourses.length,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: aspect,
+                ),
+                itemBuilder: (context, index) {
+                  final course = bookmarkedCourses[index];
+                  return DatabaseCourseCard(
+                    course: course,
+                    selectedCategory: selectedCategory,
+                  );
+                },
+              );
+            },
+          );
+        } else {
+          // Regular course display for non-bookmark categories
+          return GridView.builder(
+            itemCount: filteredCourses.length,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: aspect,
+            ),
+            itemBuilder: (context, index) {
+              final course = filteredCourses[index];
+              return DatabaseCourseCard(
+                course: course,
+                selectedCategory: selectedCategory,
+              );
+            },
+          );
+        }
       },
     );
+  }
+
+  /// Get bookmarked courses and sort them (most recently bookmarked first)
+  Future<List<Course>> _getBookmarkedCourses(List<Course> allCourses) async {
+    try {
+      final libraryService = LibraryService();
+      final bookmarkedCourses = <Course>[];
+      
+      // Check each course to see if it's bookmarked
+      for (final course in allCourses) {
+        final isBookmarked = await libraryService.isCourseBookmarked(course.title);
+        if (isBookmarked) {
+          bookmarkedCourses.add(course);
+        }
+      }
+      
+      // Sort by course creation date (newest first) or you can implement
+      // a more sophisticated sorting based on when they were bookmarked
+      bookmarkedCourses.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      
+      return bookmarkedCourses;
+    } catch (e) {
+      print('Error fetching bookmarked courses: $e');
+      return [];
+    }
   }
 }
 
@@ -682,6 +952,7 @@ class CourseCard extends StatelessWidget {
                               courseTitle: title,
                               modules: moduleCount,
                               duration: timeText,
+                              courseId: null, // Legacy CourseCard doesn't have courseId
                             ),
                       ),
                     );
@@ -696,6 +967,247 @@ class CourseCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class DatabaseCourseCard extends StatelessWidget {
+  const DatabaseCourseCard({
+    super.key, 
+    required this.course,
+    required this.selectedCategory,
+  });
+
+  final Course course;
+  final String selectedCategory;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isSmall = Responsive.isSmallScreen(context);
+    
+    // Get appropriate icon based on course title
+    Widget getCourseIcon() {
+      final title = course.title.toLowerCase();
+      if (title.contains('python') || title.contains('programming')) {
+        return const Icon(Icons.code, size: 36, color: Colors.black87);
+      } else if (title.contains('architecture') || title.contains('computer')) {
+        return const Icon(Icons.memory, size: 36, color: Colors.black87);
+      } else if (title.contains('data') || title.contains('structure')) {
+        return const Icon(Icons.hub, size: 36, color: Colors.black87);
+      } else if (title.contains('network')) {
+        return const Icon(Icons.router, size: 36, color: Colors.black87);
+      } else if (title.contains('web') || title.contains('development')) {
+        return const Icon(Icons.web, size: 36, color: Colors.black87);
+      } else if (title.contains('mobile') || title.contains('app')) {
+        return const Icon(Icons.phone_android, size: 36, color: Colors.black87);
+      } else {
+        return const Icon(Icons.school, size: 36, color: Colors.black87);
+      }
+    }
+
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: AppTheme.bgWhite,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  height: isSmall ? 70 : 80,
+                  width: double.infinity,
+                  child: ColoredBox(
+                    color: AppTheme.bgLightBlue,
+                    child: Center(child: getCourseIcon()),
+                  ),
+                ),
+              ),
+              SizedBox(height: isSmall ? 8 : 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Text(
+                      course.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  _DatabaseBookmarkToggle(
+                    courseTitle: course.title,
+                    onBookmarkChanged: () {
+                      // Trigger a rebuild when bookmark changes
+                      // This will refresh the bookmark category if it's currently selected
+                      (context as Element).markNeedsBuild();
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: isSmall ? 2 : 6),
+              SizedBox(height: isSmall ? 4 : 8),
+              FutureBuilder<int>(
+                future: _getActualModuleCount(course.id),
+                builder: (context, snapshot) {
+                  final actualCount = snapshot.data ?? course.moduleCount;
+                  return Text(
+                    '$actualCount modules',
+                    style: theme.textTheme.bodySmall,
+                  );
+                },
+              ),
+              SizedBox(height: isSmall ? 4 : 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: ButtonStyle(
+                    padding: MaterialStateProperty.all(
+                      EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: isSmall ? 5 : 10,
+                      ),
+                    ),
+                    minimumSize: MaterialStateProperty.all(
+                      Size.fromHeight(isSmall ? 32 : 40),
+                    ),
+                    shape: MaterialStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    side: MaterialStateProperty.all(
+                      BorderSide(color: AppTheme.primaryBlue, width: 2),
+                    ),
+                    backgroundColor: MaterialStateProperty.resolveWith((states) {
+                      if (states.contains(MaterialState.hovered) ||
+                          states.contains(MaterialState.pressed) ||
+                          states.contains(MaterialState.focused)) {
+                        return AppTheme.primaryBlue;
+                      }
+                      return Colors.white;
+                    }),
+                    foregroundColor: MaterialStateProperty.resolveWith((states) {
+                      if (states.contains(MaterialState.hovered) ||
+                          states.contains(MaterialState.pressed) ||
+                          states.contains(MaterialState.focused)) {
+                        return Colors.white;
+                      }
+                      return AppTheme.primaryBlue;
+                    }),
+                    overlayColor: MaterialStateProperty.all(
+                      AppTheme.primaryBlue.withOpacity(0.1),
+                    ),
+                    elevation: MaterialStateProperty.all(0),
+                  ),
+                  onPressed: () async {
+                    // Get actual module count before navigating
+                    final actualCount = await _getActualModuleCount(course.id);
+                    
+                    // Update recent course when user accesses it
+                    await LibraryService().updateRecentCourse(course.id, course.title);
+                    
+                    if (context.mounted) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => CourseOutlinePage(
+                            courseTitle: course.title,
+                            modules: actualCount,
+                            duration: '', // Empty duration since we're not tracking time
+                            courseId: course.id, // Pass the course ID for database fetching
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text(
+                    'Start',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Get the actual module count from database
+  Future<int> _getActualModuleCount(String courseId) async {
+    try {
+      final modules = await LibraryService().getCourseModules(courseId);
+      return modules.length;
+    } catch (e) {
+      print('Error fetching module count: $e');
+      return 0; // Fallback to 0 if error occurs
+    }
+  }
+}
+
+
+class _DatabaseBookmarkToggle extends StatefulWidget {
+  const _DatabaseBookmarkToggle({
+    required this.courseTitle,
+    this.onBookmarkChanged,
+  });
+  final String courseTitle;
+  final VoidCallback? onBookmarkChanged;
+
+  @override
+  State<_DatabaseBookmarkToggle> createState() => _DatabaseBookmarkToggleState();
+}
+
+class _DatabaseBookmarkToggleState extends State<_DatabaseBookmarkToggle> {
+  bool _loading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = AppTheme.primaryBlue;
+    return FutureBuilder<bool>(
+      future: LibraryService().isCourseBookmarked(widget.courseTitle),
+      builder: (context, snapshot) {
+        final isBookmarked = snapshot.data ?? false;
+        return IconButton(
+          onPressed: _loading ? null : () async {
+            setState(() => _loading = true);
+            await LibraryService().toggleCourseBookmark(widget.courseTitle);
+            if (mounted) {
+              setState(() => _loading = false);
+              // Trigger parent refresh if callback is provided
+              widget.onBookmarkChanged?.call();
+            }
+          },
+          iconSize: 20,
+          padding: const EdgeInsets.all(4),
+          constraints: const BoxConstraints(
+            minWidth: 28,
+            minHeight: 28,
+          ),
+          icon: _loading
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                )
+              : Icon(
+                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                  color: color,
+                ),
+          tooltip: isBookmarked ? 'Remove bookmark' : 'Bookmark',
+        );
+      },
     );
   }
 }
@@ -719,7 +1231,7 @@ class _BookmarkToggleState extends State<_BookmarkToggle> {
             .collection('users')
             .doc(user.uid)
             .get();
-    final data = snap.data() as Map<String, dynamic>?;
+      final data = snap.data();
     final list =
         (data?['bookmarked_courses'] as List?)?.cast<String>() ?? <String>[];
     return list.toSet();
@@ -732,7 +1244,7 @@ class _BookmarkToggleState extends State<_BookmarkToggle> {
     final doc = FirebaseFirestore.instance.collection('users').doc(user.uid);
     await FirebaseFirestore.instance.runTransaction((txn) async {
       final snap = await txn.get(doc);
-      final data = snap.data() as Map<String, dynamic>? ?? {};
+      final data = snap.data() ?? {};
       final current =
           (data['bookmarked_courses'] as List?)?.cast<String>() ?? <String>[];
       if (current.contains(widget.courseTitle)) {
@@ -769,49 +1281,4 @@ class _BookmarkToggleState extends State<_BookmarkToggle> {
   }
 }
 
-class _CourseItemData {
-  _CourseItemData({
-    required this.title,
-    required this.imageWidget,
-    required this.modulesText,
-    required this.timeText,
-    required this.isActive,
-  });
 
-  final String title;
-  final Widget imageWidget;
-  final String modulesText;
-  final String timeText;
-  final bool isActive;
-}
-
-final List<_CourseItemData> _sampleCourses = [
-  _CourseItemData(
-    title: 'Python Programming',
-    imageWidget: const Icon(Icons.code, size: 36, color: Colors.black87),
-    modulesText: '5 modules',
-    timeText: '3h 10m',
-    isActive: true,
-  ),
-  _CourseItemData(
-    title: 'Computer Architecture',
-    imageWidget: const Icon(Icons.memory, size: 36, color: Colors.black87),
-    modulesText: '8 modules',
-    timeText: '6h 40m',
-    isActive: false,
-  ),
-  _CourseItemData(
-    title: 'Data Structures',
-    imageWidget: const Icon(Icons.hub, size: 36, color: Colors.black87),
-    modulesText: '6 modules',
-    timeText: '4h 25m',
-    isActive: false,
-  ),
-  _CourseItemData(
-    title: 'Intro to Networking',
-    imageWidget: const Icon(Icons.router, size: 36, color: Colors.black87),
-    modulesText: '7 modules',
-    timeText: '5h 05m',
-    isActive: false,
-  ),
-];

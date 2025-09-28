@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'tutor2.dart';
 import 'package:hellochickgu/services/purchase_service.dart';
 import 'course_outline.dart';
+import 'best_tutor.dart';
 
 class TutorListPage extends StatefulWidget {
   const TutorListPage({super.key});
@@ -11,8 +12,6 @@ class TutorListPage extends StatefulWidget {
 }
 
 class _TutorListPageState extends State<TutorListPage> {
-  final TextEditingController _searchController = TextEditingController();
-
   final List<_CategoryChip> _categories = const [
     _CategoryChip(label: 'Computer Science', icon: Icons.computer),
     _CategoryChip(label: 'Mathematics', icon: Icons.calculate),
@@ -176,36 +175,69 @@ class _TutorListPageState extends State<TutorListPage> {
   Widget _buildHeroCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xff9fd9ff),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xff9fd9ff), Color(0xff7ac3ff)],
+        ),
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
             'Find Your Best\nTutor!',
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
               color: Colors.white,
+              letterSpacing: 0.5,
+              height: 1.2,
             ),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search Tutor...',
-              filled: true,
-              fillColor: Colors.white,
-              prefixIcon: const Icon(Icons.search),
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 0,
-                horizontal: 12,
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder:
+                        (_) =>
+                            const BestTutorPage(courseTitle: 'Tutorial Videos'),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.emoji_events, size: 20),
+              label: const Text(
+                'Education Learning Videos',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  letterSpacing: 0.5,
+                ),
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
-                borderSide: BorderSide.none,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xff1492e6),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 20,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                elevation: 3,
+                shadowColor: Colors.black.withOpacity(0.15),
+                splashFactory: InkRipple.splashFactory,
               ),
             ),
           ),
