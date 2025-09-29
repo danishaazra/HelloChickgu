@@ -346,11 +346,6 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                     child: Row(
                       children: [
-                        IconButton(
-                          tooltip: 'Attach image',
-                          icon: const Icon(Icons.image_outlined),
-                          onPressed: _pickCommentImage,
-                        ),
                         Expanded(
                           child: TextField(
                             controller: _commentController,
@@ -632,20 +627,8 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_commentImage != null) ...[
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: _buildImage(_commentImage!),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
                     Row(
                       children: [
-                        IconButton(
-                          tooltip: 'Attach image',
-                          icon: const Icon(Icons.image_outlined),
-                          onPressed: _pickCommentImage,
-                        ),
                         Expanded(
                           child: TextField(
                             key: ValueKey('comment_input_${post.id}'),
@@ -654,7 +637,7 @@ class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin 
                             textInputAction: TextInputAction.send,
                             onTap: () => _commentFocusNode.requestFocus(),
                             onSubmitted: (_) => _addComment(),
-                          scrollPadding: const EdgeInsets.only(bottom: 120),
+                            scrollPadding: const EdgeInsets.only(bottom: 120),
                             decoration: const InputDecoration(
                               hintText: 'Add a comment...',
                               border: InputBorder.none,
@@ -971,29 +954,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                IconButton(
-                  tooltip: 'Attach image',
-                  icon: const Icon(Icons.image_outlined),
-                  onPressed: () async {
-                    try {
-                      final picker = ImagePicker();
-                      final xfile = await picker.pickImage(
-                        source: ImageSource.gallery,
-                        imageQuality: 80,
-                      );
-                      if (xfile == null) return;
-                      final bytes = await xfile.readAsBytes();
-                      setState(() {
-                        _attachedImageBase64 =
-                            'data:image/jpeg;base64,' + base64Encode(bytes);
-                      });
-                    } catch (_) {}
-                  },
-                ),
-              ],
-            ),
+            const SizedBox.shrink(),
           ],
         ),
       ),
