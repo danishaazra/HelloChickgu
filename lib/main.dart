@@ -1,42 +1,32 @@
 import 'package:flutter/material.dart';
 import 'shared/theme/theme.dart';
-import 'features/tutor/main_tutor.dart';
-import 'features/game/quiz1.dart';
-import 'features/tutor/main_tutor.dart';
-import 'map.dart';
-import 'features/home/home.dart';
-import 'features/community/community.dart';
-import 'features/library/library_main.dart';
-import 'features/library/library_courseoutline.dart';
-import 'features/game/quiz1.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'features/onboarding/onboarding.dart';
-import 'features/auth/login.dart';
 import 'firebase_options.dart';
+import 'features/onboarding/onboarding.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'features/library/ar_model.dart';
-import 'features/library/test_ar.dart';
-import 'features/library/ar_model.dart';
-import 'features/game/level_page.dart';
-import 'features/library/library_main.dart';
-import 'features/ar/ar_page.dart';
-import 'features/learning pet/pet_home.dart';
 import 'package:hellochickgu/services/notification_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'services/coin_service.dart';
-import 'features/game/quiz_upload.dart';
+import 'features/chatbot/chippy_chatbot.dart';
+import 'shared/const.dart';
+import 'services/gemini_service.dart'; // ✅ your custom service
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
-  try {
-    await dotenv.load(fileName: '.env');
-  } catch (_) {}
+
+  // ✅ Load env
+  await dotenv.load(fileName: '.env');
+
+  // ✅ Firebase init
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // ✅ Notification init
   await NotificationService.instance.initialize();
-  // One-time backfill: keep coins >= points for signed-in user
+
+  // ✅ Coin backfill
   try {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -45,7 +35,7 @@ Future<void> main() async {
               .collection('users')
               .doc(user.uid)
               .get();
-      final data = doc.data() as Map<String, dynamic>?;
+      final data = doc.data();
       final points = (data?['points'] as int?) ?? 0;
       final coins = (data?['coins'] as int?) ?? 0;
       if (coins < points) {
@@ -53,6 +43,10 @@ Future<void> main() async {
       }
     }
   } catch (_) {}
+
+  // ✅ Initialize your GeminiService once
+  await GeminiService.instance.init();
+
   runApp(const MyApp());
 }
 
@@ -65,7 +59,8 @@ class MyApp extends StatelessWidget {
       title: 'Hello Chickgu!',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const UploadQuizPage(),
+      home: const OnboardingPage(),
     );
   }
 }
+

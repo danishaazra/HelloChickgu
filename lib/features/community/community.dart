@@ -111,7 +111,7 @@ class _CommunityPageState extends State<CommunityPage> {
                     (data['created_at'] as Timestamp?)?.toDate() ??
                     DateTime.now(),
               );
-              return PostCard(post: post);
+              return PostCard(key: ValueKey(docs[index].id), post: post);
             },
           );
         },
@@ -139,11 +139,15 @@ class PostCard extends StatefulWidget {
   State<PostCard> createState() => _PostCardState();
 }
 
-class _PostCardState extends State<PostCard> {
+class _PostCardState extends State<PostCard> with AutomaticKeepAliveClientMixin {
   late Post post;
   final TextEditingController _commentController = TextEditingController();
+  final FocusNode _commentFocusNode = FocusNode();
   String? _commentImage; // stores base64 or path
   bool _showComments = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -206,8 +210,172 @@ class _PostCardState extends State<PostCard> {
   }
 
   void _toggleComments() {
+    // On phones, open a bottom sheet to isolate keyboard/focus from list rebuilds
+    final isPhone = MediaQuery.of(context).size.width < 600;
+    if (isPhone && post.id != null) {
+      if (!mounted) return;
+      _showCommentsSheet();
+      return;
+    }
     setState(() {
       _showComments = !_showComments;
+    });
+    if (_showComments) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _commentFocusNode.requestFocus();
+      });
+    }
+  }
+
+  void _showCommentsSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            child: SizedBox(
+              height: MediaQuery.of(ctx).size.height * 0.75,
+              child: Column(
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[400],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Comments',
+                            style: Theme.of(ctx).textTheme.titleMedium,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                      stream: FirebaseFirestore.instance
+                          .collection('posts')
+                          .doc(post.id)
+                          .collection('comments')
+                          .orderBy('created_at', descending: true)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        final docs = snapshot.data?.docs ?? const [];
+                        return ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          reverse: false,
+                          itemCount: docs.length,
+                          itemBuilder: (context, index) {
+                            final c = docs[index].data();
+                            final uname = (c['username'] as String?) ?? 'User';
+                            final uid = (c['user_id'] as String?) ?? '';
+                            final content = (c['content'] as String?) ?? '';
+                            final img = c['image'] as String?;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor: _colorFromString(uid),
+                                    radius: 16,
+                                    child: Text(
+                                      (uname.isNotEmpty ? uname[0] : 'U')
+                                          .toUpperCase(),
+                                      style: Theme.of(ctx)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(color: Colors.white),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "$uname: $content",
+                                          style: Theme.of(ctx)
+                                              .textTheme
+                                              .bodyMedium,
+                                        ),
+                                        if (img != null) ...[
+                                          const SizedBox(height: 8),
+                                          ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            child: _buildImage(img),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _commentController,
+                            focusNode: _commentFocusNode,
+                            autofocus: true,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _addComment(),
+                            decoration: const InputDecoration(
+                              hintText: 'Add a comment...',
+                              border: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.send_rounded),
+                          color: Theme.of(ctx).colorScheme.primary,
+                          onPressed: _addComment,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ).then((_) {
+      // Clear focus when sheet closes to avoid odd focus transitions
+      if (mounted) _commentFocusNode.unfocus();
     });
   }
 
@@ -269,6 +437,7 @@ class _PostCardState extends State<PostCard> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -382,6 +551,7 @@ class _PostCardState extends State<PostCard> {
           ),
           if (_showComments && post.id != null) ...[
             const Divider(height: 1),
+            // Comments list only (does not include the input composer)
             StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream:
                   FirebaseFirestore.instance
@@ -393,7 +563,7 @@ class _PostCardState extends State<PostCard> {
               builder: (context, snapshot) {
                 final docs = snapshot.data?.docs ?? const [];
                 return Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -444,46 +614,46 @@ class _PostCardState extends State<PostCard> {
                           ),
                         );
                       }),
-                      const SizedBox(height: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_commentImage != null) ...[
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: _buildImage(_commentImage!),
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                          Row(
-                            children: [
-                              IconButton(
-                                tooltip: 'Attach image',
-                                icon: const Icon(Icons.image_outlined),
-                                onPressed: _pickCommentImage,
-                              ),
-                              Expanded(
-                                child: TextField(
-                                  controller: _commentController,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Add a comment...',
-                                    border: InputBorder.none,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.send_rounded),
-                                color: Theme.of(context).colorScheme.primary,
-                                onPressed: _addComment,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 );
               },
+            ),
+            // Persistent input composer (outside the StreamBuilder to avoid focus loss)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            key: ValueKey('comment_input_${post.id}'),
+                            controller: _commentController,
+                            focusNode: _commentFocusNode,
+                            textInputAction: TextInputAction.send,
+                            onTap: () => _commentFocusNode.requestFocus(),
+                            onSubmitted: (_) => _addComment(),
+                            scrollPadding: const EdgeInsets.only(bottom: 120),
+                            decoration: const InputDecoration(
+                              hintText: 'Add a comment...',
+                              border: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.send_rounded),
+                          color: Theme.of(context).colorScheme.primary,
+                          onPressed: _addComment,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ],
@@ -784,29 +954,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                IconButton(
-                  tooltip: 'Attach image',
-                  icon: const Icon(Icons.image_outlined),
-                  onPressed: () async {
-                    try {
-                      final picker = ImagePicker();
-                      final xfile = await picker.pickImage(
-                        source: ImageSource.gallery,
-                        imageQuality: 80,
-                      );
-                      if (xfile == null) return;
-                      final bytes = await xfile.readAsBytes();
-                      setState(() {
-                        _attachedImageBase64 =
-                            'data:image/jpeg;base64,' + base64Encode(bytes);
-                      });
-                    } catch (_) {}
-                  },
-                ),
-              ],
-            ),
+            const SizedBox.shrink(),
           ],
         ),
       ),
