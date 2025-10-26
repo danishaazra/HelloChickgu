@@ -4,7 +4,6 @@ import 'package:hellochickgu/features/game/quiz2.dart';
 import 'package:hellochickgu/shared/utils/responsive.dart';
 import 'package:hellochickgu/features/game/quiz3.dart';
 import 'package:hellochickgu/features/game/quiz4.dart';
-import 'package:hellochickgu/features/game/training_page.dart';
 import 'package:hellochickgu/map.dart';
 import 'package:hellochickgu/services/quiz_service.dart';
 import 'package:hellochickgu/features/game/quiz_review.dart';
@@ -29,17 +28,6 @@ class _LevelPageState extends State<LevelPage> {
   bool _trainingSelected = false;
   Set<int> completedLevels = {}; // Track completed levels
 
-  void _openTraining() {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => const TrainingPage()))
-        .then((_) {
-          if (mounted) {
-            setState(() {
-              _trainingSelected = false;
-            });
-          }
-        });
-  }
 
   void _onTapLevel(int level) {
     // For levels 5+, always open the unified popup (Coming Soon layout inside)
@@ -129,16 +117,7 @@ class _LevelPageState extends State<LevelPage> {
               startLabel: hasResult ? 'Review Questions' : 'Start Game!',
               onClose: () {
                 Navigator.of(context).pop();
-                // After closing, go to next level if this level is completed
-                if (hasResult) {
-                  final int nextLevel = level + 1;
-                  // If next is <= 4 open its popup, otherwise show Coming Soon popup
-                  if (nextLevel <= 4) {
-                    _onTapLevel(nextLevel);
-                  } else {
-                    _showLevelPopup(context, 5);
-                  }
-                }
+                // Simply close the popup without opening the next level
               },
             );
           },
